@@ -22,7 +22,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end sm:ps-7 cursor-pointer">
 
               {/* Clerk Authentication  */}
-              {!user ? <SignInButton mode='modal' signUpForceRedirectUrl={'/dashboard'}>
+              {!user ? <SignInButton mode='modal' signUpForceRedirectUrl={'/dashboard'} forceRedirectUrl={'/dashboard'}>
                 <div className="flex items-center gap-x-2 font-medium text-gray-500 hover:text-blue-600 sm:border-s sm:border-gray-300 py-2 sm:py-0 sm:ms-4 sm:my-6 sm:ps-6 dark:border-neutral-700 dark:text-neutral-400 dark:hover:text-blue-500" >
                   <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
@@ -42,8 +42,18 @@ export default function Home() {
 
           <div className="flex justify-center">
             <a className="inline-flex items-center gap-x-2 bg-white border border-gray-200 text-sm text-gray-800 p-1 ps-3 rounded-full transition hover:border-gray-300 dark:bg-neutral-800 dark:border-neutral-700 dark:hover:border-neutral-600 dark:text-neutral-200"
-              href="#" target="_blank">
-              Trusted by 10,000+ Professionals
+              onClick={(e) => {
+                e.preventDefault();
+                if (user) {
+                  window.location.href = '/dashboard';
+                } else {
+                  // Redirect to sign-in page
+                  window.location.href = '/sign-in';
+                }
+              }}
+              href="#"
+            >
+              "Your career transformation begins with one decision"
               <span className="py-1.5 px-2.5 inline-flex justify-center items-center gap-x-2 rounded-full bg-gray-200 font-semibold text-sm text-gray-600 dark:bg-neutral-700 dark:text-neutral-400">
                 <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
               </span>
@@ -70,19 +80,30 @@ export default function Home() {
 
 
           <div className="mt-8 gap-3 flex justify-center">
-            <a className="inline-flex justify-center items-center
+            {!user ? (
+              <>
+                <a className="inline-flex justify-center items-center
       gap-x-3 text-center bg-gradient-to-tl from-blue-600
        to-violet-600 hover:from-violet-600 hover:to-blue-600 border border-transparent cursor-pointer text-white text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 py-3 px-4 dark:focus:ring-offset-gray-800"
-              href="/dashboard">
-              Get Started Free
-              <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-            </a>
-            <a className="inline-flex justify-center items-center
+                  href="/dashboard">
+                  Get Started Free
+                  <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                </a>
+                <a className="inline-flex justify-center items-center
       gap-x-3 text-center bg-white text-gray-800 border border-gray-200 hover:bg-gray-100 cursor-pointer text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 py-3 px-4 dark:bg-neutral-900 dark:border-neutral-700 dark:hover:bg-neutral-800 dark:text-white dark:focus:ring-offset-gray-800"
-              href="#features">
-              View Demo
-            </a>
-
+                  href="#features">
+                  View Demo
+                </a>
+              </>
+            ) : (
+              <a className="inline-flex justify-center items-center
+      gap-x-3 text-center bg-gradient-to-tl from-blue-600
+       to-violet-600 hover:from-violet-600 hover:to-blue-600 border border-transparent cursor-pointer text-white text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 py-3 px-4 dark:focus:ring-offset-gray-800"
+                href="/dashboard">
+                Go to Dashboard
+                <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              </a>
+            )}
           </div>
 
 
@@ -198,35 +219,37 @@ export default function Home() {
       {/* Footer Section */}
       <footer className="mt-20 py-10 bg-gray-50 dark:bg-neutral-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="md:flex md:items-center md:justify-between">
-            <div className="flex justify-center md:justify-start">
+          <div className="flex flex-col items-center">
+            <div className="flex justify-center mb-6">
               <div className="flex items-center">
                 <Image src={'/logo.png'} alt="Mentorix Logo" width={150} height={150} className="h-8 w-8" />
                 <span className="ml-2 text-xl font-semibold text-gray-800 dark:text-white">Mentorix</span>
               </div>
             </div>
-            <div className="mt-8 md:mt-0 flex justify-center space-x-6">
-              <a href="https://www.linkedin.com/in/divyasaxena24/" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                <span className="sr-only">LinkedIn</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                </svg>
-              </a>
-              <a href="https://github.com/divysaxena24/" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                <span className="sr-only">GitHub</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-                </svg>
-              </a>
-              <a href="mailto:divysaxena2402@gmail.com" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                <span className="sr-only">Gmail</span>
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.325-2.488 1.38-3.543C2.488.325 4.072 0 5.454 0h13.091C19.928 0 21.512.325 22.62 1.38c1.055 1.055 1.38 2.639 1.38 3.543z" />
-                </svg>
-              </a>
+            <div className="flex justify-center mb-6">
+              <div className="flex space-x-6">
+                <a href="https://www.linkedin.com/in/divyasaxena24/" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200">
+                  <span className="sr-only">LinkedIn</span>
+                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                  </svg>
+                </a>
+                <a href="https://github.com/divysaxena24/" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200">
+                  <span className="sr-only">GitHub</span>
+                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                  </svg>
+                </a>
+                <a href="mailto:divysaxena2402@gmail.com" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200">
+                  <span className="sr-only">Gmail</span>
+                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.325-2.488 1.38-3.543C2.488.325 4.072 0 5.454 0h13.091C19.928 0 21.512.325 22.62 1.38c1.055 1.055 1.38 2.639 1.38 3.543z" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
-          <div className="mt-8 text-center md:text-left">
+          <div className="text-center">
             <p className="text-base text-gray-400 dark:text-gray-500">&copy; 2026 Mentorix. All rights reserved.</p>
           </div>
         </div>
