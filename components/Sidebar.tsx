@@ -18,7 +18,7 @@ const menuItems = [
     { name: 'Workspace', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'AI Tools', icon: Wrench, href: '/ai-tools' },
     { name: 'My History', icon: History, href: '/history' },
-    { name: 'Profile', icon: User, href: '/profile' },
+    { name: 'Profile', icon: User, href: '/dashboard/profile' },
 ]
 
 interface SidebarProps {
