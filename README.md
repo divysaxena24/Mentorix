@@ -1,4 +1,4 @@
-# 🚀 Mentorix 
+# 🚀 Mentorix (Under Active Build)
 
 **Mentorix** is an intelligent AI-powered career coaching platform designed to help professionals navigate their career journey with personalized guidance, resume analysis, and custom AI agents.
 
