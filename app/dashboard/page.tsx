@@ -39,9 +39,11 @@ export default function Dashboard() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-1">AI Career Q&A Chat</h3>
                         <p className="text-sm text-gray-500 mb-6">Chat with AI Agent</p>
-                        <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
-                            Let's Chat
-                        </button>
+                        <Link href="/ai-tools/ai-chat" className="w-full">
+                            <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
+                                Let's Chat
+                            </button>
+                        </Link>
                     </div>
 
                     {/* Tool Card 2 */}
@@ -50,10 +52,12 @@ export default function Dashboard() {
                             <FileText className="w-8 h-8 text-orange-500" />
                         </div>
                         <h3 className="font-bold text-gray-900 mb-1">AI Resume Analyzer</h3>
-                        <p className="text-sm text-gray-500 mb-6">Chat with AI Agent</p>
-                        <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
-                            Start
-                        </button>
+                        <p className="text-sm text-gray-500 mb-6">Optimize your resume for ATS</p>
+                        <Link href="/ai-tools/resume-analyzer" className="w-full">
+                            <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
+                                Start
+                            </button>
+                        </Link>
                     </div>
 
                     {/* Tool Card 3 */}
@@ -63,9 +67,11 @@ export default function Dashboard() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-1">Learning Roadmap</h3>
                         <p className="text-sm text-gray-500 mb-6">Chat with AI Agent</p>
-                        <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
-                            Get Started
-                        </button>
+                        <Link href="/ai-tools/roadmap" className="w-full">
+                            <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
+                                Get Started
+                            </button>
+                        </Link>
                     </div>
 
                     {/* Tool Card 4 */}
@@ -75,28 +81,15 @@ export default function Dashboard() {
                         </div>
                         <h3 className="font-bold text-gray-900 mb-1">Cover Letter Generator</h3>
                         <p className="text-sm text-gray-500 mb-6">Chat with AI Agent</p>
-                        <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
-                            Lets Generate
-                        </button>
+                        <Link href="/ai-tools/cover-letter" className="w-full">
+                            <button className="w-full py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors">
+                                Lets Generate
+                            </button>
+                        </Link>
                     </div>
                 </div>
             </section>
 
-            {/* Previous History Section */}
-            <section className="bg-white rounded-2xl p-10 border border-gray-200 shadow-sm text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">Previous History</h2>
-                <p className="text-gray-500 mb-10">What Your previously work on, You can find here</p>
-
-                <div className="flex flex-col items-center justify-center py-10">
-                    <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-6">
-                        <Lightbulb className="w-8 h-8 text-yellow-500 fill-yellow-500" />
-                    </div>
-                    <p className="text-gray-600 mb-6 text-lg">You do Not Have any history</p>
-                    <button className="px-8 py-3 bg-black text-white rounded-xl font-medium hover:bg-zinc-800 transition-colors">
-                        Get Started
-                    </button>
-                </div>
-            </section>
         </div>
     )
 }

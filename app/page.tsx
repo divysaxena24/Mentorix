@@ -1,10 +1,28 @@
 "use client"
 
-import { SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut } from "@clerk/nextjs"
+import { useState } from "react"
+import { SignInButton, SignOutButton, SignUpButton, SignedIn, SignedOut, useClerk } from "@clerk/nextjs"
 import { Sparkles, FileText, Map, MessageCircle, FileEdit } from "lucide-react"
 import Link from "next/link"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function Home() {
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false)
+  const { signOut } = useClerk()
+
+  const handleSignOut = async () => {
+    await signOut({ redirectUrl: '/' })
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Navbar */}
@@ -26,28 +44,42 @@ export default function Home() {
                   Sign In
                 </button>
               </SignInButton>
-
             </SignedOut>
             <SignedIn>
-              <Link href="/dashboard">
-                <button className="px-10 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl text-lg font-bold hover:shadow-lg hover:scale-105 transition-all">
-                  Go to Dashboard
-                </button>
-              </Link>
-
-              {/*make its dimension same as go to dashboard button */}
-              <SignOutButton>
-                <button className="px-10 py-2 bg-red-600 text-white rounded-2xl text-lg font-bold hover:bg-red-800 transition-colors">
-                  Logout
-                </button>
-              </SignOutButton>
+              <button
+                onClick={() => setShowSignOutDialog(true)}
+                className="px-10 py-2 bg-red-600 text-white rounded-2xl text-lg font-bold hover:bg-red-800 transition-colors"
+              >
+                Logout
+              </button>
             </SignedIn>
           </div>
         </div>
       </header>
 
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to log in again to access your career insights and roadmaps.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSignOut}
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+            >
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Hero Section */}
-      <main className="flex-1 pt-32">
+      <main className="flex-1 pt-32 relative">
         <section className="px-6 pb-20">
           <div className="max-w-5xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-8 border border-blue-100 animate-fade-in">
@@ -73,7 +105,6 @@ export default function Home() {
                     Open Your Dashboard
                   </button>
                 </Link>
-
               </SignedIn>
               <SignedOut>
                 <SignUpButton mode="modal">
@@ -112,7 +143,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 bg-white py-12">
+      <footer className="border-t border-gray-100 bg-white py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-500">
           <p>© 2026 Mentorix. Engineered for Excellence.</p>
         </div>

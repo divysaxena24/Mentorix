@@ -1,17 +1,15 @@
 "use client"
 
-import { UserProfile } from "@clerk/nextjs"
+import { UserProfile, SignedIn } from "@clerk/nextjs"
 
 export default function ProfilePage() {
     return (
-        <div className="p-6 flex flex-col items-center justify-center">
-            <div className="w-full max-w-4xl bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-8 border-b border-gray-100">
-                    <h2 className="text-3xl font-bold text-gray-900">Account Settings</h2>
-                    <p className="text-gray-500 mt-1">Manage your account preferences and profile information.</p>
-                </div>
-                <div className="p-4 md:p-8 flex justify-center">
+        <SignedIn>
+            <div className="p-0 pt-0 flex flex-col items-center justify-center">
+
+                <div className="p-4 pt-0 md:p-8 flex justify-center">
                     <UserProfile
+                        path="/dashboard/profile"
                         appearance={{
                             elements: {
                                 rootBox: "mx-auto shadow-none border-none w-full",
@@ -24,8 +22,9 @@ export default function ProfilePage() {
                             }
                         }}
                     />
+
                 </div>
             </div>
-        </div>
+        </SignedIn>
     )
 }

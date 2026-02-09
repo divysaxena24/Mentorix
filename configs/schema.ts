@@ -1,6 +1,43 @@
-import { integer, pgTable, varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, text, timestamp } from "drizzle-orm/pg-core";
+
 export const usersTable = pgTable("users", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull().unique(),
+});
+
+export const chatHistoryTable = pgTable("chat_history", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    chatId: varchar({ length: 255 }).notNull(), // Unique ID for each session
+    chatTitle: varchar({ length: 255 }), // Optional title for the block
+    userEmail: varchar({ length: 255 }).notNull(),
+    role: varchar({ length: 20 }).notNull(),
+    content: text().notNull(),
+    createdAt: timestamp().defaultNow().notNull(),
+});
+
+export const roadmapsTable = pgTable("roadmaps", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userEmail: varchar({ length: 255 }).notNull(),
+    targetField: varchar({ length: 255 }).notNull(),
+    roadmapData: text().notNull(), // Store JSON as string
+    createdAt: timestamp().defaultNow().notNull(),
+});
+
+export const coverLettersTable = pgTable("cover_letters", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userEmail: varchar({ length: 255 }).notNull(),
+    jobDescription: text().notNull(),
+    userDetails: text().notNull(),
+    coverLetter: text().notNull(),
+    createdAt: timestamp().defaultNow().notNull(),
+});
+
+export const resumeAnalysisTable = pgTable("resume_analysis", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userEmail: varchar({ length: 255 }).notNull(),
+    resumeText: text().notNull(),
+    jobDescription: text(),
+    analysisData: text().notNull(), // Store JSON string
+    createdAt: timestamp().defaultNow().notNull(),
 });
