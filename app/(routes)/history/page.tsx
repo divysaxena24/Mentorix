@@ -179,10 +179,10 @@ export default function HistoryPage() {
             </div>
 
             <Tabs defaultValue="roadmaps" onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-gray-100 p-1 rounded-2xl h-auto flex flex-wrap gap-1">
+                <TabsList className="bg-gray-100 p-1 rounded-2xl h-auto flex flex-nowrap gap-1 overflow-x-auto no-scrollbar justify-start md:justify-center">
                     <TabsTrigger
                         value="roadmaps"
-                        className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2"
+                        className="rounded-xl px-4 md:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                     >
                         <Map className="w-4 h-4" />
                         Roadmaps
@@ -192,7 +192,7 @@ export default function HistoryPage() {
                     </TabsTrigger>
                     <TabsTrigger
                         value="chats"
-                        className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2"
+                        className="rounded-xl px-4 md:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                     >
                         <MessageSquare className="w-4 h-4" />
                         Chat Sessions
@@ -202,7 +202,7 @@ export default function HistoryPage() {
                     </TabsTrigger>
                     <TabsTrigger
                         value="cover-letters"
-                        className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2"
+                        className="rounded-xl px-4 md:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                     >
                         <FileText className="w-4 h-4" />
                         Cover Letters
@@ -212,7 +212,7 @@ export default function HistoryPage() {
                     </TabsTrigger>
                     <TabsTrigger
                         value="resumes"
-                        className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2"
+                        className="rounded-xl px-4 md:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all flex items-center gap-2 whitespace-nowrap flex-shrink-0"
                     >
                         <Search className="w-4 h-4" />
                         Resume Analysis
