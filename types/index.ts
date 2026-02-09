@@ -52,6 +52,12 @@ export interface CoverLetterItem {
 }
 
 // Chat Types
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    createdAt: string;
+}
+
 export interface ChatItem {
     chatId: string;
     chatTitle: string;

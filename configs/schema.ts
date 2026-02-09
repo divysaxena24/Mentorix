@@ -41,3 +41,9 @@ export const resumeAnalysisTable = pgTable("resume_analysis", {
     analysisData: text().notNull(), // Store JSON string
     createdAt: timestamp().defaultNow().notNull(),
 });
+
+export const sharedChatsTable = pgTable("shared_chats", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    chatId: varchar({ length: 255 }).notNull().unique(),
+    createdAt: timestamp().defaultNow().notNull(),
+});

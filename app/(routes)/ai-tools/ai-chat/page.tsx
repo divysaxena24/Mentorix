@@ -20,11 +20,24 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Share2, Globe, Link as LinkIcon } from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import { toast } from "sonner"
 
 interface Message {
     role: 'user' | 'assistant';
     content: string;
 }
+
+import { Toaster } from "@/components/ui/sonner"
 
 const CodeBlock = ({ language, value }: { language: string; value: string }) => {
     const [copied, setCopied] = useState(false);
@@ -81,6 +94,10 @@ export default function AIChatPage() {
     const [showHistory, setShowHistory] = useState(false)
     const [currentChatId, setCurrentChatId] = useState<string | null>(null)
     const [chatTitle, setChatTitle] = useState<string | null>(null)
+    const [isSharing, setIsSharing] = useState(false)
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+    const [isShared, setIsShared] = useState(false)
+    const [sharingLoading, setSharingLoading] = useState(false)
 
     useEffect(() => {
         if (showHistory) {
@@ -119,10 +136,45 @@ export default function AIChatPage() {
             setChatTitle(result.data[0]?.chatTitle || "History Chat")
             setShowHistory(false)
             setLoading(false)
+            checkSharingStatus(chatId)
         } catch (error) {
             console.error("Error loading chat session:", error)
             setLoading(false)
         }
+    }
+
+    const checkSharingStatus = async (chatId: string) => {
+        try {
+            const result = await axios.get(`/api/ai-career-chat-agent/share?chatId=${chatId}`)
+            setIsShared(result.data.shared)
+        } catch (error) {
+            console.error("Error checking sharing status:", error)
+        }
+    }
+
+    const toggleSharing = async () => {
+        if (!currentChatId) return
+        setSharingLoading(true)
+        try {
+            const nextShared = !isShared
+            await axios.post("/api/ai-career-chat-agent/share", {
+                chatId: currentChatId,
+                shared: nextShared
+            })
+            setIsShared(nextShared)
+            toast.success(nextShared ? "Sharing enabled!" : "Sharing disabled.")
+        } catch (error) {
+            console.error("Error toggling sharing:", error)
+            toast.error("Failed to update sharing settings.")
+        } finally {
+            setSharingLoading(false)
+        }
+    }
+
+    const copyShareLink = () => {
+        const url = `${window.location.origin}/share/${currentChatId}`
+        navigator.clipboard.writeText(url)
+        toast.success("Link copied to clipboard!")
     }
 
     const handleSend = async (textOverride?: string) => {
@@ -226,6 +278,75 @@ export default function AIChatPage() {
                     </p>
                 </div>
                 <div className="flex gap-3">
+                    {currentChatId && (
+                        <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+                            <DialogTrigger asChild>
+                                <button
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all shadow-sm"
+                                >
+                                    <Share2 className="w-4 h-4" />
+                                    <span>Share</span>
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="rounded-[3rem] sm:max-w-[540px] w-[95vw] p-8 sm:p-14 border-zinc-100 shadow-2xl bg-white flex flex-col gap-0 overflow-hidden">
+                                <DialogHeader className="text-left mb-10 w-full">
+                                    <DialogTitle className="text-3xl sm:text-4xl font-black text-zinc-900 tracking-tight leading-tight">
+                                        Share this chat
+                                    </DialogTitle>
+                                    <DialogDescription className="text-zinc-500 text-base sm:text-lg font-medium leading-relaxed mt-4">
+                                        Make this conversation public to generate a unique shareable link.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div className="flex flex-col gap-8 w-full">
+                                    {/* Visibility Toggle Card */}
+                                    <div className={`w-full flex items-center justify-between p-6 sm:p-8 rounded-[2rem] border transition-all duration-500 ${isShared ? 'bg-zinc-900 border-zinc-800 shadow-xl' : 'bg-zinc-50 border-zinc-100'}`}>
+                                        <div className="flex items-center gap-4 sm:gap-6 min-w-0 pr-2">
+                                            <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 flex-shrink-0 ${isShared ? 'bg-zinc-800 text-white shadow-inner' : 'bg-white text-zinc-400 shadow-sm'}`}>
+                                                <Globe className={`w-6 h-6 sm:w-8 sm:h-8 ${isShared ? 'animate-pulse' : ''}`} />
+                                            </div>
+                                            <div className="min-w-0 flex flex-col">
+                                                <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-1 ${isShared ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                                    Visibility
+                                                </span>
+                                                <span className={`text-lg sm:text-2xl font-black truncate ${isShared ? 'text-white' : 'text-zinc-900'}`}>
+                                                    {isShared ? 'Public Access' : 'Private'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={isShared}
+                                            onCheckedChange={toggleSharing}
+                                            disabled={sharingLoading}
+                                            className="scale-110 sm:scale-125 data-[state=checked]:bg-white data-[state=checked]:[&>span]:bg-zinc-900 flex-shrink-0"
+                                        />
+                                    </div>
+
+                                    {/* Link & Copy Section */}
+                                    {isShared && (
+                                        <div className="flex flex-col gap-5 w-full animate-in fade-in slide-in-from-top-6 duration-700">
+                                            <div className="group relative w-full">
+                                                <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+                                                    <LinkIcon className="w-4 h-4 text-zinc-400" />
+                                                </div>
+                                                <div className="w-full pl-12 pr-6 py-5 bg-zinc-50 border border-zinc-100 rounded-2xl text-[12px] sm:text-[13px] font-mono text-zinc-400 overflow-hidden truncate shadow-inner transition-all group-hover:border-zinc-200">
+                                                    {window.location.host}/share/{currentChatId}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={copyShareLink}
+                                                className="w-full flex items-center justify-center gap-4 py-5 sm:py-6 bg-zinc-900 text-white rounded-[1.8rem] font-black text-lg transition-all hover:bg-black hover:shadow-2xl hover:scale-[1.01] active:scale-[0.98] group"
+                                            >
+                                                <Copy className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:rotate-12" />
+                                                <span>Copy Share Link</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    )}
                     <button
                         onClick={() => setShowHistory(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all shadow-sm"
@@ -407,6 +528,7 @@ export default function AIChatPage() {
                     </div>
                 </div>
             )}
+            <Toaster />
         </div>
     )
 }
