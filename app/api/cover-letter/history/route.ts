@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/configs/db";
 import { coverLettersTable } from "@/configs/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
     try {
@@ -45,7 +45,12 @@ export async function DELETE(req: NextRequest) {
         }
 
         await db.delete(coverLettersTable)
-            .where(eq(coverLettersTable.id, parseInt(id)))
+            .where(
+                and(
+                    eq(coverLettersTable.id, parseInt(id)),
+                    eq(coverLettersTable.userEmail, userEmail)
+                )
+            )
             .execute();
 
         return NextResponse.json({ message: "Cover letter deleted successfully" });

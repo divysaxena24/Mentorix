@@ -39,6 +39,7 @@ export const resumeAnalysisTable = pgTable("resume_analysis", {
     resumeText: text().notNull(),
     jobDescription: text(),
     analysisData: text().notNull(), // Store JSON string
+    resumeName: varchar({ length: 255 }), // Name of the uploaded file
     createdAt: timestamp().defaultNow().notNull(),
 });
 
@@ -46,4 +47,13 @@ export const sharedChatsTable = pgTable("shared_chats", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     chatId: varchar({ length: 255 }).notNull().unique(),
     createdAt: timestamp().defaultNow().notNull(),
+});
+
+export const resumesTable = pgTable("resumes", {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userEmail: varchar({ length: 255 }).notNull(),
+    resumeName: varchar({ length: 255 }).notNull(),
+    resumeData: text().notNull(), // Store full JSON data
+    createdAt: timestamp().defaultNow().notNull(),
+    updatedAt: timestamp().defaultNow().notNull(),
 });

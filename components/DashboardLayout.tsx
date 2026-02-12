@@ -30,19 +30,19 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-200">
             {/* Sidebar */}
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Header */}
-                <header className="bg-white border-b border-gray-200 z-20 shrink-0 h-20 flex items-center">
+                <header className="bg-slate-950/80 backdrop-blur-xl border-b border-white/5 z-20 shrink-0 h-20 flex items-center">
                     <div className="flex-1 flex items-center justify-between px-6">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg mr-2"
+                                className="lg:hidden p-2 text-slate-400 hover:bg-white/5 rounded-lg mr-2"
                             >
                                 <Menu className="w-6 h-6" />
                             </button>
@@ -59,7 +59,8 @@ export default function DashboardLayout({
                                                 },
                                                 userButtonPopoverFooter: {
                                                     display: "none"
-                                                }
+                                                },
+                                                userButtonAvatarBox: "w-10 h-10 border border-white/10"
                                             }
                                         }}
                                     >
@@ -79,15 +80,15 @@ export default function DashboardLayout({
 
                 {/* Confirm Sign Out Dialog */}
                 <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                            <AlertDialogDescription>
+                            <AlertDialogDescription className="text-slate-400">
                                 You will need to log in again to access your dashboard and AI tools.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10">Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleSignOut}
                                 className="bg-red-600 hover:bg-red-700 text-white border-none"
@@ -99,7 +100,7 @@ export default function DashboardLayout({
                 </AlertDialog>
 
                 {/* Scrollable Content */}
-                <main className="flex-1 overflow-auto bg-slate-50">
+                <main className="flex-1 overflow-auto bg-slate-950">
                     {children}
                 </main>
             </div>

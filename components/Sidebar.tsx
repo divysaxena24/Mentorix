@@ -15,8 +15,8 @@ import {
 } from 'lucide-react'
 
 const menuItems = [
-    { name: 'Workspace', icon: LayoutDashboard, href: '/dashboard' },
-    { name: 'AI Tools', icon: Wrench, href: '/ai-tools' },
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { name: 'Features', icon: Wrench, href: '/ai-tools' },
     { name: 'My History', icon: History, href: '/history' },
     { name: 'Profile', icon: User, href: '/dashboard/profile' },
 ]
@@ -43,33 +43,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <aside
                 className={`
           fixed lg:static inset-y-0 left-0 z-40
-          w-64 bg-gradient-to-b from-gray-50 to-gray-100
-          border-r border-gray-200
+          w-64 bg-slate-950 border-r border-white/5
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
             >
                 <div className="flex flex-col h-full">
                     {/* Logo Section */}
-                    <div className="flex items-center justify-between px-6 border-b border-gray-200 h-20">
+                    <div className="flex items-center justify-between px-6 border-b border-white/5 h-20">
                         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-[0_0_15px_rgba(37,99,235,0.2)]">
                                 M
                             </div>
-                            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                            <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
                                 Mentorix
                             </h1>
                         </Link>
                         <button
                             onClick={onClose}
-                            className="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+                            className="lg:hidden p-2 text-slate-400 hover:bg-white/5 rounded-lg"
                         >
                             <X className="w-6 h-6" />
                         </button>
                     </div>
 
                     {/* Navigation Menu */}
-                    <nav className="flex-1 p-4 space-y-2">
+                    <nav className="flex-1 p-4 space-y-1.5">
                         {menuItems.map((item) => {
                             const Icon = item.icon
                             const isActive = pathname === item.href
@@ -80,24 +79,27 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     href={item.href}
                                     onClick={onClose}
                                     className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg
-                    transition-all duration-200
+                    flex items-center gap-3 px-4 py-3 rounded-xl
+                    transition-all duration-200 group
                     ${isActive
-                                            ? 'bg-white text-blue-600 shadow-md font-medium'
-                                            : 'text-gray-700 hover:bg-white/60 hover:text-gray-900'
+                                            ? 'bg-blue-600/10 text-blue-400'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
                                         }
                   `}
                                 >
-                                    <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-600'}`} />
-                                    <span className="text-sm">{item.name}</span>
+                                    <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                                    <span className="text-sm font-medium">{item.name}</span>
+                                    {isActive && (
+                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+                                    )}
                                 </Link>
                             )
                         })}
                     </nav>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-gray-200">
-                        <div className="text-xs text-gray-500 text-center">
+                    <div className="p-4 border-t border-white/5">
+                        <div className="text-[10px] text-slate-600 text-center font-bold uppercase tracking-widest">
                             © 2026 Mentorix
                         </div>
                     </div>

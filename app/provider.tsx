@@ -22,6 +22,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // change this if your route is different
 const USER_ENDPOINT = "/api/user";
 
+import SessionTracker from "@/components/auth/SessionTracker";
+
 export function Provider({ children }: { children: React.ReactNode }) {
     const [appUser, setAppUser] = useState<AppUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -57,6 +59,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
 
     return (
         <UserContext.Provider value={{ appUser, setAppUser, loading, refresh }}>
+            <SessionTracker />
             {children}
         </UserContext.Provider>
     );

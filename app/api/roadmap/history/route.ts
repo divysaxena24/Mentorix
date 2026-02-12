@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/configs/db";
 import { roadmapsTable } from "@/configs/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
     try {
@@ -56,7 +56,12 @@ export async function DELETE(req: NextRequest) {
         }
 
         await db.delete(roadmapsTable)
-            .where(eq(roadmapsTable.id, parseInt(id)))
+            .where(
+                and(
+                    eq(roadmapsTable.id, parseInt(id)),
+                    eq(roadmapsTable.userEmail, userEmail)
+                )
+            )
             .execute();
 
         return NextResponse.json({ message: "Roadmap deleted successfully" });

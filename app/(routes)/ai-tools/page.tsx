@@ -50,73 +50,80 @@ const tools = [
         color: "from-emerald-600 to-teal-500",
         tag: "AI Coach",
         features: ["Mock Interviews", "Salary Insights", "Real-time Advice"]
+    },
+    {
+        title: "Resume Builder",
+        description: "Create professional, ATS-friendly resumes using premium templates and expert guidance.",
+        icon: FileText,
+        href: "/ai-tools/resume-builder",
+        color: "from-rose-600 to-pink-500",
+        tag: "New Feature",
+        features: ["Premium Templates", "Multi-step Builder", "Instant PDF Export"]
     }
 ]
 
 export default function AiToolsHub() {
     return (
-        <div className="space-y-12 italic">
-            {/* Hero Section */}
-            <div className="max-w-4xl space-y-4">
-                <div
-                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-900/20 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]"
-                >
-                    <Sparkles className="w-3 h-3" />
-                    Career Suite v5.0.1
+        <div className="pt-6 lg:pt-10 pb-16 space-y-12 lg:space-y-16 max-w-7xl mx-auto">
+            {/* Header Section */}
+            <div className="px-4 mb-2">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-1 bg-blue-600 rounded-full" />
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Core Workspace</span>
+                    </div>
+                    <h1 className="text-5xl lg:text-6xl font-black text-white tracking-tighter uppercase">
+                        Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Features</span>
+                    </h1>
                 </div>
-                <h1
-                    className="text-5xl lg:text-7xl font-black text-white tracking-tighter leading-[0.9]"
-                >
-                    SUPERCHARGE YOUR <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 pb-2 uppercase italic">Career Growth.</span>
-                </h1>
-                <p
-                    className="text-lg text-gray-400 font-semibold max-w-2xl leading-relaxed italic"
-                >
-                    High-performance AI tools engineered to decode your resume, simulate interviews, and map your professional ascent.
-                </p>
             </div>
 
             {/* Tools Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl pb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4 pb-20">
                 {tools.map((tool, idx) => (
                     <div
                         key={tool.title}
+                        className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out fill-mode-both"
+                        style={{ animationDelay: `${idx * 100}ms` }}
                     >
-                        <Link href={tool.href} className="group block h-full cursor-pointer">
-                            <div className="relative h-full bg-gray-900 rounded-[3rem] p-1 border border-gray-800 shadow-sm hover:shadow-2xl hover:border-blue-900/50 transition-all duration-500 overflow-hidden">
-                                {/* Decorative Glow */}
-                                <div className={`absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-[0.03] blur-[80px] transition-opacity duration-500`} />
+                        <Link href={tool.href} className="group block h-full">
+                            <div className="relative h-full bg-white/5 backdrop-blur-2xl rounded-[3rem] p-1 border border-white/10 shadow-sm hover:shadow-[0_0_50px_rgba(37,99,235,0.1)] hover:border-white/20 transition-all duration-500 overflow-hidden">
+                                {/* Dynamic Background Glow */}
+                                <div className={`absolute -top-32 -right-32 w-80 h-80 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-[0.08] blur-[100px] transition-opacity duration-700`} />
+                                <div className={`absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-[0.05] blur-[100px] transition-opacity duration-700`} />
 
-                                <div className="relative p-10 h-full flex flex-col">
-                                    <div className="flex items-start justify-between mb-8">
-                                        <div className={`p-4 rounded-[1.5rem] bg-gradient-to-br ${tool.color} text-white shadow-xl group-hover:scale-110 transition-transform duration-500`}>
-                                            <tool.icon className="w-7 h-7" />
+                                <div className="relative p-10 lg:p-12 h-full flex flex-col">
+                                    <div className="flex items-start justify-between mb-10">
+                                        <div className={`p-5 rounded-2xl bg-gradient-to-br ${tool.color} p-0.5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                                            <div className="w-full h-full bg-slate-950 rounded-[calc(1rem-2px)] flex items-center justify-center p-3">
+                                                <tool.icon className="w-8 h-8 text-white" />
+                                            </div>
                                         </div>
-                                        <span className="px-3 py-1 bg-gray-50 border border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-400 rounded-full group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                        <span className="px-4 py-1.5 bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 rounded-full group-hover:bg-blue-600/20 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-all">
                                             {tool.tag}
                                         </span>
                                     </div>
 
-                                    <h3 className="text-2xl font-black text-white mb-4 group-hover:text-blue-400 transition-colors">
+                                    <h3 className="text-3xl font-black text-white mb-4 tracking-tight">
                                         {tool.title}
                                     </h3>
-                                    <p className="text-gray-400 font-bold leading-relaxed mb-8 flex-1 italic">
+                                    <p className="text-slate-400 font-medium leading-relaxed mb-8 flex-1">
                                         {tool.description}
                                     </p>
 
-                                    <div className="space-y-4 mb-10">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
                                         {tool.features.map((feature) => (
-                                            <div key={feature} className="flex items-center gap-2 text-xs font-black text-gray-400 group-hover:text-gray-600 transition-colors">
-                                                <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${tool.color} opacity-40`} />
+                                            <div key={feature} className="flex items-center gap-2.5 text-xs font-bold text-slate-500 group-hover:text-slate-300 transition-colors">
+                                                <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${tool.color} shadow-[0_0_8px_rgba(255,255,255,0.2)]`} />
                                                 {feature}
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-white font-black text-sm group-hover:gap-4 transition-all uppercase tracking-widest">
-                                        Open Tool
-                                        <ArrowRight className="w-4 h-4 text-blue-400" />
+                                    <div className="flex items-center gap-3 text-white font-black text-sm uppercase tracking-[0.15em] transition-all group-hover:gap-5">
+                                        Explore Tool
+                                        <div className="w-8 h-px bg-white/20 group-hover:w-12 group-hover:bg-blue-500 transition-all" />
+                                        <ArrowRight className="w-5 h-5 text-blue-500 group-hover:translate-x-1 transition-transform" />
                                     </div>
                                 </div>
                             </div>
@@ -124,8 +131,6 @@ export default function AiToolsHub() {
                     </div>
                 ))}
             </div>
-
-            {/* Footer Branding - This will be part of the DashboardLayout/Global Footer anyway */}
         </div>
     )
 }

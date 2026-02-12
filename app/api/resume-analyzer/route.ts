@@ -113,10 +113,18 @@ ${resumeText}
 
         // Save to Database if user is authenticated
         if (userEmail) {
+            // Use field/role as title if job description is empty
+            const displayTitle = jobDescription.trim()
+                ? jobDescription
+                : (fieldOfInterest || targetRole)
+                    ? `${fieldOfInterest}${fieldOfInterest && targetRole ? ' - ' : ''}${targetRole}`.trim()
+                    : "General Analysis";
+
             await db.insert(resumeAnalysisTable).values({
                 userEmail,
                 resumeText,
-                jobDescription,
+                resumeName: file.name,
+                jobDescription: displayTitle,
                 analysisData: JSON.stringify(aiOutput)
             });
         }

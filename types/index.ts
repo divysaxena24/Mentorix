@@ -39,6 +39,7 @@ export interface ResumeAnalysisItem {
     resumeText: string;
     jobDescription: string | null;
     analysisData: AnalysisResult;
+    resumeName: string | null;
     createdAt: string;
 }
 
@@ -62,4 +63,67 @@ export interface ChatItem {
     chatId: string;
     chatTitle: string;
     createdAt: string;
+}
+
+// Resume Builder Types
+export interface PersonalInfo {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+    linkedin?: string;
+    github?: string;
+    leetcode?: string;
+    portfolio?: string;
+    summary: string;
+}
+
+export interface Education {
+    institution: string;
+    degree: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    cgpa?: string;
+    description?: string;
+}
+
+export interface Experience {
+    company: string;
+    role: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+}
+
+export interface Skill {
+    category: string;
+    skills: string[];
+}
+
+export interface Project {
+    title: string;
+    link?: string;
+    description: string;
+    technologies: string[];
+}
+
+export interface ResumeData {
+    personalInfo: PersonalInfo;
+    education: Education[];
+    experience: Experience[];
+    skills: Skill[];
+    projects: Project[];
+    honors?: string[];
+    template: string;
+}
+
+export interface ResumeItem {
+    id: number;
+    userEmail: string;
+    resumeName: string;
+    resumeData: ResumeData;
+    createdAt: string;
+    updatedAt: string;
 }
