@@ -113,3 +113,31 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
+/* Resize handle styles */
+.resize-x {
+  resize: horizontal;
+  overflow: auto;
+  min-width: 200px;
+  max-width: 80%;
+}
+
+.resize-y {
+  resize: vertical;
+  overflow: auto;
+  min-height: 200px;
+  max-height: 90%;
+}
+
+/* Custom resize handle appearance */
+.resize-x::-webkit-resizer {
+  background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+  border-left: 1px solid rgba(255,255,255,0.2);
+  cursor: col-resize;
+}
+
+.resize-y::-webkit-resizer {
+  background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+  border-top: 1px solid rgba(255,255,255,0.2);
+  cursor: row-resize;
+}

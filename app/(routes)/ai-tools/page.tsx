@@ -67,8 +67,8 @@ export default function AiToolsHub() {
         <div className="pt-6 lg:pt-10 pb-16 space-y-12 lg:space-y-16 max-w-7xl mx-auto">
             {/* Header Section */}
             <div className="px-4 mb-2">
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center justify-center text-center gap-2">
+                    <div className="flex items-center justify-center gap-3">
                         <div className="w-8 h-1 bg-blue-600 rounded-full" />
                         <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Core Workspace</span>
                     </div>

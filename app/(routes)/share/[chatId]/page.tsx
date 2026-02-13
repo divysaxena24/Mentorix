@@ -153,9 +153,6 @@ export default function SharedChatPage() {
                                 <a href="/" className="px-10 py-4 bg-white text-zinc-900 rounded-2xl font-black text-lg transition-transform hover:scale-105 active:scale-95 shadow-xl">
                                     Get Started Free
                                 </a>
-                                <a href="https://github.com/divy-goel/Mentorix" target="_blank" className="px-10 py-4 bg-zinc-800 text-white rounded-2xl font-black text-lg transition-colors hover:bg-zinc-700 border border-zinc-700">
-                                    Star on GitHub
-                                </a>
                             </div>
                         </div>
                     </div>

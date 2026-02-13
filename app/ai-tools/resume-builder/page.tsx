@@ -169,7 +169,7 @@ export default function ResumeBuilderPage() {
             {/* Main Content Area */}
             <div className="max-w-[1920px] mx-auto flex h-[calc(100vh-140px)] relative z-10 overflow-hidden">
                 {/* Sidebar Navigation */}
-                <div className="w-72 border-r border-white/5 p-8 space-y-3 hidden xl:block bg-white/2 backdrop-blur-xl flex-shrink-0">
+                <div id="sidebar-nav" className="w-72 border-r border-white/5 p-8 space-y-3 hidden xl:block bg-white/2 backdrop-blur-xl flex-shrink-0 resize-x overflow-auto min-w-[20rem] max-w-[40rem]">
                     <div className="mb-10 px-4">
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Architecture</h3>
                         <div className="h-0.5 w-8 bg-blue-500/30 rounded-full" />
@@ -202,9 +202,9 @@ export default function ResumeBuilderPage() {
                 </div>
 
                 {/* Split Pane: Form and Preview */}
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden min-w-0">
                     {/* Form Area */}
-                    <div className="flex-1 p-8 lg:p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700 border-r border-white/5 bg-slate-950/40">
+                    <div id="form-area" className="flex-1 p-8 lg:p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700 border-r border-white/5 bg-slate-950/40 resize-x overflow-auto min-w-[25rem] max-w-[60rem]">
                         <div className="max-w-2xl mx-auto space-y-16 pb-32">
                             {step === 1 && (
                                 <div className="space-y-12">
@@ -702,7 +702,7 @@ export default function ResumeBuilderPage() {
                     </div>
 
                     {/* Preview Area */}
-                    <div className="hidden lg:block w-[45%] bg-slate-900/50 overflow-y-auto custom-scrollbar relative p-8">
+                    <div id="preview-area" className="hidden lg:block flex-1 bg-slate-900/50 overflow-y-auto custom-scrollbar relative p-8 resize-x overflow-auto min-w-[20rem] max-w-[60rem]">
                         <div className="sticky top-0 mb-8 flex items-center justify-between z-20">
                             <div className="flex items-center gap-3">
                                 <Layout className="w-4 h-4 text-blue-500" />

@@ -205,7 +205,7 @@ export default function RoadmapPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-6 pb-20">
-                <div className="flex gap-4 mb-10 bg-white/5 backdrop-blur-xl p-1.5 rounded-2xl w-fit border border-white/10 shadow-2xl">
+                <div className="flex gap-4 mb-10 bg-white/5 backdrop-blur-xl p-1.5 rounded-2xl w-fit border border-white/10 shadow-2xl self-start md:self-end">
                     <button
                         onClick={() => { setView("generator"); setRoadmap(null); }}
                         className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all uppercase tracking-widest ${view === "generator" && !roadmap ? "bg-white text-black shadow-lg" : "text-slate-400 hover:text-white"}`}

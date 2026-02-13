@@ -123,10 +123,11 @@ export default function Home() {
             </div>
 
             {/* Feature Grid */}
-            <div id="features" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left pb-20">
+            <div id="features" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 text-left pb-20">
               {[
                 { icon: MessageCircle, title: "Career Chat", desc: "24/7 access to AI guidance", color: "blue", gradient: "from-blue-500 to-cyan-500" },
-                { icon: FileText, title: "Resume Scan", desc: "Instant ATS optimization", color: "purple", gradient: "from-purple-500 to-pink-500" },
+                { icon: FileText, title: "Resume Builder", desc: "Complete resume creation & optimization", color: "purple", gradient: "from-purple-500 to-pink-500" },
+                { icon: FileText, title: "Resume Analyzer", desc: "AI-powered ATS scoring & feedback", color: "indigo", gradient: "from-indigo-500 to-purple-500" },
                 { icon: Map, title: "Custom Paths", desc: "Skill-based learning tracks", color: "emerald", gradient: "from-emerald-500 to-teal-500" },
                 { icon: FileEdit, title: "Smart Writing", desc: "Automated cover letters", color: "orange", gradient: "from-orange-500 to-rose-500" },
               ].map((feature, i) => (

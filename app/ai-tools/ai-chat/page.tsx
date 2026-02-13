@@ -262,99 +262,101 @@ export default function AIChatPage() {
 
             {/* Top Header Section */}
             <div className="max-w-7xl mx-auto px-6 py-8 w-full">
-                <Link href="/dashboard" className="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-0 group">
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-sm font-medium">Back to Dashboard</span>
-                </Link>
+
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-5">
-                    <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                            Career Advisor AI
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {currentChatId && (
-                            <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
-                                <DialogTrigger asChild>
-                                    <button
-                                        className="flex items-center gap-3 px-6 py-2 bg-white/5 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-xl backdrop-blur-xl"
-                                    >
-                                        <Share2 className="w-4 h-4" />
-                                        <span>Share</span>
-                                    </button>
-                                </DialogTrigger>
-                                <DialogContent className="rounded-[2.5rem] sm:max-w-[540px] w-[95vw] p-8 sm:p-14 border-white/10 shadow-2xl bg-slate-900/90 backdrop-blur-2xl text-white flex flex-col gap-0 overflow-hidden">
-                                    <DialogHeader className="text-left mb-10 w-full">
-                                        <DialogTitle className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight uppercase text-left">
-                                            Share this <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 italic">Conversation</span>
-                                        </DialogTitle>
-                                        <DialogDescription className="text-slate-400 text-base sm:text-lg font-medium leading-relaxed mt-4 text-left">
-                                            Make this conversation public to generate a unique shareable link for others to view.
-                                        </DialogDescription>
-                                    </DialogHeader>
 
-                                    <div className="flex flex-col gap-8 w-full">
-                                        <div className={`w-full flex items-center justify-between p-6 sm:p-8 rounded-[2rem] border transition-all duration-500 ${isShared ? 'bg-white/5 border-white/20 shadow-[0_0_50px_rgba(37,99,235,0.2)]' : 'bg-white/5 border-white/10'}`}>
-                                            <div className="flex items-center gap-6 min-w-0 pr-2">
-                                                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 flex-shrink-0 ${isShared ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/10 text-slate-500'}`}>
-                                                    <Globe className={`w-6 h-6 sm:w-8 sm:h-8 ${isShared ? 'animate-pulse' : ''}`} />
+                    {/* shifting history and new sessions button to the right and back to dashboard to the left */}
+                    <div className="flex items-center justify-between w-full">
+                        <Link href="/dashboard" className="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-0 group">
+                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium">Back to Dashboard</span>
+                        </Link>
+
+                        <div className="flex items-center gap-3">
+                            {currentChatId && (
+                                <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+                                    <DialogTrigger asChild>
+                                        <button
+                                            onClick={() => setIsShareModalOpen(true)}
+                                            className="flex items-center gap-3 px-6 py-2 bg-white/5 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                                        >
+                                            <Share2 className="w-4 h-4" />
+                                            <span>Share</span>
+                                        </button>
+                                    </DialogTrigger>
+                                    <DialogContent className="rounded-[2.5rem] sm:max-w-[540px] w-[95vw] p-8 sm:p-14 border-white/10 shadow-2xl bg-slate-900/90 backdrop-blur-2xl text-white flex flex-col gap-0 overflow-hidden">
+                                        <DialogHeader className="text-left mb-10 w-full">
+                                            <DialogTitle className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight uppercase text-left">
+                                                Share this <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 italic">Conversation</span>
+                                            </DialogTitle>
+                                            <DialogDescription className="text-slate-400 text-base sm:text-lg font-medium leading-relaxed mt-4 text-left">
+                                                Make this conversation public to generate a unique shareable link for others to view.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="flex flex-col gap-8 w-full">
+                                            <div className={`w-full flex items-center justify-between p-6 sm:p-8 rounded-[2rem] border transition-all duration-500 ${isShared ? 'bg-white/5 border-white/20 shadow-[0_0_50px_rgba(37,99,235,0.2)]' : 'bg-white/5 border-white/10'}`}>
+                                                <div className="flex items-center gap-6 min-w-0 pr-2">
+                                                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500 flex-shrink-0 ${isShared ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/10 text-slate-500'}`}>
+                                                        <Globe className={`w-6 h-6 sm:w-8 sm:h-8 ${isShared ? 'animate-pulse' : ''}`} />
+                                                    </div>
+                                                    <div className="min-w-0 flex flex-col">
+                                                        <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-1 ${isShared ? 'text-blue-400' : 'text-slate-500'}`}>
+                                                            Visibility
+                                                        </span>
+                                                        <span className={`text-lg sm:text-2xl font-black truncate ${isShared ? 'text-white' : 'text-slate-400'}`}>
+                                                            {isShared ? 'Public Access' : 'Private'}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0 flex flex-col">
-                                                    <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-1 ${isShared ? 'text-blue-400' : 'text-slate-500'}`}>
-                                                        Visibility
-                                                    </span>
-                                                    <span className={`text-lg sm:text-2xl font-black truncate ${isShared ? 'text-white' : 'text-slate-400'}`}>
-                                                        {isShared ? 'Public Access' : 'Private'}
-                                                    </span>
-                                                </div>
+                                                <Switch
+                                                    checked={isShared}
+                                                    onCheckedChange={toggleSharing}
+                                                    disabled={sharingLoading}
+                                                    className="scale-125 data-[state=checked]:bg-blue-600"
+                                                />
                                             </div>
-                                            <Switch
-                                                checked={isShared}
-                                                onCheckedChange={toggleSharing}
-                                                disabled={sharingLoading}
-                                                className="scale-125 data-[state=checked]:bg-blue-600"
-                                            />
+
+                                            {isShared && (
+                                                <div className="flex flex-col gap-5 w-full animate-in fade-in slide-in-from-top-6 duration-700">
+                                                    <div className="group relative w-full">
+                                                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                                                            <LinkIcon className="w-4 h-4 text-blue-400" />
+                                                        </div>
+                                                        <div className="w-full pl-14 pr-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-[12px] sm:text-[13px] font-mono text-slate-400 overflow-hidden truncate shadow-inner group-hover:border-white/20 transition-all">
+                                                            {window.location.host}/share/{currentChatId}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={copyShareLink}
+                                                        className="w-full flex items-center justify-center gap-4 py-5 sm:py-6 bg-white text-black rounded-[1.8rem] font-black text-lg transition-all hover:bg-slate-200 hover:shadow-2xl hover:scale-[1.01] active:scale-[0.98] group"
+                                                    >
+                                                        <Copy className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:rotate-12" />
+                                                        <span className="uppercase tracking-widest text-sm">Copy Share Link</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        {isShared && (
-                                            <div className="flex flex-col gap-5 w-full animate-in fade-in slide-in-from-top-6 duration-700">
-                                                <div className="group relative w-full">
-                                                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                                                        <LinkIcon className="w-4 h-4 text-blue-400" />
-                                                    </div>
-                                                    <div className="w-full pl-14 pr-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-[12px] sm:text-[13px] font-mono text-slate-400 overflow-hidden truncate shadow-inner group-hover:border-white/20 transition-all">
-                                                        {window.location.host}/share/{currentChatId}
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    onClick={copyShareLink}
-                                                    className="w-full flex items-center justify-center gap-4 py-5 sm:py-6 bg-white text-black rounded-[1.8rem] font-black text-lg transition-all hover:bg-slate-200 hover:shadow-2xl hover:scale-[1.01] active:scale-[0.98] group"
-                                                >
-                                                    <Copy className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:rotate-12" />
-                                                    <span className="uppercase tracking-widest text-sm">Copy Share Link</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </DialogContent>
-                            </Dialog>
-                        )}
-                        <button
-                            onClick={() => setShowHistory(true)}
-                            className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-xl backdrop-blur-xl"
-                        >
-                            <History className="w-4 h-4" />
-                            <span>History</span>
-                        </button>
-                        <button
-                            onClick={startNewChat}
-                            className="flex items-center gap-3 px-6 py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl group"
-                        >
-                            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
-                            <span>New Session</span>
-                        </button>
+                                    </DialogContent>
+                                </Dialog>
+                            )}
+                            <button
+                                onClick={() => setShowHistory(true)}
+                                className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-xl backdrop-blur-xl"
+                            >
+                                <History className="w-4 h-4" />
+                                <span>History</span>
+                            </button>
+                            <button
+                                onClick={startNewChat}
+                                className="flex items-center gap-3 px-6 py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl group"
+                            >
+                                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+                                <span>New Session</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -442,7 +444,7 @@ export default function AIChatPage() {
             </div>
 
             {/* Bottom Input Area */}
-            <div className="px-6 pb-20 pt-4 bg-transparent shrink-0 mt-auto relative z-10 w-full">
+            <div className="px-6 pb-5 pt-4 bg-transparent shrink-0 mt-auto relative z-10 w-full">
                 <div className="max-w-7xl mx-auto flex gap-4">
                     <div className="flex-1 relative group">
                         <div className="absolute inset-0 bg-blue-500/10 blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity rounded-[2rem]" />
