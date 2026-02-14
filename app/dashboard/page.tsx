@@ -8,7 +8,7 @@ import Link from "next/link"
 
 export default function Dashboard() {
     return (
-        <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto pb-24">
+        <div className="p-8 lg:p-16 space-y-12 max-w-7xl mx-auto pb-24">
             {/* AI Career Coach Banner */}
             <section className="relative overflow-hidden rounded-[3rem] bg-slate-900 border border-white/10 p-10 lg:p-16 text-white shadow-2xl group">
                 {/* Visual Background Elements - Animated-style Blobs */}

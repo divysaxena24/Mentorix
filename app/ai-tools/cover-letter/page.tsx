@@ -282,7 +282,7 @@ export default function CoverLetterPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 gap-8">
                         {/* Left Side: Inputs */}
                         <div className="space-y-6">
                             <div className="bg-white/5 rounded-[3rem] p-10 shadow-2xl border border-white/10 backdrop-blur-3xl flex flex-col h-full relative overflow-hidden">
@@ -346,7 +346,7 @@ export default function CoverLetterPage() {
                             ) : coverLetter ? (
                                 <div className="bg-white/5 rounded-[3rem] p-10 border border-white/10 h-full flex flex-col shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-right-4 duration-500 relative overflow-hidden">
                                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 blur-3xl -ml-32 -mb-32 rounded-full" />
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+                                    <div className="flex flex-row items-center justify-between gap-6 mb-8 relative z-10">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 shadow-lg">
                                                 <FileText className="w-6 h-6 text-white" />

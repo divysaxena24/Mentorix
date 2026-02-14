@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { db } from "@/configs/db";
 import { chatHistoryTable } from "@/configs/schema";
 import { currentUser } from "@clerk/nextjs/server";
@@ -29,16 +29,15 @@ export async function GET(req: NextRequest) {
         }
 
         // Return unique session "blocks" (distinct chatId)
-        // Note: Using subquery or distinct on for better performance/accuracy
         const sessions = await db
             .select({
                 chatId: chatHistoryTable.chatId,
-                chatTitle: chatHistoryTable.chatTitle,
+                chatTitle: sql<string>`MAX(${chatHistoryTable.chatTitle})`,
                 createdAt: sql<string>`MAX(${chatHistoryTable.createdAt})`,
             })
             .from(chatHistoryTable)
             .where(eq(chatHistoryTable.userEmail, email))
-            .groupBy(chatHistoryTable.chatId, chatHistoryTable.chatTitle)
+            .groupBy(chatHistoryTable.chatId)
             .orderBy(desc(sql`MAX(${chatHistoryTable.createdAt})`));
 
         return NextResponse.json(sessions);
@@ -98,12 +97,13 @@ export async function DELETE(req: NextRequest) {
 
         // Delete all messages for this chatId and user
         const result = await db.delete(chatHistoryTable)
-            .where(sql`${chatHistoryTable.chatId} = ${chatId} AND ${chatHistoryTable.userEmail} = ${email}`)
+            .where(
+                and(
+                    eq(chatHistoryTable.chatId, chatId),
+                    eq(chatHistoryTable.userEmail, email)
+                )
+            )
             .returning();
-
-        if (result.length === 0) {
-            return NextResponse.json({ error: "Chat session not found or already deleted" }, { status: 404 });
-        }
 
         return NextResponse.json({ message: "Chat session deleted successfully" });
     } catch (error: any) {

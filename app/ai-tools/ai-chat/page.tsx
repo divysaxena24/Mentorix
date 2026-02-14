@@ -94,6 +94,7 @@ export default function AIChatPage() {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false)
     const [isShared, setIsShared] = useState(false)
     const [sharingLoading, setSharingLoading] = useState(false)
+    const [historyLoading, setHistoryLoading] = useState(false)
 
     useEffect(() => {
         if (showHistory) {
@@ -102,11 +103,14 @@ export default function AIChatPage() {
     }, [showHistory])
 
     const fetchHistory = async () => {
+        setHistoryLoading(true)
         try {
             const result = await axios.get("/api/ai-career-chat-agent/history")
             setHistory(result.data)
         } catch (error) {
             console.error("Error fetching history:", error)
+        } finally {
+            setHistoryLoading(false)
         }
     }
 
@@ -365,7 +369,7 @@ export default function AIChatPage() {
             <div className="flex-1 overflow-y-auto px-6 py-10 flex flex-col space-y-12 custom-scrollbar">
                 {messages.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
-                        <div className="text-center mb-16 space-y-6">
+                        <div className="text-center mb-12 space-y-6">
                             <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl border border-white/10 group animate-bounce duration-[3s]">
                                 <MessageSquare className="w-12 h-12 text-blue-500" />
                             </div>
@@ -489,7 +493,9 @@ export default function AIChatPage() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar relative z-10">
-                            {history.length === 0 ? (
+                            {historyLoading ? (
+                                <HistorySkeleton />
+                            ) : history.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-[2.5rem] border border-white/10 border-dashed">
                                     <MessageSquare className="w-12 h-12 text-slate-700 mb-6" />
                                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No history found</p>
@@ -500,18 +506,14 @@ export default function AIChatPage() {
                                         key={idx}
                                         className="w-full text-left p-6 rounded-[2.5rem] bg-white/5 border border-white/5 hover:border-blue-500/50 hover:bg-white/10 transition-all group relative flex items-start gap-5 shadow-sm overflow-hidden"
                                     >
-                                        {/* Clickable Overlay - Decoupled from Delete Button */}
                                         <div
                                             className="absolute inset-0 z-0 cursor-pointer"
                                             onClick={() => loadChatSession(item.chatId)}
                                         />
-
                                         <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
                                         <div className="relative z-10 w-12 h-12 shrink-0 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:border-blue-500 transition-all duration-500 pointer-events-none">
                                             <MessageSquare className="w-5 h-5 text-slate-500 group-hover:text-white" />
                                         </div>
-
                                         <div className="relative z-10 flex-1 min-w-0 pointer-events-none">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded-full border border-white/5 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-colors">
@@ -520,9 +522,7 @@ export default function AIChatPage() {
                                                 <div className="delete-btn-area pointer-events-auto relative z-20" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <button
-                                                                className="p-2 hover:bg-red-500/10 text-slate-700 hover:text-red-500 rounded-xl transition-all"
-                                                            >
+                                                            <button className="p-2 hover:bg-red-500/10 text-slate-700 hover:text-red-500 rounded-xl transition-all">
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </AlertDialogTrigger>
@@ -534,12 +534,7 @@ export default function AIChatPage() {
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                                <AlertDialogCancel
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl font-bold uppercase text-[10px] tracking-widest"
-                                                                >
-                                                                    Cancel
-                                                                </AlertDialogCancel>
+                                                                <AlertDialogCancel onClick={(e) => e.stopPropagation()} className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</AlertDialogCancel>
                                                                 <AlertDialogAction
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -568,4 +563,21 @@ export default function AIChatPage() {
             <Toaster />
         </div>
     )
+}
+
+function HistorySkeleton() {
+    return (
+        <div className="space-y-4 animate-in fade-in duration-500">
+            {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="w-full p-6 rounded-[2.5rem] bg-white/5 border border-white/5 flex items-start gap-5 overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                    <div className="w-12 h-12 shrink-0 bg-white/5 border border-white/10 rounded-2xl" />
+                    <div className="flex-1 space-y-3">
+                        <div className="w-20 h-4 bg-white/5 rounded-full" />
+                        <div className="w-3/4 h-5 bg-white/5 rounded-full" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }

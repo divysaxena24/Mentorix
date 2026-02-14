@@ -64,22 +64,25 @@ const tools = [
 
 export default function AiToolsHub() {
     return (
-        <div className="pt-6 lg:pt-10 pb-16 space-y-12 lg:space-y-16 max-w-7xl mx-auto">
+        <div className="p-8 lg:p-16 space-y-12 lg:space-y-16 max-w-7xl mx-auto">
             {/* Header Section */}
-            <div className="px-4 mb-2">
-                <div className="flex flex-col items-center justify-center text-center gap-2">
-                    <div className="flex items-center justify-center gap-3">
-                        <div className="w-8 h-1 bg-blue-600 rounded-full" />
-                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Core Workspace</span>
+            <div className="border-b border-white/5 pb-12 mb-12">
+                <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">
+                        <Wrench className="w-3 h-3" />
+                        Core Workspace
                     </div>
-                    <h1 className="text-5xl lg:text-6xl font-black text-white tracking-tighter uppercase">
+                    <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">
                         Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Features</span>
                     </h1>
+                    <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xl">
+                        Explore our suite of AI-driven career tools designed to accelerate your professional growth.
+                    </p>
                 </div>
             </div>
 
             {/* Tools Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4 pb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-20">
                 {tools.map((tool, idx) => (
                     <div
                         key={tool.title}

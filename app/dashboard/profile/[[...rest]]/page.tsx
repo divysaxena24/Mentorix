@@ -7,31 +7,15 @@ import Link from "next/link"
 export default function ProfilePage() {
     return (
         <SignedIn>
-            <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col pt-12">
+            <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col pt-6">
                 {/* Atmospheric Background Decorations */}
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 blur-[130px] -mr-64 -mt-64 rounded-full pointer-events-none" />
                 <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] -ml-48 rounded-full pointer-events-none" />
                 <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-cyan-600/5 blur-[100px] rounded-full pointer-events-none" />
 
-                <div className="max-w-7xl mx-auto w-full px-8 md:px-12 relative z-10 flex-1 flex flex-col">
+                <div className="max-w-7xl mx-auto w-full px-8 lg:px-16 relative z-10 flex-1 flex flex-col">
                     {/* Header Section */}
-                    <div className="mb-12">
 
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/5 pb-12">
-                            <div className="max-w-2xl">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-                                    <ShieldCheck className="w-3 h-3" />
-                                    Identity Management
-                                </div>
-                                <h1 className="text-5xl font-black text-white tracking-tighter mb-4 uppercase leading-none">
-                                    Account <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Interface</span>
-                                </h1>
-                                <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xl">
-                                    Manage your professional identity, security protocols, and digital authentication settings within the Mentorix ecosystem.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Profile Management Area */}
                     <div className="flex-1 flex justify-center pb-24">

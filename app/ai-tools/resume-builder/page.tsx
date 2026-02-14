@@ -28,6 +28,11 @@ import { Label } from "@/components/ui/label"
 import { ResumeData } from "@/types"
 import { downloadResume, TEMPLATES } from "@/components/resume/ResumeTemplates"
 import ResumePreview from "@/components/resume/ResumePreview"
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 const INITIAL_DATA: ResumeData = {
     personalInfo: {
@@ -58,6 +63,7 @@ export default function ResumeBuilderPage() {
     const [data, setData] = useState<ResumeData>(INITIAL_DATA)
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(!!resumeId)
+    const [sidebarSize, setSidebarSize] = useState(20)
 
     useEffect(() => {
         if (resumeId) {
@@ -118,7 +124,7 @@ export default function ResumeBuilderPage() {
         <div className="min-h-screen bg-slate-950 relative overflow-hidden text-white">
             {/* Background Decoration */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] -mr-48 -mt-48 rounded-full pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] -ml-48 -mb-48 rounded-full pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] -ml-48 -mb-20 rounded-full pointer-events-none" />
 
             {/* Header */}
             <div className="max-w-7xl mx-auto px-6 py-8 border-b border-white/5 relative z-10">
@@ -167,388 +173,150 @@ export default function ResumeBuilderPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="max-w-[1920px] mx-auto flex h-[calc(100vh-140px)] relative z-10 overflow-hidden">
-                {/* Sidebar Navigation */}
-                <div id="sidebar-nav" className="w-72 border-r border-white/5 p-8 space-y-3 hidden xl:block bg-white/2 backdrop-blur-xl flex-shrink-0 resize-x overflow-auto min-w-[20rem] max-w-[40rem]">
-                    <div className="mb-10 px-4">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Architecture</h3>
-                        <div className="h-0.5 w-8 bg-blue-500/30 rounded-full" />
-                    </div>
-                    {steps.map((s) => (
-                        <button
-                            key={s.id}
-                            onClick={() => setStep(s.id)}
-                            className={`w-full flex items-center gap-4 px-6 py-4 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all group relative overflow-hidden ${step === s.id
-                                ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)] translate-x-1"
-                                : "text-slate-500 hover:text-white hover:bg-white/5"
-                                }`}
-                        >
-                            <s.icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${step === s.id ? "text-blue-600" : "text-slate-600"}`} />
-                            <span className="relative z-10">{s.name}</span>
-                            {step === s.id && (
-                                <div className="absolute right-4 w-1.5 h-1.5 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)]" />
-                            )}
-                        </button>
-                    ))}
+            <div className="max-w-[1920px] mx-auto h-[calc(100vh-130px)] relative z-10 overflow-hidden">
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                    {/* Sidebar Navigation */}
+                    <ResizablePanel
+                        defaultSize={20}
+                        minSize={10}
+                        onResize={(size) => setSidebarSize(size)}
+                        className="hidden xl:block transition-all duration-300 ease-in-out"
+                    >
+                        <div id="sidebar-nav" className={`h-full border-r border-white/5 p-8 space-y-3 bg-white/2 backdrop-blur-xl overflow-y-auto custom-scrollbar transition-all duration-300 ${sidebarSize <= 10 ? "px-4" : "p-8"}`}>
+                            <div className={`mb-10 px-4 transition-opacity duration-300 ${sidebarSize <= 10 ? "opacity-0 h-0 mb-0 overflow-hidden" : "opacity-100"}`}>
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 whitespace-nowrap">Architecture</h3>
+                                <div className="h-0.5 w-8 bg-blue-500/30 rounded-full" />
+                            </div>
+                            <div className="space-y-3">
+                                {steps.map((s) => (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => setStep(s.id)}
+                                        className={`w-full flex items-center gap-4 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all group relative overflow-hidden ${sidebarSize <= 10 ? "justify-center px-0 py-6" : "px-6 py-4"} ${step === s.id
+                                            ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)] translate-x-1"
+                                            : "text-slate-500 hover:text-white hover:bg-white/5"
+                                            }`}
+                                        title={sidebarSize <= 10 ? s.name : ""}
+                                    >
+                                        <s.icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${step === s.id ? "text-blue-600" : "text-slate-600"}`} />
+                                        <span className={`relative z-10 transition-all duration-300 whitespace-nowrap ${sidebarSize <= 10 ? "opacity-0 w-0 scale-0 overflow-hidden invisible" : "opacity-100 w-auto scale-100 visible"}`}>
+                                            {s.name}
+                                        </span>
+                                        {step === s.id && (
+                                            <div className={`absolute bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)] transition-all ${sidebarSize <= 10 ? "bottom-2 w-1 h-1" : "right-4 w-1.5 h-1.5"}`} />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
 
-                    <div className="absolute bottom-8 left-8 right-8">
-                        <div className="p-6 rounded-3xl bg-blue-600/5 border border-blue-500/10 backdrop-blur-3xl">
-                            <Sparkles className="w-5 h-5 text-blue-400 mb-3" />
-                            <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider">
-                                Content optimization active in neural layers.
-                            </p>
+                            <div className={`absolute bottom-8 left-4 right-4 transition-all duration-300 ${sidebarSize <= 10 ? "opacity-0 scale-0 pointer-events-none" : "opacity-100 scale-100"}`}>
+                                <div className="p-6 rounded-3xl bg-blue-600/5 border border-blue-500/10 backdrop-blur-3xl">
+                                    <Sparkles className="w-5 h-5 text-blue-400 mb-3" />
+                                    <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider">
+                                        Content optimization active in neural layers.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </ResizablePanel>
 
-                {/* Split Pane: Form and Preview */}
-                <div className="flex-1 flex overflow-hidden min-w-0">
+                    <ResizableHandle className="w-1 bg-white/5 hover:bg-blue-500/30 transition-colors hidden xl:flex" />
+
                     {/* Form Area */}
-                    <div id="form-area" className="flex-1 p-8 lg:p-12 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700 border-r border-white/5 bg-slate-950/40 resize-x overflow-auto min-w-[25rem] max-w-[60rem]">
-                        <div className="max-w-2xl mx-auto space-y-16 pb-32">
-                            {step === 1 && (
-                                <div className="space-y-12">
-                                    <SectionHeader title="Personal Information" icon={User} />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Full Identity</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.fullName || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, fullName: e.target.value } })}
-                                                placeholder="e.g. Alexander Pierce"
-                                            />
+                    <ResizablePanel defaultSize={40} minSize={30}>
+                        <div id="form-area" className="h-full p-8 pb-0 lg:p-12 lg:pb-0 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700 bg-slate-950/40">
+                            <div className="max-w-2xl mx-auto space-y-16">
+                                {step === 1 && (
+                                    <div className="space-y-12">
+                                        <SectionHeader title="Personal Information" icon={User} />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Full Identity</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.fullName || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, fullName: e.target.value } })}
+                                                    placeholder="e.g. Alexander Pierce"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Digital Mail</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.email || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, email: e.target.value } })}
+                                                    placeholder="alexander@interface.com"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Comm-Link</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.phone || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, phone: e.target.value } })}
+                                                    placeholder="+1 888 000 9999"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Geographic Node</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.address || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, address: e.target.value } })}
+                                                    placeholder="San Francisco, CA"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">LinkedIn Profile</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.linkedin || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, linkedin: e.target.value } })}
+                                                    placeholder="linkedin.com/in/username"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">GitHub Repository</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.github || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, github: e.target.value } })}
+                                                    placeholder="github.com/username"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">LeetCode Link</Label>
+                                                <Input
+                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
+                                                    value={data.personalInfo.leetcode || ""}
+                                                    onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, leetcode: e.target.value } })}
+                                                    placeholder="leetcode.com/username"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Digital Mail</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.email || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, email: e.target.value } })}
-                                                placeholder="alexander@interface.com"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Comm-Link</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.phone || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, phone: e.target.value } })}
-                                                placeholder="+1 888 000 9999"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Geographic Node</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.address || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, address: e.target.value } })}
-                                                placeholder="San Francisco, CA"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">LinkedIn Profile</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.linkedin || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, linkedin: e.target.value } })}
-                                                placeholder="linkedin.com/in/username"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">GitHub Repository</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.github || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, github: e.target.value } })}
-                                                placeholder="github.com/username"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">LeetCode Link</Label>
-                                            <Input
-                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 focus:border-blue-500/50 backdrop-blur-xl transition-all"
-                                                value={data.personalInfo.leetcode || ""}
-                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, leetcode: e.target.value } })}
-                                                placeholder="leetcode.com/username"
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Professional Narrative</Label>
+                                            <textarea
+                                                className="w-full min-h-[180px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm leading-relaxed backdrop-blur-xl shadow-2xl"
+                                                value={data.personalInfo.summary || ""}
+                                                onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, summary: e.target.value } })}
+                                                placeholder="Briefly describe your career trajectory and core competencies..."
                                             />
                                         </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Professional Narrative</Label>
-                                        <textarea
-                                            className="w-full min-h-[180px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm leading-relaxed backdrop-blur-xl shadow-2xl"
-                                            value={data.personalInfo.summary || ""}
-                                            onChange={e => setData({ ...data, personalInfo: { ...data.personalInfo, summary: e.target.value } })}
-                                            placeholder="Briefly describe your career trajectory and core competencies..."
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                                )}
 
-                            {step === 2 && (
-                                <div className="space-y-12">
-                                    <SectionHeader title="Professional Trajectory" icon={Briefcase} />
-                                    <div className="space-y-8">
-                                        {data.experience.map((exp, idx) => (
-                                            <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500">
-                                                <button
-                                                    onClick={() => {
-                                                        const newExp = [...data.experience];
-                                                        newExp.splice(idx, 1);
-                                                        setData({ ...data, experience: newExp });
-                                                    }}
-                                                    className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Organization</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={exp.company || ""}
-                                                            onChange={e => {
-                                                                const newExp = [...data.experience];
-                                                                newExp[idx].company = e.target.value;
-                                                                setData({ ...data, experience: newExp });
-                                                            }}
-                                                            placeholder="e.g. Neuralink"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Strategic Role</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={exp.role || ""}
-                                                            onChange={e => {
-                                                                const newExp = [...data.experience];
-                                                                newExp[idx].role = e.target.value;
-                                                                setData({ ...data, experience: newExp });
-                                                            }}
-                                                            placeholder="e.g. Lead System Architect"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Start Phase</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={exp.startDate || ""}
-                                                            onChange={e => {
-                                                                const newExp = [...data.experience];
-                                                                newExp[idx].startDate = e.target.value;
-                                                                setData({ ...data, experience: newExp });
-                                                            }}
-                                                            placeholder="Oct 2022"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">End Phase</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={exp.endDate || ""}
-                                                            onChange={e => {
-                                                                const newExp = [...data.experience];
-                                                                newExp[idx].endDate = e.target.value;
-                                                                setData({ ...data, experience: newExp });
-                                                            }}
-                                                            placeholder="Present"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="mt-8 space-y-3">
-                                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Operational Summary</Label>
-                                                    <textarea
-                                                        className="w-full min-h-[120px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm backdrop-blur-xl"
-                                                        value={exp.description || ""}
-                                                        onChange={e => {
+                                {step === 2 && (
+                                    <div className="space-y-12">
+                                        <SectionHeader title="Professional Trajectory" icon={Briefcase} />
+                                        <div className="space-y-8">
+                                            {data.experience.map((exp, idx) => (
+                                                <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500">
+                                                    <button
+                                                        onClick={() => {
                                                             const newExp = [...data.experience];
-                                                            newExp[idx].description = e.target.value;
+                                                            newExp.splice(idx, 1);
                                                             setData({ ...data, experience: newExp });
-                                                        }}
-                                                        placeholder="Key impact and achievements..."
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => setData({ ...data, experience: [...data.experience, { company: "", role: "", location: "", startDate: "", endDate: "", description: "" }] })}
-                                            className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
-                                        >
-                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                <Plus className="w-5 h-5" />
-                                            </div>
-                                            Initialize New Experience
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 3 && (
-                                <div className="space-y-12">
-                                    <SectionHeader title="Academic Foundation" icon={GraduationCap} />
-                                    <div className="space-y-8">
-                                        {data.education.map((edu, idx) => (
-                                            <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500">
-                                                <button
-                                                    onClick={() => {
-                                                        const newEdu = [...data.education];
-                                                        newEdu.splice(idx, 1);
-                                                        setData({ ...data, education: newEdu });
-                                                    }}
-                                                    className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Institution</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={edu.institution || ""}
-                                                            onChange={e => {
-                                                                const newEdu = [...data.education];
-                                                                newEdu[idx].institution = e.target.value;
-                                                                setData({ ...data, education: newEdu });
-                                                            }}
-                                                            placeholder="e.g. Stanford University"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Degree / Specialization</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={edu.degree || ""}
-                                                            onChange={e => {
-                                                                const newEdu = [...data.education];
-                                                                newEdu[idx].degree = e.target.value;
-                                                                setData({ ...data, education: newEdu });
-                                                            }}
-                                                            placeholder="B.S. Computer Science"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Start Era</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={edu.startDate || ""}
-                                                            onChange={e => {
-                                                                const newEdu = [...data.education];
-                                                                newEdu[idx].startDate = e.target.value;
-                                                                setData({ ...data, education: newEdu });
-                                                            }}
-                                                            placeholder="2018"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Conclusion Era</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={edu.endDate || ""}
-                                                            onChange={e => {
-                                                                const newEdu = [...data.education];
-                                                                newEdu[idx].endDate = e.target.value;
-                                                                setData({ ...data, education: newEdu });
-                                                            }}
-                                                            placeholder="2022"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Metric (CGPA / %)</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={edu.cgpa || ""}
-                                                            onChange={e => {
-                                                                const newEdu = [...data.education];
-                                                                newEdu[idx].cgpa = e.target.value;
-                                                                setData({ ...data, education: newEdu });
-                                                            }}
-                                                            placeholder="9.8 / 10"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => setData({ ...data, education: [...data.education, { institution: "", degree: "", location: "", startDate: "", endDate: "", cgpa: "" }] })}
-                                            className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
-                                        >
-                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                <Plus className="w-5 h-5" />
-                                            </div>
-                                            Initialize Academic Node
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 4 && (
-                                <div className="space-y-16">
-                                    <div className="space-y-12">
-                                        <SectionHeader title="Core Capabilities" icon={Code} />
-                                        <div className="space-y-8">
-                                            {data.skills.map((skillGroup, idx) => (
-                                                <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 space-y-8">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newSkills = [...data.skills];
-                                                            newSkills.splice(idx, 1);
-                                                            setData({ ...data, skills: newSkills });
-                                                        }}
-                                                        className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
-                                                    >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </button>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Skill Category</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={skillGroup.category || ""}
-                                                            onChange={e => {
-                                                                const newSkills = [...data.skills];
-                                                                newSkills[idx].category = e.target.value;
-                                                                setData({ ...data, skills: newSkills });
-                                                            }}
-                                                            placeholder="e.g. Neural Networks, Cloud Ops"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Proficiencies (Comma separated)</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={skillGroup.skills?.join(", ") || ""}
-                                                            onChange={e => {
-                                                                const newSkills = [...data.skills];
-                                                                newSkills[idx].skills = e.target.value.split(",").map(s => s.trim());
-                                                                setData({ ...data, skills: newSkills });
-                                                            }}
-                                                            placeholder="PyTorch, AWS, Docker..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            <button
-                                                onClick={() => setData({ ...data, skills: [...data.skills, { category: "", skills: [] }] })}
-                                                className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
-                                            >
-                                                <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                    <Plus className="w-5 h-5" />
-                                                </div>
-                                                Register Capability Set
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-12">
-                                        <SectionHeader title="Strategic Projects" icon={Sparkles} />
-                                        <div className="space-y-8">
-                                            {data.projects.map((project, idx) => (
-                                                <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 space-y-8">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newProjects = [...data.projects];
-                                                            newProjects.splice(idx, 1);
-                                                            setData({ ...data, projects: newProjects });
                                                         }}
                                                         className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
                                                     >
@@ -556,171 +324,428 @@ export default function ResumeBuilderPage() {
                                                     </button>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                         <div className="space-y-3">
-                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Project Title</Label>
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Organization</Label>
                                                             <Input
                                                                 className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                                value={project.title || ""}
+                                                                value={exp.company || ""}
                                                                 onChange={e => {
-                                                                    const newProjects = [...data.projects];
-                                                                    newProjects[idx].title = e.target.value;
-                                                                    setData({ ...data, projects: newProjects });
+                                                                    const newExp = [...data.experience];
+                                                                    newExp[idx].company = e.target.value;
+                                                                    setData({ ...data, experience: newExp });
                                                                 }}
-                                                                placeholder="Project Codex"
+                                                                placeholder="e.g. Neuralink"
                                                             />
                                                         </div>
                                                         <div className="space-y-3">
-                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Deployment Link</Label>
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Strategic Role</Label>
                                                             <Input
                                                                 className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                                value={project.link || ""}
+                                                                value={exp.role || ""}
                                                                 onChange={e => {
-                                                                    const newProjects = [...data.projects];
-                                                                    newProjects[idx].link = e.target.value;
-                                                                    setData({ ...data, projects: newProjects });
+                                                                    const newExp = [...data.experience];
+                                                                    newExp[idx].role = e.target.value;
+                                                                    setData({ ...data, experience: newExp });
                                                                 }}
-                                                                placeholder="https://..."
+                                                                placeholder="e.g. Lead System Architect"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Start Phase</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={exp.startDate || ""}
+                                                                onChange={e => {
+                                                                    const newExp = [...data.experience];
+                                                                    newExp[idx].startDate = e.target.value;
+                                                                    setData({ ...data, experience: newExp });
+                                                                }}
+                                                                placeholder="Oct 2022"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">End Phase</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={exp.endDate || ""}
+                                                                onChange={e => {
+                                                                    const newExp = [...data.experience];
+                                                                    newExp[idx].endDate = e.target.value;
+                                                                    setData({ ...data, experience: newExp });
+                                                                }}
+                                                                placeholder="Present"
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Tech Stack (Comma separated)</Label>
-                                                        <Input
-                                                            className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
-                                                            value={project.technologies?.join(", ") || ""}
-                                                            onChange={e => {
-                                                                const newProjects = [...data.projects];
-                                                                newProjects[idx].technologies = e.target.value.split(",").map(t => t.trim());
-                                                                setData({ ...data, projects: newProjects });
-                                                            }}
-                                                            placeholder="React, Node.js..."
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Project Architecture</Label>
+                                                    <div className="mt-8 space-y-3">
+                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Operational Summary</Label>
                                                         <textarea
-                                                            className="w-full min-h-[100px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm backdrop-blur-xl"
-                                                            value={project.description || ""}
+                                                            className="w-full min-h-[120px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm backdrop-blur-xl"
+                                                            value={exp.description || ""}
                                                             onChange={e => {
-                                                                const newProjects = [...data.projects];
-                                                                newProjects[idx].description = e.target.value;
-                                                                setData({ ...data, projects: newProjects });
+                                                                const newExp = [...data.experience];
+                                                                newExp[idx].description = e.target.value;
+                                                                setData({ ...data, experience: newExp });
                                                             }}
-                                                            placeholder="Architectural overview and core achievements..."
+                                                            placeholder="Key impact and achievements..."
                                                         />
                                                     </div>
                                                 </div>
                                             ))}
                                             <button
-                                                onClick={() => setData({ ...data, projects: [...data.projects, { title: "", description: "", technologies: [], link: "" }] })}
+                                                onClick={() => setData({ ...data, experience: [...data.experience, { company: "", role: "", location: "", startDate: "", endDate: "", description: "" }] })}
                                                 className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
                                             >
                                                 <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
                                                     <Plus className="w-5 h-5" />
                                                 </div>
-                                                Initialize Project Instance
+                                                Initialize New Experience
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {step === 5 && (
-                                <div className="space-y-12">
-                                    <SectionHeader title="Distinctions & Recognition" icon={Sparkles} />
-                                    <div className="space-y-6">
-                                        {(data.honors || []).map((honor, idx) => (
-                                            <div key={idx} className="flex gap-4 items-center group animate-in slide-in-from-left duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
-                                                <div className="flex-1 relative">
-                                                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                                                        <Trophy className="w-4 h-4 text-blue-500/50" />
-                                                    </div>
-                                                    <Input
-                                                        className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl transition-all"
-                                                        value={honor}
-                                                        onChange={e => {
-                                                            const newHonors = [...(data.honors || [])];
-                                                            newHonors[idx] = e.target.value;
-                                                            setData({ ...data, honors: newHonors });
+                                {step === 3 && (
+                                    <div className="space-y-12">
+                                        <SectionHeader title="Academic Foundation" icon={GraduationCap} />
+                                        <div className="space-y-8">
+                                            {data.education.map((edu, idx) => (
+                                                <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500">
+                                                    <button
+                                                        onClick={() => {
+                                                            const newEdu = [...data.education];
+                                                            newEdu.splice(idx, 1);
+                                                            setData({ ...data, education: newEdu });
                                                         }}
-                                                        placeholder="e.g. Strategic Growth Award 2024"
-                                                    />
+                                                        className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Institution</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={edu.institution || ""}
+                                                                onChange={e => {
+                                                                    const newEdu = [...data.education];
+                                                                    newEdu[idx].institution = e.target.value;
+                                                                    setData({ ...data, education: newEdu });
+                                                                }}
+                                                                placeholder="e.g. Stanford University"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Degree / Specialization</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={edu.degree || ""}
+                                                                onChange={e => {
+                                                                    const newEdu = [...data.education];
+                                                                    newEdu[idx].degree = e.target.value;
+                                                                    setData({ ...data, education: newEdu });
+                                                                }}
+                                                                placeholder="B.S. Computer Science"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Start Era</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={edu.startDate || ""}
+                                                                onChange={e => {
+                                                                    const newEdu = [...data.education];
+                                                                    newEdu[idx].startDate = e.target.value;
+                                                                    setData({ ...data, education: newEdu });
+                                                                }}
+                                                                placeholder="2018"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Conclusion Era</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={edu.endDate || ""}
+                                                                onChange={e => {
+                                                                    const newEdu = [...data.education];
+                                                                    newEdu[idx].endDate = e.target.value;
+                                                                    setData({ ...data, education: newEdu });
+                                                                }}
+                                                                placeholder="2022"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Metric (CGPA / %)</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={edu.cgpa || ""}
+                                                                onChange={e => {
+                                                                    const newEdu = [...data.education];
+                                                                    newEdu[idx].cgpa = e.target.value;
+                                                                    setData({ ...data, education: newEdu });
+                                                                }}
+                                                                placeholder="9.8 / 10"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                            ))}
+                                            <button
+                                                onClick={() => setData({ ...data, education: [...data.education, { institution: "", degree: "", location: "", startDate: "", endDate: "", cgpa: "" }] })}
+                                                className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
+                                            >
+                                                <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                    <Plus className="w-5 h-5" />
+                                                </div>
+                                                Initialize Academic Node
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {step === 4 && (
+                                    <div className="space-y-16">
+                                        <div className="space-y-12">
+                                            <SectionHeader title="Core Capabilities" icon={Code} />
+                                            <div className="space-y-8">
+                                                {data.skills.map((skillGroup, idx) => (
+                                                    <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 space-y-8">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSkills = [...data.skills];
+                                                                newSkills.splice(idx, 1);
+                                                                setData({ ...data, skills: newSkills });
+                                                            }}
+                                                            className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Skill Category</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={skillGroup.category || ""}
+                                                                onChange={e => {
+                                                                    const newSkills = [...data.skills];
+                                                                    newSkills[idx].category = e.target.value;
+                                                                    setData({ ...data, skills: newSkills });
+                                                                }}
+                                                                placeholder="e.g. Neural Networks, Cloud Ops"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Proficiencies (Comma separated)</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={skillGroup.skills?.join(", ") || ""}
+                                                                onChange={e => {
+                                                                    const newSkills = [...data.skills];
+                                                                    newSkills[idx].skills = e.target.value.split(",").map(s => s.trim());
+                                                                    setData({ ...data, skills: newSkills });
+                                                                }}
+                                                                placeholder="PyTorch, AWS, Docker..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
                                                 <button
-                                                    onClick={() => {
-                                                        const newHonors = [...(data.honors || [])];
-                                                        newHonors.splice(idx, 1);
-                                                        setData({ ...data, honors: newHonors });
-                                                    }}
-                                                    className="p-4 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all shadow-xl backdrop-blur-xl"
+                                                    onClick={() => setData({ ...data, skills: [...data.skills, { category: "", skills: [] }] })}
+                                                    className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
                                                 >
-                                                    <Trash2 className="w-5 h-5" />
+                                                    <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                        <Plus className="w-5 h-5" />
+                                                    </div>
+                                                    Register Capability Set
                                                 </button>
                                             </div>
-                                        ))}
-                                        <button
-                                            onClick={() => setData({ ...data, honors: [...(data.honors || []), ""] })}
-                                            className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-4 group"
-                                        >
-                                            <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                <Plus className="w-5 h-5" />
-                                            </div>
-                                            Initialize Recognition
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                                        </div>
 
-                            {/* Navigation Buttons */}
-                            <div className="pt-12 border-t border-white/5 flex items-center justify-between mt-20">
-                                <button
-                                    onClick={prevStep}
-                                    disabled={step === 1}
-                                    className="flex items-center gap-3 px-8 py-5 text-slate-500 hover:text-white font-black text-[10px] uppercase tracking-[0.2em] disabled:opacity-0 transition-all group"
-                                >
-                                    <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                    Previous Phase
-                                </button>
-                                {step < 5 ? (
-                                    <button
-                                        onClick={nextStep}
-                                        className="flex items-center gap-3 px-12 py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-2xl group"
-                                    >
-                                        Continue Evolution
-                                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => downloadResume(data)}
-                                        className="flex items-center gap-3 px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] group"
-                                    >
-                                        Generate Final Blueprint
-                                        <Download className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />
-                                    </button>
+                                        <div className="space-y-12">
+                                            <SectionHeader title="Strategic Projects" icon={Sparkles} />
+                                            <div className="space-y-8">
+                                                {data.projects.map((project, idx) => (
+                                                    <div key={idx} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500 space-y-8">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newProjects = [...data.projects];
+                                                                newProjects.splice(idx, 1);
+                                                                setData({ ...data, projects: newProjects });
+                                                            }}
+                                                            className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                            <div className="space-y-3">
+                                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Project Title</Label>
+                                                                <Input
+                                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                    value={project.title || ""}
+                                                                    onChange={e => {
+                                                                        const newProjects = [...data.projects];
+                                                                        newProjects[idx].title = e.target.value;
+                                                                        setData({ ...data, projects: newProjects });
+                                                                    }}
+                                                                    placeholder="Project Codex"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Deployment Link</Label>
+                                                                <Input
+                                                                    className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                    value={project.link || ""}
+                                                                    onChange={e => {
+                                                                        const newProjects = [...data.projects];
+                                                                        newProjects[idx].link = e.target.value;
+                                                                        setData({ ...data, projects: newProjects });
+                                                                    }}
+                                                                    placeholder="https://..."
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Tech Stack (Comma separated)</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={project.technologies?.join(", ") || ""}
+                                                                onChange={e => {
+                                                                    const newProjects = [...data.projects];
+                                                                    newProjects[idx].technologies = e.target.value.split(",").map(t => t.trim());
+                                                                    setData({ ...data, projects: newProjects });
+                                                                }}
+                                                                placeholder="React, Node.js..."
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Project Architecture</Label>
+                                                            <textarea
+                                                                className="w-full min-h-[100px] p-6 bg-white/5 border border-white/10 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white placeholder:text-slate-600 text-sm backdrop-blur-xl"
+                                                                value={project.description || ""}
+                                                                onChange={e => {
+                                                                    const newProjects = [...data.projects];
+                                                                    newProjects[idx].description = e.target.value;
+                                                                    setData({ ...data, projects: newProjects });
+                                                                }}
+                                                                placeholder="Architectural overview and core achievements..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => setData({ ...data, projects: [...data.projects, { title: "", description: "", technologies: [], link: "" }] })}
+                                                    className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
+                                                >
+                                                    <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                        <Plus className="w-5 h-5" />
+                                                    </div>
+                                                    Initialize Project Instance
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
+
+                                {step === 5 && (
+                                    <div className="space-y-12">
+                                        <SectionHeader title="Distinctions & Recognition" icon={Sparkles} />
+                                        <div className="space-y-6">
+                                            {(data.honors || []).map((honor, idx) => (
+                                                <div key={idx} className="flex gap-4 items-center group animate-in slide-in-from-left duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
+                                                    <div className="flex-1 relative">
+                                                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                                                            <Trophy className="w-4 h-4 text-blue-500/50" />
+                                                        </div>
+                                                        <Input
+                                                            className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl transition-all"
+                                                            value={honor}
+                                                            onChange={e => {
+                                                                const newHonors = [...(data.honors || [])];
+                                                                newHonors[idx] = e.target.value;
+                                                                setData({ ...data, honors: newHonors });
+                                                            }}
+                                                            placeholder="e.g. Strategic Growth Award 2024"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newHonors = [...(data.honors || [])];
+                                                            newHonors.splice(idx, 1);
+                                                            setData({ ...data, honors: newHonors });
+                                                        }}
+                                                        className="p-4 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all shadow-xl backdrop-blur-xl"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                onClick={() => setData({ ...data, honors: [...(data.honors || []), ""] })}
+                                                className="w-full py-8 border-2 border-dashed border-white/10 rounded-[2.5rem] text-slate-500 hover:text-white hover:border-blue-500/50 hover:bg-white/5 transition-all font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-4 group"
+                                            >
+                                                <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                    <Plus className="w-5 h-5" />
+                                                </div>
+                                                Initialize Recognition
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Navigation Buttons */}
+                                <div className="pt-12 border-t border-white/5 flex items-center justify-between mt-20">
+                                    <button
+                                        onClick={prevStep}
+                                        disabled={step === 1}
+                                        className="flex items-center gap-3 px-8 py-5 text-slate-500 hover:text-white font-black text-[10px] uppercase tracking-[0.2em] disabled:opacity-0 transition-all group"
+                                    >
+                                        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                                        Previous Phase
+                                    </button>
+                                    {step < 5 ? (
+                                        <button
+                                            onClick={nextStep}
+                                            className="flex items-center gap-3 px-12 py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-2xl group"
+                                        >
+                                            Continue Evolution
+                                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => downloadResume(data)}
+                                            className="flex items-center gap-3 px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-[0_0_30px_rgba(37,99,235,0.3)] group"
+                                        >
+                                            Generate Final Blueprint
+                                            <Download className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </ResizablePanel>
+
+                    <ResizableHandle className="w-1 bg-white/5 hover:bg-blue-500/30 transition-colors hidden lg:flex" />
 
                     {/* Preview Area */}
-                    <div id="preview-area" className="hidden lg:block flex-1 bg-slate-900/50 overflow-y-auto custom-scrollbar relative p-8 resize-x overflow-auto min-w-[20rem] max-w-[60rem]">
-                        <div className="sticky top-0 mb-8 flex items-center justify-between z-20">
-                            <div className="flex items-center gap-3">
-                                <Layout className="w-4 h-4 text-blue-500" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Live Diagnostic Preview</span>
+                    <ResizablePanel defaultSize={40} minSize={30} className="hidden lg:block">
+                        <div id="preview-area" className="h-full bg-slate-900/50 overflow-y-auto custom-scrollbar relative p-8 pb-0">
+                            <div className="sticky top-0 mb-8 flex items-center justify-between z-20">
+                                <div className="flex items-center gap-3">
+                                    <Layout className="w-4 h-4 text-blue-500" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Live Diagnostic Preview</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                    <div className="w-2 h-2 rounded-full bg-blue-500/20" />
+                                    <div className="w-2 h-2 rounded-full bg-blue-500/10" />
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                                <div className="w-2 h-2 rounded-full bg-blue-500/20" />
-                                <div className="w-2 h-2 rounded-full bg-blue-500/10" />
+                            <div className="relative group">
+                                {/* Glass background for the paper */}
+                                <div className="absolute -inset-4 bg-gradient-to-br from-blue-600/5 to-purple-600/5 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                                <ResumePreview data={data} />
                             </div>
                         </div>
-                        <div className="relative group">
-                            {/* Glass background for the paper */}
-                            <div className="absolute -inset-4 bg-gradient-to-br from-blue-600/5 to-purple-600/5 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
-                            <ResumePreview data={data} />
-                        </div>
-                    </div>
-                </div>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
         </div>
     )
