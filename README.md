@@ -29,6 +29,52 @@
 
 ---
 
+## 🗺️ Visual Architecture
+
+### 🏗️ System Architecture
+```mermaid
+graph TD
+    User((User)) --> NextJS[Next.js 16 App]
+    subgraph Frontend
+        NextJS --> Tailwind[Tailwind CSS]
+        NextJS --> Radix[shadcn/ui]
+    end
+    subgraph Auth
+        NextJS --> Clerk[Clerk Auth]
+    end
+    subgraph "AI Core"
+        NextJS --> Groq[Groq LPU Inference]
+        NextJS --> Inngest[Inngest Workflows]
+    end
+    subgraph Data
+        NextJS --> Drizzle[Drizzle ORM]
+        Drizzle --> Neon[Neon PostgreSQL]
+    end
+```
+
+### 🔄 User Flow
+```mermaid
+graph LR
+    Start([Landing Page]) --> Auth{Auth Required?}
+    Auth -- Yes --> Login[Clerk Sign-In/Up]
+    Login --> Dashboard[Main Dashboard]
+    Auth -- No --> Dashboard
+    
+    Dashboard --> RB[Resume Architect]
+    RB --> RB_Action[Build / Preview / Download]
+    
+    Dashboard --> AC[AI Career Chat]
+    AC --> AC_Action[Direct Guidance / History]
+    
+    Dashboard --> AB[AI Agent Builder]
+    AB --> AB_Action[Visual Workflow]
+    
+    Dashboard --> Hist[Neural Archive]
+    Hist --> Hist_Action[View Saved Docs/Chats]
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend Architecture
