@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
     ArrowLeft,
@@ -54,7 +54,7 @@ const INITIAL_DATA: ResumeData = {
     template: "corporate",
 }
 
-export default function ResumeBuilderPage() {
+function ResumeBuilderContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const resumeId = searchParams.get("id")
@@ -151,7 +151,7 @@ export default function ResumeBuilderPage() {
                             className="inline-flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-slate-300 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-xl backdrop-blur-xl group"
                         >
                             <Clock className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                            My Archive
+                            My History
                         </Link>
                         <button
                             onClick={handleSave}
@@ -748,6 +748,21 @@ export default function ResumeBuilderPage() {
                 </ResizablePanelGroup>
             </div>
         </div>
+    )
+}
+
+export default function ResumeBuilderPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Initializing Architect...</p>
+                </div>
+            </div>
+        }>
+            <ResumeBuilderContent />
+        </Suspense>
     )
 }
 
