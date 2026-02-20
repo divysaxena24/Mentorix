@@ -18,7 +18,13 @@ import {
     Sparkles,
     Clock,
     Loader2,
-    Trophy
+    Trophy,
+    ShieldCheck,
+    Languages,
+    Heart,
+    BookOpen,
+    Users,
+    Terminal
 } from "lucide-react"
 import Link from "next/link"
 import axios from "axios"
@@ -50,7 +56,8 @@ const INITIAL_DATA: ResumeData = {
     experience: [],
     skills: [],
     projects: [],
-    honors: [], // New section matching image
+    honors: [],
+    customSections: [],
     template: "corporate",
 }
 
@@ -107,9 +114,10 @@ function ResumeBuilderContent() {
         { id: 3, name: "Education", icon: GraduationCap },
         { id: 4, name: "Skills & Projects", icon: Code },
         { id: 5, name: "Honors & Awards", icon: Sparkles },
+        { id: 6, name: "Add New Section", icon: Layout },
     ]
 
-    const nextStep = () => setStep(s => Math.min(s + 1, 5))
+    const nextStep = () => setStep(s => Math.min(s + 1, 6))
     const prevStep = () => setStep(s => Math.max(s - 1, 1))
 
     if (loading) {
@@ -127,7 +135,7 @@ function ResumeBuilderContent() {
             <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] -ml-48 -mb-20 rounded-full pointer-events-none" />
 
             {/* Header */}
-            <div className="max-w-7xl mx-auto px-6 py-8 border-b border-white/5 relative z-10">
+            <div className="max-w-[1920px] mx-auto px-10 py-8 border-b border-white/5 relative z-10 text-left">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                         <Link href="/dashboard" className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 hover:border-white/20 transition-all group">
@@ -135,13 +143,13 @@ function ResumeBuilderContent() {
                         </Link>
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-widest mb-2">
-                                Resume Engine v2.0
+                                Resume Engine v3.0
                             </div>
                             <h1 className="text-3xl font-black text-white tracking-tight uppercase leading-none">
                                 Resume <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Architect</span>
                             </h1>
                             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-2">
-                                Step {step} of 5: {steps[step - 1].name}
+                                Step {step} of 6: {steps[step - 1].name}
                             </p>
                         </div>
                     </div>
@@ -178,12 +186,12 @@ function ResumeBuilderContent() {
                     {/* Sidebar Navigation */}
                     <ResizablePanel
                         defaultSize={20}
-                        minSize={10}
+                        minSize={15}
                         onResize={(size) => setSidebarSize(size)}
                         className="hidden xl:block transition-all duration-300 ease-in-out"
                     >
-                        <div id="sidebar-nav" className={`h-full border-r border-white/5 p-8 space-y-3 bg-white/2 backdrop-blur-xl overflow-y-auto custom-scrollbar transition-all duration-300 ${sidebarSize <= 10 ? "px-4" : "p-8"}`}>
-                            <div className={`mb-10 px-4 transition-opacity duration-300 ${sidebarSize <= 10 ? "opacity-0 h-0 mb-0 overflow-hidden" : "opacity-100"}`}>
+                        <div id="sidebar-nav" className={`h-full border-r border-white/5 p-8 space-y-3 bg-white/2 backdrop-blur-xl overflow-y-auto custom-scrollbar transition-all duration-300 ${sidebarSize <= 17 ? "px-4" : "p-8"}`}>
+                            <div className={`mb-10 px-4 transition-opacity duration-300 ${sidebarSize <= 17 ? "opacity-0 h-0 mb-0 overflow-hidden" : "opacity-100"}`}>
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 whitespace-nowrap">Architecture</h3>
                                 <div className="h-0.5 w-8 bg-blue-500/30 rounded-full" />
                             </div>
@@ -192,24 +200,24 @@ function ResumeBuilderContent() {
                                     <button
                                         key={s.id}
                                         onClick={() => setStep(s.id)}
-                                        className={`w-full flex items-center gap-4 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all group relative overflow-hidden ${sidebarSize <= 10 ? "justify-center px-0 py-6" : "px-6 py-4"} ${step === s.id
+                                        className={`w-full flex items-center gap-4 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all group relative overflow-hidden ${sidebarSize <= 17 ? "justify-center px-0 py-6" : "px-6 py-4"} ${step === s.id
                                             ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)] translate-x-1"
                                             : "text-slate-500 hover:text-white hover:bg-white/5"
                                             }`}
-                                        title={sidebarSize <= 10 ? s.name : ""}
+                                        title={sidebarSize <= 17 ? s.name : ""}
                                     >
                                         <s.icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${step === s.id ? "text-blue-600" : "text-slate-600"}`} />
-                                        <span className={`relative z-10 transition-all duration-300 whitespace-nowrap ${sidebarSize <= 10 ? "opacity-0 w-0 scale-0 overflow-hidden invisible" : "opacity-100 w-auto scale-100 visible"}`}>
+                                        <span className={`relative z-10 transition-all duration-300 whitespace-nowrap ${sidebarSize <= 17 ? "opacity-0 w-0 scale-0 overflow-hidden invisible" : "opacity-100 w-auto scale-100 visible"}`}>
                                             {s.name}
                                         </span>
                                         {step === s.id && (
-                                            <div className={`absolute bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)] transition-all ${sidebarSize <= 10 ? "bottom-2 w-1 h-1" : "right-4 w-1.5 h-1.5"}`} />
+                                            <div className={`absolute bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)] transition-all ${sidebarSize <= 17 ? "bottom-2 w-1 h-1" : "right-4 w-1.5 h-1.5"}`} />
                                         )}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className={`absolute bottom-8 left-4 right-4 transition-all duration-300 ${sidebarSize <= 10 ? "opacity-0 scale-0 pointer-events-none" : "opacity-100 scale-100"}`}>
+                            <div className={`absolute bottom-8 left-4 right-4 transition-all duration-300 ${sidebarSize <= 17 ? "opacity-0 scale-0 pointer-events-none" : "opacity-100 scale-100"}`}>
                                 <div className="p-6 rounded-3xl bg-blue-600/5 border border-blue-500/10 backdrop-blur-3xl">
                                     <Sparkles className="w-5 h-5 text-blue-400 mb-3" />
                                     <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider">
@@ -690,6 +698,188 @@ function ResumeBuilderContent() {
                                     </div>
                                 )}
 
+                                {step === 6 && (
+                                    <div className="space-y-16">
+                                        <div className="space-y-8">
+                                            <SectionHeader title="Custom Architecture" icon={Layout} />
+
+                                            <div className="space-y-4">
+                                                <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-4">Neural Presets</Label>
+                                                <div className="flex flex-wrap gap-3">
+                                                    {[
+                                                        { title: "Certifications", icon: ShieldCheck },
+                                                        { title: "Languages", icon: Languages },
+                                                        { title: "Volunteer Work", icon: Heart },
+                                                        { title: "Publications", icon: BookOpen },
+                                                        { title: "Awards", icon: Trophy },
+                                                        { title: "References", icon: Users },
+                                                        { title: "Technical Skills", icon: Terminal }
+                                                    ].map((preset) => (
+                                                        <button
+                                                            key={preset.title}
+                                                            onClick={() => setData({
+                                                                ...data,
+                                                                customSections: [
+                                                                    ...(data.customSections || []),
+                                                                    { id: Math.random().toString(36).substr(2, 9), title: preset.title, items: [{ description: "" }] }
+                                                                ]
+                                                            })}
+                                                            className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-blue-600/10 hover:border-blue-500/20 transition-all group"
+                                                        >
+                                                            <preset.icon className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                                                            {preset.title}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-12">
+                                            {(data.customSections || []).map((section, sIdx) => (
+                                                <div key={section.id} className="p-10 bg-white/5 rounded-[3rem] border border-white/10 relative group shadow-2xl backdrop-blur-3xl animate-in zoom-in-95 duration-500">
+                                                    <button
+                                                        onClick={() => {
+                                                            const newSections = [...(data.customSections || [])];
+                                                            newSections.splice(sIdx, 1);
+                                                            setData({ ...data, customSections: newSections });
+                                                        }}
+                                                        className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+
+                                                    <div className="space-y-8">
+                                                        <div className="space-y-3">
+                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Section Identity</Label>
+                                                            <Input
+                                                                className="h-14 px-6 bg-white/5 border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:ring-blue-500/50 backdrop-blur-xl"
+                                                                value={section.title}
+                                                                onChange={e => {
+                                                                    const newSections = [...(data.customSections || [])];
+                                                                    newSections[sIdx].title = e.target.value;
+                                                                    setData({ ...data, customSections: newSections });
+                                                                }}
+                                                                placeholder="e.g. Certifications, Volunteer Work, Publications"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            {section.items.map((item, iIdx) => (
+                                                                <div key={iIdx} className="p-6 bg-white/5 rounded-2xl border border-white/5 relative group/item">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newSections = [...(data.customSections || [])];
+                                                                            newSections[sIdx].items.splice(iIdx, 1);
+                                                                            setData({ ...data, customSections: newSections });
+                                                                        }}
+                                                                        className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl opacity-0 group-hover/item:opacity-100 transition-all"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Node Title</Label>
+                                                                            <Input
+                                                                                className="h-10 px-4 bg-white/5 border-white/10 rounded-xl"
+                                                                                value={item.title || ""}
+                                                                                onChange={e => {
+                                                                                    const newSections = [...(data.customSections || [])];
+                                                                                    newSections[sIdx].items[iIdx].title = e.target.value;
+                                                                                    setData({ ...data, customSections: newSections });
+                                                                                }}
+                                                                                placeholder="e.g. AWS Certified"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Sub-header</Label>
+                                                                            <Input
+                                                                                className="h-10 px-4 bg-white/5 border-white/10 rounded-xl"
+                                                                                value={item.subtitle || ""}
+                                                                                onChange={e => {
+                                                                                    const newSections = [...(data.customSections || [])];
+                                                                                    newSections[sIdx].items[iIdx].subtitle = e.target.value;
+                                                                                    setData({ ...data, customSections: newSections });
+                                                                                }}
+                                                                                placeholder="e.g. Associate Level"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Temporal Marker</Label>
+                                                                            <Input
+                                                                                className="h-10 px-4 bg-white/5 border-white/10 rounded-xl"
+                                                                                value={item.date || ""}
+                                                                                onChange={e => {
+                                                                                    const newSections = [...(data.customSections || [])];
+                                                                                    newSections[sIdx].items[iIdx].date = e.target.value;
+                                                                                    setData({ ...data, customSections: newSections });
+                                                                                }}
+                                                                                placeholder="Dec 2023"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Location</Label>
+                                                                            <Input
+                                                                                className="h-10 px-4 bg-white/5 border-white/10 rounded-xl"
+                                                                                value={item.location || ""}
+                                                                                onChange={e => {
+                                                                                    const newSections = [...(data.customSections || [])];
+                                                                                    newSections[sIdx].items[iIdx].location = e.target.value;
+                                                                                    setData({ ...data, customSections: newSections });
+                                                                                }}
+                                                                                placeholder="Remote / City"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="mt-4 space-y-2">
+                                                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Description</Label>
+                                                                        <textarea
+                                                                            className="w-full min-h-[80px] p-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none text-white text-xs backdrop-blur-xl"
+                                                                            value={item.description}
+                                                                            onChange={e => {
+                                                                                const newSections = [...(data.customSections || [])];
+                                                                                newSections[sIdx].items[iIdx].description = e.target.value;
+                                                                                setData({ ...data, customSections: newSections });
+                                                                            }}
+                                                                            placeholder="Detailed accomplishments..."
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newSections = [...(data.customSections || [])];
+                                                                    newSections[sIdx].items.push({ description: "" });
+                                                                    setData({ ...data, customSections: newSections });
+                                                                }}
+                                                                className="w-full py-4 border border-dashed border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                <Plus className="w-3 h-3" />
+                                                                Append Sub-Node
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            <button
+                                                onClick={() => setData({
+                                                    ...data,
+                                                    customSections: [
+                                                        ...(data.customSections || []),
+                                                        { id: Math.random().toString(36).substr(2, 9), title: "", items: [{ description: "" }] }
+                                                    ]
+                                                })}
+                                                className="w-full py-8 border-2 border-dashed border-white/20 rounded-[2.5rem] bg-blue-600/5 text-blue-400 hover:bg-blue-600/10 hover:text-white transition-all font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
+                                            >
+                                                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                    <Plus className="w-5 h-5" />
+                                                </div>
+                                                Initialize Custom Block
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Navigation Buttons */}
                                 <div className="pt-12 border-t border-white/5 flex items-center justify-between mt-20">
                                     <button
@@ -700,7 +890,7 @@ function ResumeBuilderContent() {
                                         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                                         Previous Phase
                                     </button>
-                                    {step < 5 ? (
+                                    {step < 6 ? (
                                         <button
                                             onClick={nextStep}
                                             className="flex items-center gap-3 px-12 py-5 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-200 transition-all shadow-2xl group"

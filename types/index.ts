@@ -109,6 +109,20 @@ export interface Project {
     technologies: string[];
 }
 
+export interface CustomSubItem {
+    title?: string;
+    subtitle?: string;
+    date?: string;
+    location?: string;
+    description: string;
+}
+
+export interface CustomSection {
+    id: string;
+    title: string;
+    items: CustomSubItem[];
+}
+
 export interface ResumeData {
     personalInfo: PersonalInfo;
     education: Education[];
@@ -116,6 +130,7 @@ export interface ResumeData {
     skills: Skill[];
     projects: Project[];
     honors?: string[];
+    customSections?: CustomSection[];
     template: string;
 }
 

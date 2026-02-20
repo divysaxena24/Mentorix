@@ -7,57 +7,47 @@ interface ResumePreviewProps {
 }
 
 const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
-    const { personalInfo, education, experience, skills, projects, honors } = data;
+    const { personalInfo, education, experience, skills, projects, honors, customSections } = data;
 
     const cleanUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
     return (
         <div className="w-full h-full p-4 flex justify-center overflow-auto custom-scrollbar">
-            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl origin-top scale-[0.6] sm:scale-[0.7] md:scale-[0.8] lg:scale-[0.9] xl:scale-100 transition-transform p-[20mm] font-serif">
+            <div className="w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl origin-top scale-[0.6] sm:scale-[0.7] md:scale-[0.8] lg:scale-[0.9] xl:scale-100 transition-transform p-[15mm] font-serif">
                 {/* Header */}
-                <header className="text-center mb-10 border-b-2 border-slate-900 pb-8">
-                    <h1 className="text-4xl font-black uppercase tracking-tight mb-4 text-slate-950">
+                <header className="text-center mb-6 border-b-[2.5px] border-slate-950 pb-5 font-serif">
+                    <h1 className="text-4xl font-black uppercase tracking-tight mb-5 text-slate-950">
                         {personalInfo.fullName || "Your Full Name"}
                     </h1>
 
-                    <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs font-medium text-slate-600">
+                    <div className="flex justify-center items-center gap-3 text-[10px] text-slate-700">
                         {personalInfo.phone && (
                             <div className="flex items-center gap-1.5">
-                                <Phone className="w-3 h-3" />
+                                <Phone className="w-3 h-3 fill-slate-700" />
                                 <span>{personalInfo.phone}</span>
                             </div>
                         )}
+                        {personalInfo.phone && personalInfo.email && <span className="text-slate-200">|</span>}
                         {personalInfo.email && (
                             <div className="flex items-center gap-1.5">
-                                <Mail className="w-3 h-3" />
+                                <Mail className="w-3 h-3 fill-slate-700" />
                                 <span>{personalInfo.email}</span>
-                            </div>
-                        )}
-                        {personalInfo.address && (
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="w-3 h-3" />
-                                <span>{personalInfo.address}</span>
-                            </div>
-                        )}
-                        {personalInfo.portfolio && (
-                            <div className="flex items-center gap-1.5">
-                                <Globe className="w-3 h-3" />
-                                <span className="text-blue-600">{cleanUrl(personalInfo.portfolio)}</span>
                             </div>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-[10px] sm:text-xs font-medium text-slate-600 mt-2">
+                    <div className="flex justify-center items-center gap-3 text-[10px] text-slate-700 mt-1.5">
                         {personalInfo.linkedin && (
                             <div className="flex items-center gap-1.5">
-                                <Linkedin className="w-3 h-3" />
-                                <span className="text-blue-600">{cleanUrl(personalInfo.linkedin)}</span>
+                                <Linkedin className="w-3 h-3 fill-slate-700" />
+                                <span className="hover:underline">{cleanUrl(personalInfo.linkedin)}</span>
                             </div>
                         )}
+                        {personalInfo.linkedin && personalInfo.github && <span className="text-slate-200">|</span>}
                         {personalInfo.github && (
                             <div className="flex items-center gap-1.5">
-                                <Github className="w-3 h-3" />
-                                <span className="text-blue-600">{cleanUrl(personalInfo.github)}</span>
+                                <Github className="w-3 h-3 fill-slate-700" />
+                                <span className="hover:underline">{cleanUrl(personalInfo.github)}</span>
                             </div>
                         )}
                     </div>
@@ -65,9 +55,9 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
 
                 {/* Summary */}
                 {personalInfo.summary && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-3 border-b border-slate-200 pb-1 text-slate-900">Summary</h2>
-                        <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                    <section className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-2 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Summary</h2>
+                        <p className="text-[11px] leading-snug text-slate-700 whitespace-pre-wrap">
                             {personalInfo.summary}
                         </p>
                     </section>
@@ -75,22 +65,26 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
 
                 {/* Experience */}
                 {experience.length > 0 && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-4 border-b border-slate-200 pb-1 text-slate-900">Professional Experience</h2>
-                        <div className="space-y-6">
+                    <section className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Professional Experience</h2>
+                        <div className="space-y-4">
                             {experience.map((exp, idx) => (
-                                <div key={idx} className="relative">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h3 className="text-sm font-bold text-slate-900">{exp.role || "Role"}</h3>
+                                <div key={idx} className={`${idx > 0 ? "pt-3 border-t border-slate-100" : ""}`}>
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                        <h3 className="text-[11px] font-bold text-slate-900">{exp.role || "Role"}</h3>
                                         <span className="text-[10px] font-bold text-slate-500 italic">{exp.startDate} — {exp.endDate}</span>
                                     </div>
-                                    <div className="flex justify-between items-baseline mb-3">
-                                        <span className="text-xs font-semibold text-slate-700 italic">{exp.company || "Company"}</span>
-                                        <span className="text-[10px] text-slate-500 font-medium">{exp.location}</span>
+                                    <h4 className="text-[10px] font-semibold text-slate-700 italic mb-2">{exp.company || "Company"}</h4>
+                                    <div className="space-y-1.5 pl-2">
+                                        {exp.description.split('\n').filter(p => p.trim()).map((point, pIdx) => (
+                                            <div key={pIdx} className="flex gap-2.5">
+                                                <span className="text-[9px] mt-1.5 text-slate-400">•</span>
+                                                <p className="text-[10px] leading-snug text-slate-700">
+                                                    {point}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap pl-2 border-l-2 border-slate-100 italic">
-                                        {exp.description}
-                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -99,29 +93,36 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
 
                 {/* Projects */}
                 {projects.length > 0 && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-4 border-b border-slate-200 pb-1 text-slate-900">Strategic Projects</h2>
-                        <div className="space-y-6">
+                    <section className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Strategic Projects</h2>
+                        <div className="space-y-4">
                             {projects.map((project, idx) => (
-                                <div key={idx} className="relative">
+                                <div key={idx} className={`${idx > 0 ? "pt-3 border-t border-slate-100" : ""}`}>
                                     <div className="flex justify-between items-baseline mb-2">
-                                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                        <h3 className="text-[11px] font-bold text-slate-900 flex items-center gap-2">
                                             {project.title || "Untitled Project"}
                                             {project.link && <ExternalLink className="w-3 h-3 text-blue-500" />}
                                         </h3>
                                         {project.technologies && project.technologies.length > 0 && (
                                             <div className="flex gap-1.5">
                                                 {project.technologies.map((tech, i) => (
-                                                    <span key={i} className="text-[8px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold uppercase tracking-tighter self-center">
+                                                    <span key={i} className="text-[8px] px-2 py-0.5 bg-slate-50 text-slate-600 rounded-full font-bold uppercase tracking-tighter border border-slate-100">
                                                         {tech}
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-wrap pl-2 border-l-2 border-slate-100 italic">
-                                        {project.description}
-                                    </p>
+                                    <div className="space-y-1.5 pl-2">
+                                        {project.description.split('\n').filter(p => p.trim()).map((point, pIdx) => (
+                                            <div key={pIdx} className="flex gap-2.5">
+                                                <span className="text-[9px] mt-1.5 text-slate-400">•</span>
+                                                <p className="text-[10px] leading-snug text-slate-700">
+                                                    {point}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -130,18 +131,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
 
                 {/* Education */}
                 {education.length > 0 && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-4 border-b border-slate-200 pb-1 text-slate-900">Education</h2>
-                        <div className="space-y-4">
+                    <section className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Education</h2>
+                        <div className="space-y-3">
                             {education.map((edu, idx) => (
-                                <div key={idx}>
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h3 className="text-sm font-bold text-slate-900">{edu.institution || "Institution"}</h3>
+                                <div key={idx} className="">
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                        <h3 className="text-[11px] font-bold text-slate-900">{edu.institution || "Institution"}</h3>
                                         <span className="text-[10px] font-bold text-slate-500 italic">{edu.startDate} — {edu.endDate}</span>
                                     </div>
-                                    <div className="flex justify-between items-baseline">
-                                        <span className="text-xs font-medium text-slate-700 italic">{edu.degree}</span>
-                                        {edu.cgpa && <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">GPA: {edu.cgpa}</span>}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-medium text-slate-700 italic">{edu.degree}</span>
+                                        {edu.cgpa && <span className="text-[9px] font-bold text-slate-600 bg-slate-50 px-2.5 py-0.5 rounded-full border border-slate-200">GPA: {edu.cgpa}</span>}
                                     </div>
                                 </div>
                             ))}
@@ -151,28 +152,61 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
 
                 {/* Skills */}
                 {skills.length > 0 && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-3 border-b border-slate-200 pb-1 text-slate-900">Technical Skills</h2>
-                        <div className="space-y-2">
+                    <section className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Technical Skills</h2>
+                        <div className="space-y-2.5">
                             {skills.map((skill, idx) => (
-                                <div key={idx} className="flex items-start gap-2">
-                                    <span className="text-xs font-bold text-slate-900 min-w-[120px]">{skill.category}:</span>
-                                    <span className="text-xs text-slate-700">{skill.skills.join(", ")}</span>
+                                <div key={idx} className="flex items-start">
+                                    <span className="text-[10px] font-bold text-slate-900 w-[45mm] flex-shrink-0">{skill.category}:</span>
+                                    <span className="text-[10px] text-slate-700 leading-normal">{skill.skills.join(", ")}</span>
                                 </div>
                             ))}
                         </div>
                     </section>
                 )}
 
+                {/* Custom Sections */}
+                {customSections && customSections.length > 0 && customSections.map((section, sIdx) => (
+                    <section key={section.id || sIdx} className="mb-4">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">{section.title}</h2>
+                        <div className="space-y-4">
+                            {section.items.map((item, iIdx) => (
+                                <div key={iIdx} className="">
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                        {item.title && <h3 className="text-[11px] font-bold text-slate-900">{item.title}</h3>}
+                                        {item.date && <span className="text-[10px] font-bold text-slate-500 italic">{item.date}</span>}
+                                    </div>
+                                    {(item.subtitle || item.location) && (
+                                        <div className="flex justify-between items-baseline mb-2">
+                                            {item.subtitle && <span className="text-[10px] font-semibold text-slate-700 italic">{item.subtitle}</span>}
+                                            {item.location && <span className="text-[10px] text-slate-500 font-medium">{item.location}</span>}
+                                        </div>
+                                    )}
+                                    <div className="space-y-1.5 pl-2">
+                                        {item.description.split('\n').filter(p => p.trim()).map((point, pIdx) => (
+                                            <div key={pIdx} className="flex gap-2.5">
+                                                <span className="text-[9px] mt-1.5 text-slate-400">•</span>
+                                                <p className="text-[10px] leading-snug text-slate-700">
+                                                    {point}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                ))}
+
                 {/* Honors */}
                 {honors && honors.length > 0 && honors.some(h => h) && (
                     <section>
-                        <h2 className="text-sm font-black uppercase tracking-widest mb-3 border-b border-slate-200 pb-1 text-slate-900">Honors & Awards</h2>
-                        <div className="space-y-2">
+                        <h2 className="text-[11px] font-black uppercase tracking-widest mb-3 border-b-[1.5px] border-slate-900 pb-1 text-slate-900">Honors & Awards</h2>
+                        <div className="space-y-2.5">
                             {honors.filter(h => h).map((honor, idx) => (
-                                <div key={idx} className="flex items-start gap-2">
-                                    <Trophy className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-xs text-slate-700 leading-snug">{honor}</span>
+                                <div key={idx} className="flex items-start gap-3">
+                                    <Trophy className="w-3.5 h-3.5 text-orange-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-[10px] text-slate-700 leading-snug">{honor}</span>
                                 </div>
                             ))}
                         </div>

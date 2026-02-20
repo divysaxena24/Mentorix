@@ -39,12 +39,12 @@ export default function Home() {
 
           <div className="flex items-center gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
                 <button className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-semibold border border-white/10 transition-all">
                   Sign In
                 </button>
               </SignInButton>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
                 <button className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">
                   Join Mentorix
                 </button>
@@ -84,9 +84,9 @@ export default function Home() {
       </AlertDialog>
 
       {/* Hero Section */}
-      <main className="flex-1 pt-32 relative overflow-hidden">
+      <main className="flex-1 pt-32 mt-10 relative overflow-hidden">
         <section className="px-6 pb-20 relative z-10">
-          <div className="max-w-5xl mx-auto text-center">
+          <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm font-medium mb-8 border border-blue-500/20 animate-fade-in backdrop-blur-md">
               <Sparkles className="w-4 h-4" />
               AI-Powered Career Intelligence
@@ -113,7 +113,7 @@ export default function Home() {
                 </Link>
               </SignedIn>
               <SignedOut>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
                   <button className="group px-10 py-5 bg-white text-slate-950 rounded-2xl text-lg font-bold hover:bg-slate-200 transition-all w-full flex items-center justify-center gap-2">
                     Get Started Free
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
