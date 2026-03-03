@@ -32,24 +32,7 @@ export interface AnalysisResult {
     weaknesses: string[];
     improvementPoints: string[];
     missingKeywords: string[];
-    sectionwiseAnalysis?: Record<string, string>;
-    scoreBreakdown?: {
-        skills: number;
-        projects: number;
-        experience: number;
-        ats: number;
-        impact: number;
-        industryFit: number;
-    };
-    sectionwiseAnalysis?: Record<string, string>;
-    scoreBreakdown?: {
-        skills: number;
-        projects: number;
-        experience: number;
-        ats: number;
-        impact: number;
-        industryFit: number;
-    };
+
 }
 
 export interface ResumeAnalysisItem {
