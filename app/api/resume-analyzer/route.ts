@@ -69,13 +69,27 @@ You MUST respond with a valid JSON object only. No conversational text.
 {
   "score": (number 0-100),
   "summary": "A concise overview of the analysis.",
+  "scoreBreakdown": {
+    "skills": (number 0-100),
+    "projects": (number 0-100),
+    "experience": (number 0-100),
+    "ats": (number 0-100),
+    "impact": (number 0-100),
+    "industryFit": (number 0-100)
+  },
   "strengths": ["Strength 1", "Strength 2"],
   "weaknesses": ["Improvement area 1", "Improvement area 2"],
   "improvementPoints": [
     "Actionable advice 1",
     "Actionable advice 2"
   ],
-  "missingKeywords": [${mode === "strict_jd" ? "List of keywords from JD missing" : mode === "career_intent" ? "Industry-standard skills missing for this intent" : ""}]
+  "missingKeywords": [${mode === "strict_jd" ? "List of keywords from JD missing" : mode === "career_intent" ? "Industry-standard skills missing for this intent" : ""}],
+  "sectionwiseAnalysis": {
+    "education": "Deep analytical feedback on education section. E.g., 'Solid foundation but missing major coursework context. Add relevant subjects...'",
+    "experience": "Deep analytical feedback on experience section. Evaluate bullets, metrics, and leadership. Suggest exact rewrites.",
+    "projects": "Deep analytical feedback on projects. Are they too academic? Do they list technologies or actual impact? Suggest features to add.",
+    "skills": "Deep analytical feedback on skills section. E.g., 'Strong React experience, but missing state management or testing frameworks...'"
+  }
 }
 `;
 

@@ -143,6 +143,26 @@ export default function ResumeAnalyzerPage() {
 
         // Key Strengths
         doc.setFontSize(16)
+        // Score Breakdown
+        if (result.scoreBreakdown) {
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Section Matching Breakdown", 20, currentY)
+            currentY += 10
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [['Area', 'Match %']],
+                body: Object.entries(result.scoreBreakdown).map(([key, val]) => [key.charAt(0).toUpperCase() + key.slice(1), `${val}%`]),
+                theme: 'striped',
+                headStyles: { fillColor: [60, 140, 255] },
+                margin: { left: 20, right: 20 }
+            })
+            currentY = (doc as any).lastAutoTable.finalY + 15
+        }
+
+        // Strengths
+        doc.setFontSize(16)
         doc.setTextColor(0, 0, 0)
         doc.text("Key Strengths", 20, currentY)
         currentY += 10
@@ -172,6 +192,24 @@ export default function ResumeAnalyzerPage() {
         })
 
         currentY = (doc as any).lastAutoTable.finalY + 15
+
+        // Detailed Section Analysis
+        if (result.sectionwiseAnalysis) {
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Detailed Section Analysis", 20, currentY)
+            currentY += 10
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [['Section', 'Feedback']],
+                body: Object.entries(result.sectionwiseAnalysis).map(([section, feedback]) => [section.charAt(0).toUpperCase() + section.slice(1), String(feedback)]),
+                theme: 'grid',
+                headStyles: { fillColor: [100, 100, 100] },
+                margin: { left: 20, right: 20 }
+            })
+            currentY = (doc as any).lastAutoTable.finalY + 15
+        }
 
         // Keywords to Add
         doc.setFontSize(16)
@@ -607,6 +645,38 @@ export default function ResumeAnalyzerPage() {
                                                 </li>
                                             ))}
                                         </ul>
+                                    </div>
+
+                                    {/* Score Breakdown */}
+                                    {result.scoreBreakdown && (
+                                        <div className="bg-white/5 rounded-[2.5rem] p-10 border border-white/10 backdrop-blur-xl shadow-2xl mt-8 mb-8 text-left">
+                                            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">
+                                                Section Matching Analysis
+                                            </h3>
+                                            <div className="grid justify-items-center grid-cols-2 md:grid-cols-3 gap-4">
+                                                {Object.entries(result.scoreBreakdown).map(([key, val]) => (
+                                                    <div key={key} className="flex flex-col items-center bg-white/5 rounded-2xl border border-white/5 p-4 w-full">
+                                                        <span className="text-3xl font-black text-blue-400">{val as number}%</span>
+                                                        <span className="text-xs text-slate-300 uppercase tracking-widest mt-2">{key}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Section-wise Analysis */}
+                                    <div className="bg-white/5 rounded-[2.5rem] p-10 border border-white/10 backdrop-blur-xl shadow-2xl mt-8 mb-8">
+                                        <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">
+                                            Detailed Section Analysis
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {result.sectionwiseAnalysis && Object.entries(result.sectionwiseAnalysis).map(([section, feedback]) => (
+                                                <div key={section} className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                                                    <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest mb-3">{section}</h4>
+                                                    <p className="text-sm text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">{String(feedback)}</p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Missing Keywords */}
