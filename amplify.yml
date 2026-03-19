@@ -1,0 +1,32 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        # --- CRITICAL FIX FOR NEXT.JS SSR ---
+        # This line captures the Amplify environment variables and builds a local .env.production file
+        - echo "CLERK_SECRET_KEY=$CLERK_SECRET_KEY" >> .env.production
+        - echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" >> .env.production
+        - echo "NEXT_PUBLIC_NEON_DB_CONNECTION_STRING=$NEXT_PUBLIC_NEON_DB_CONNECTION_STRING" >> .env.production
+        - echo "GROQ_API_KEY=$GROQ_API_KEY" >> .env.production
+        - echo "YOUTUBE_API_KEY=$YOUTUBE_API_KEY" >> .env.production
+        - echo "MY_AWS_REGION=$MY_AWS_REGION" >> .env.production
+        - echo "MY_AWS_ACCESS_KEY_ID=$MY_AWS_ACCESS_KEY_ID" >> .env.production
+        - echo "MY_AWS_SECRET_ACCESS_KEY=$MY_AWS_SECRET_ACCESS_KEY" >> .env.production
+        - echo "NEXT_PUBLIC_CLERK_SIGN_IN_URL=$NEXT_PUBLIC_CLERK_SIGN_IN_URL" >> .env.production
+        - echo "NEXT_PUBLIC_CLERK_SIGN_UP_URL=$NEXT_PUBLIC_CLERK_SIGN_UP_URL" >> .env.production
+        - echo "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=$NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL" >> .env.production
+        - echo "NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=$NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL" >> .env.production
+        # -----------------------------------
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

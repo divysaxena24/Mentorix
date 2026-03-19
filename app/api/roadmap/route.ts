@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
-import { db } from "@/configs/db";
-import { roadmapsTable } from "@/configs/schema";
+import { chatWithGroq } from "@/lib/ai/groq";
+import { MODELS } from "@/lib/ai/models";
+import { db } from "@/lib/db/db";
+import { roadmapsTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
+import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate limit check
+        const ip = getRequestIP(req);
+        const { limited, resetIn } = checkRateLimit(`roadmap:${ip}`, AI_RATE_LIMIT);
+        if (limited) {
+            return NextResponse.json(
+                { error: `Too many requests. Please try again in ${resetIn} seconds.` },
+                { status: 429 }
+            );
+        }
+
         const user = await currentUser();
         const userEmail = user?.primaryEmailAddress?.emailAddress;
 
@@ -20,30 +32,31 @@ export async function POST(req: NextRequest) {
         }
 
         const systemPrompt = `
-You are an expert Career Coach and Curriculum Designer. 
-Your task is to generate a highly structured, actionable, and personalized learning roadmap based on the user's goals.
+        You are an expert Career Strategist and Senior Curriculum Designer at a top university.
+        Create a detailed, non-linear learning roadmap that spans exactly the user's requested timeline.
+        
+        STRICT RULES:
+        - NO REPETITION CLAUSE: Every single week/milestone MUST have a distinct, unique, and evolving goal. Do not repeat "Review documentation" or generic placeholders.
+        - RESOURCE SPECIFICITY: Provide exact, hyper-specific resource names (e.g., "Read Eloquent JavaScript Chapter 4: Data Structures", "MDN Docs on CSS Grid Layout", or "Harvard CS50 Lecture on Memory"). 
+        - GROWTH TRAJECTORY: Ensure the complexity increases significantly every week. A 12-week roadmap should cover 12 weeks of UNIQUE content, not 3 weeks of content repeated 4 times.
+        - ACTIONABLE STEPS: Every "detailedStep" must be a concrete, builder-focused task.
 
-CRITICAL REQUIREMENT:
-The roadmap MUST strictly cover the entire duration specified in the TIMELINE provided by the user. 
-Do NOT shorten or truncate the plan. If the user asks for 12 months, provide milestones spanning 12 months.
-
-Output Format:
-You MUST respond with a valid JSON object ONLY. No conversational text.
-{
-  "title": "Roadmap Title",
-  "description": "Brief overview of the roadmap spanning the requested timeline.",
-  "milestones": [
-    {
-      "week": "Date Range (e.g. Week 1-2, Month 3, Year 1)",
-      "goal": "Milestone Goal",
-      "topics": ["Topic 1", "Topic 2"],
-      "resources": ["Resource suggestion 1", "Resource suggestion 2"],
-      "detailedSteps": ["Step 1: Focus on X", "Step 2: Practice Y", "Step 3: Build Z"]
-    }
-  ],
-  "tips": ["Tip 1", "Tip 2"]
-}
-`;
+        Output ONLY valid JSON:
+        {
+          "title": "Roadmap Title",
+          "description": "Concise 2-sentence overview",
+          "milestones": [
+            {
+              "week": "Date Range",
+              "goal": "Unique, Specific Milestone Goal",
+              "topics": ["Specific Technical Topic 1", "Specific Technical Topic 2"],
+              "resources": ["Hyper-specific Resource 1", "Hyper-specific Resource 2"],
+              "detailedSteps": ["Concrete Task 1", "Concrete Task 2"]
+            }
+          ],
+          "tips": ["Elite Career Tip 1", "Elite Career Tip 2"]
+        }
+        `;
 
         const userPrompt = `
 TARGET FIELD: ${targetField}
@@ -55,44 +68,39 @@ Generate a comprehensive roadmap for mastering ${targetField} that STRICTLY span
 Ensure the milestones are distributed logically across the whole period.
 `;
 
-        const response = await axios.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                response_format: { type: "json_object" }
-            },
-            {
-                headers: {
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        const responseData = await chatWithGroq([
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+        ], {
+            model: MODELS.PRIMARY,
+            response_format: { type: "json_object" },
+            max_tokens: 4096
+        });
 
-        const aiOutput = JSON.parse(response.data.choices[0].message.content);
+        if (!responseData?.choices?.[0]?.message?.content) {
+            throw new Error("Invalid response from AI provider");
+        }
+
+        const aiOutput = JSON.parse(responseData.choices[0].message.content);
 
         // Save to Database
-        await db.insert(roadmapsTable).values({
+        const inserted = await db.insert(roadmapsTable).values({
             userEmail: userEmail,
             targetField: targetField,
             roadmapData: JSON.stringify(aiOutput)
-        });
+        }).returning();
 
-        return NextResponse.json(aiOutput);
-
-    } catch (error: any) {
-        console.error("Roadmap Generation Error DETAILS:", {
-            message: error.message,
-            response: error.response?.data,
-            stack: error.stack
-        });
         return NextResponse.json({
-            error: error.message || "Failed to generate roadmap",
-            details: error.response?.data || error.message
+            ...aiOutput,
+            id: inserted[0].id
+        });
+
+    } catch (error: unknown) {
+        console.error("Roadmap Generation Error:", error);
+        const err = error as { message?: string; response?: { data?: any } };
+        return NextResponse.json({
+            error: err.message || "Failed to generate roadmap",
+            details: err.response?.data || err.message
         }, { status: 500 });
     }
 }

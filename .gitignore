@@ -43,3 +43,12 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# project debug & logs
+/debug/
+/logs/
+/scripts/tests/
+*.txt
+*.log
+/tmp/
+.temp/

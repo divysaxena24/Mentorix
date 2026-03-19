@@ -18,7 +18,7 @@ export default function Icon() {
             <div
                 style={{
                     fontSize: 22,
-                    background: 'linear-gradient(to bottom right, #2563eb, #9333ea)',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #a855f7 100%)',
                     width: '100%',
                     height: '100%',
                     display: 'flex',
@@ -26,11 +26,11 @@ export default function Icon() {
                     justifyContent: 'center',
                     color: 'white',
                     borderRadius: '25%',
-                    fontWeight: 'bold',
-                    fontFamily: 'sans-serif',
+                    fontWeight: 900,
+                    fontFamily: 'system-ui, sans-serif',
                 }}
             >
-                M
+                S
             </div>
         ),
         // ImageResponse options

@@ -10,19 +10,21 @@ import {
     Sparkles,
     Zap,
     Target,
-    ShieldCheck
+    ShieldCheck,
+    PenTool,
+    BookOpen
 } from "lucide-react"
 import Link from "next/link"
 
 const tools = [
     {
-        title: "Resume Analyzer",
-        description: "Get a professional ATS score and 2-3 pages of detailed, actionable feedback to land your dream job.",
+        title: "Job Readiness Analyzer",
+        description: "Get a comprehensive Job Readiness Score, missing skill gaps, and an AI-driven actionable roadmap.",
         icon: FileSearch,
         href: "/ai-tools/resume-analyzer",
         color: "from-blue-600 to-cyan-500",
-        tag: "Most Popular",
-        features: ["ATS Scoring", "Keyword Analysis", "Multi-page Report"]
+        tag: "Career Intelligence",
+        features: ["Score Breakdown", "Gap Analysis", "Actionable Plan"]
     },
     {
         title: "Roadmap Generator",
@@ -34,13 +36,13 @@ const tools = [
         features: ["Step-by-step Guides", "Resource Links", "Skill Tracking"]
     },
     {
-        title: "Cover Letter AI",
-        description: "Generate high-converting, professional cover letters that match your resume and job description perfectly.",
-        icon: FileText,
-        href: "/ai-tools/cover-letter",
-        color: "from-orange-600 to-amber-500",
+        title: "AI Writing Studio",
+        description: "Generate tailored, opportunity-winning documents (Cover Letters, SOPs, Proposals) powered by intelligent analysis.",
+        icon: PenTool,
+        href: "/ai-tools/writing-studio",
+        color: "from-blue-600 to-indigo-500",
         tag: "Job Ready",
-        features: ["Smart Matching", "Tone Selection", "Instant Export"]
+        features: ["Cover Letters & SOPs", "Tone Selection", "Document Vault"]
     },
     {
         title: "Career AI Chat",
@@ -49,7 +51,7 @@ const tools = [
         href: "/ai-tools/ai-chat",
         color: "from-emerald-600 to-teal-500",
         tag: "AI Coach",
-        features: ["Mock Interviews", "Salary Insights", "Real-time Advice"]
+        features: ["AI Mentorship", "Salary Insights", "Real-time Advice"]
     },
     {
         title: "Resume Builder",
@@ -59,6 +61,15 @@ const tools = [
         color: "from-rose-600 to-pink-500",
         tag: "New Feature",
         features: ["Premium Templates", "Multi-step Builder", "Instant PDF Export"]
+    },
+    {
+        title: "Course Generator",
+        description: "AI-powered educational courses with deep-dive lessons, video lectures, and interactive quizzes.",
+        icon: BookOpen,
+        href: "/ai-tools/course",
+        color: "from-indigo-600 to-violet-500",
+        tag: "Personalized",
+        features: ["Structured Lessons", "YouTube Integration", "AI Quizzes"]
     }
 ]
 

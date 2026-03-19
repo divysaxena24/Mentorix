@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { db } from "@/configs/db";
-import { sharedChatsTable, chatHistoryTable } from "@/configs/schema";
+import { db } from "@/lib/db/db";
+import { sharedChatsTable, chatHistoryTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {

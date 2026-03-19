@@ -1,96 +1,168 @@
-import axios from "axios";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+// Use pdf-parse-fork which is more stable in Next.js environments
+import pdf from "pdf-parse-fork";
+import { chatWithGroq } from "@/lib/ai/groq";
+import { MODELS } from "@/lib/ai/models";
+import { db } from "@/lib/db/db";
+import { currentUser } from "@clerk/nextjs/server";
+import { resumeAnalysisTable } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
+import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
-export async function POST(req: any) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const userInput = body.userInput;
+        // Rate limit check
+        const ip = getRequestIP(req);
+        const { limited, resetIn } = checkRateLimit(`chat:${ip}`, AI_RATE_LIMIT);
+        if (limited) {
+            return NextResponse.json(
+                { error: `Too many requests. Please try again in ${resetIn} seconds.` },
+                { status: 429 }
+            );
+        }
 
-        if (!userInput) {
-            return NextResponse.json({ error: "userInput is required" }, { status: 400 });
+        const clerkUser = await currentUser();
+        const userEmail = clerkUser?.primaryEmailAddress?.emailAddress;
+
+        const body = await req.json();
+        const { userInput, fileBase64, fileType, fileName, conversationHistory } = body;
+
+        if (!userInput && !fileBase64 && (!conversationHistory || conversationHistory.length === 0)) {
+            return NextResponse.json({ error: "Input or file is required" }, { status: 400 });
+        }
+
+        // Fetch User's Latest Analyzed Resume
+        let resumeContext = "";
+        if (userEmail) {
+            const [latestResume] = await db.select()
+                .from(resumeAnalysisTable)
+                .where(eq(resumeAnalysisTable.userEmail, userEmail))
+                .orderBy(desc(resumeAnalysisTable.createdAt))
+                .limit(1);
+
+            if (latestResume?.resumeText) {
+                resumeContext = `
+--- [USER'S PROFILE RESUME CONTEXT] ---
+The following is extracted from the user's latest analyzed resume. Use this to personalize your advice and mentorship.
+RESUME CONTENT:
+${latestResume.resumeText}
+---------------------------------------
+`;
+            }
         }
 
         const systemPrompt = `
-You are Mentorix AI, an expert career advisor designed to help students and early professionals plan and grow their careers in technology and related fields.
+        You are Mentorix, an elite Technical Recruiter and Career Strategist.
+        
+        TONE & BEHAVIOR:
+        - Professional, concise, and analytical.
+        - NO conversational filler (e.g., "I understand your point").
+        - NO long essays. Max 2 paragraphs per response.
+        - Use bolding for key action items.
 
-Your Responsibilities:
-- Provide accurate, practical, and actionable career guidance.
-- Help users choose career paths (Software Development, AI/ML, Data Science, Cybersecurity, Product, etc.).
-- Create step-by-step learning roadmaps.
-- Suggest projects based on skill level.
-- Help with resume improvement, internships, and job preparation.
-- Provide FAANG and startup preparation strategies.
-- Explain concepts clearly and simply when needed.
-- Encourage growth mindset and confidence.
+        INTERVIEW MODE:
+        - If the user is practicing, ask exactly ONE sharp technical or behavioral question at a time.
+        - Provide feedback only after the user responds.
+        - Feedback must be: "Strength: [X], Weakness: [Y], Advice: [Z]".
 
-Response Style:
-- Be clear, structured, and supportive.
-- Use bullet points when giving steps or plans.
-- Keep explanations beginner-friendly but technically correct.
-- Avoid overly generic advice.
-- If user context is missing, ask 1–2 clarifying questions.
+        ${resumeContext ? "CONTEXT: Use the provided resume data to ask EXPERIENCE-SPECIFIC questions. Do not ask entry-level questions to a senior candidate." : "If resume context is missing, provide broad but practical advice."}
+        `;
 
-Personalization Rules:
-- Adapt advice based on:
-  - Skill level (Beginner / Intermediate / Advanced)
-  - Career goal (Internship / Placement / Startup / Research)
-  - Domain (Web Dev / AI / Systems / etc.)
+        let activeModel = MODELS.FAST_REASONING;
+        let finalMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
+            { role: "system", content: systemPrompt }
+        ];
 
-Safety Rules:
-- Never give harmful, unethical, or illegal advice.
-- Never fabricate facts.
-- If unsure, say you are unsure and suggest how user can verify.
+        // Process File If Attached
+        let appendedText = "";
 
-Mentorix Personality:
-- Supportive like a mentor.
-- Practical like an industry engineer.
-- Strategic like a career coach.
-
-Response Structure:
-- Use Markdown to format your response.
-- Use ## for main sections and ### for subsections.
-- Use **bold** for emphasis and important terms.
-- Use bullet points (- ) or numbered lists (1. ) for steps, guides, or roadmaps.
-- Use tables for comparisons if needed.
-- Keep the tone professional, encouraging, and structured.
-
-Code Generation:
-- ALWAYS wrap code snippets in triple backticks with the correct language identifier (e.g., \`\`\`python, \`\`\`javascript).
-- Provide comments within the code to explain complex logic.
-- Ensure the code is production-ready and follows best practices.
-
-Strict Focus Rules: 
-- You ONLY answer questions related to TECHNOLOGY careers, technical education, tech skills (coding, AI, DevOps, etc.), technical job preparation (like coding/DA interviews), and professional growth within the tech industry.
-- If a user asks a question about a non-tech career (e.g., medical, law, finance with no tech angle) or any unrelated general knowledge question (e.g., "Who is the Prime Minister of India?"), you must politely decline and redirect them to technology-related career topics.
-- Example response for off-topic queries: "I'm here to help you with your growth in the technology field! I don't have information on that topic, but I'd be happy to discuss software engineering, AI, data science roadmaps, or other technical career paths."
-
-Always focus on helping the user move one step closer to their career goal.
-`;
-
-        const response = await axios.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userInput }
-                ],
-            },
-            {
-                headers: {
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
+        if (fileBase64 && fileType) {
+            if (fileType === "application/pdf") {
+                try {
+                    const buffer = Buffer.from(fileBase64, "base64");
+                    // Safety check for pdfParse
+                    const pdfParse = typeof pdf === 'function' ? pdf : (pdf as unknown as { default: any }).default || pdf;
+                    const data = await pdfParse(buffer);
+                    appendedText = `\n\n--- [Attached PDF Document: ${fileName || "Document.pdf"}] ---\n${data.text}\n---`;
+                } catch (pdfError: unknown) {
+                    console.error("PDF Parsing Error:", pdfError instanceof Error ? pdfError.message : "Unknown error");
+                    return NextResponse.json({ error: "Failed to parse PDF document. Please ensure it's not password protected." }, { status: 422 });
+                }
+            } else if (fileType.startsWith("text/")) {
+                const text = Buffer.from(fileBase64, "base64").toString("utf-8");
+                appendedText = `\n\n--- [Attached Text Document: ${fileName || "Document.txt"}] ---\n${text}\n---`;
+            } else {
+                return NextResponse.json({ error: "Unsupported file format. Please upload a PDF or TXT file." }, { status: 400 });
             }
-        );
+        }
 
-        const aiResponse = response.data.choices[0].message.content;
+        const userText = (userInput || "Please analyze the attached file.") + appendedText;
 
+        // Append past history to the finalMessages array before adding the latest message
+        // [TPM OPTIMIZATION]: Limit history to last 10 messages (approx 5 conversational rounds)
+        if (conversationHistory && Array.isArray(conversationHistory)) {
+            const historicalWindow = conversationHistory.slice(-10);
+
+            // Take all but the last message (which is the current user input handled below)
+            const priorMessages = historicalWindow.slice(0, -1).map((msg: { role: string; content: string | { type: string; text: string }[] }) => {
+                let textContent = "";
+                if (typeof msg.content === "string") {
+                    textContent = msg.content;
+                } else if (Array.isArray(msg.content)) {
+                    // Extract text parts from multi-modal content for history stability
+                    textContent = msg.content
+                        .map((part) => {
+                            if (typeof part === 'string') return part;
+                            if (part && typeof part === 'object' && 'text' in part) return part.text;
+                            return '';
+                        })
+                        .filter(Boolean)
+                        .join("\n");
+                } else {
+                    textContent = String(msg.content || "");
+                }
+
+                return {
+                    role: (msg.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
+                    content: textContent || " " // Ensure non-empty string
+                };
+            });
+            finalMessages.push(...priorMessages);
+        }
+
+        finalMessages.push({
+            role: "user",
+            content: userText
+        });
+
+        // Using robust Groq handler with built-in retries and model failover
+        const data = await chatWithGroq(finalMessages, {
+            model: activeModel,
+            temperature: 0.7,
+            max_tokens: 1024,
+        });
+
+        if (!data?.choices?.[0]?.message?.content) {
+            throw new Error("Invalid response structure from AI provider");
+        }
+
+        const aiResponse = data.choices[0].message.content;
         return NextResponse.json({ output: aiResponse });
-    } catch (error: any) {
-        console.error("AI Career Chat Error:", error.response?.data || error.message);
+
+    } catch (error: unknown) {
+        // chatWithGroq already logs errors, but we catch them for the HTTP response
+        const err = error as {
+            response?: {
+                status?: number;
+                data?: { error?: { message?: string } }
+            };
+            message?: string
+        };
+        const status = err.response?.status || 500;
+        const groqError = err.response?.data?.error?.message;
+
         return NextResponse.json({
-            error: error.response?.data?.error?.message || error.message || "Internal Server Error"
-        }, { status: 500 });
+            error: groqError || err.message || "Internal Server Error"
+        }, { status });
     }
 }

@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
-import { db } from "@/configs/db";
-import { coverLettersTable } from "@/configs/schema";
+import { chatWithGroq } from "@/lib/ai/groq";
+import { MODELS } from "@/lib/ai/models";
+import { db } from "@/lib/db/db";
+import { coverLettersTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
+import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate limit check
+        const ip = getRequestIP(req);
+        const { limited, resetIn } = checkRateLimit(`cover:${ip}`, AI_RATE_LIMIT);
+        if (limited) {
+            return NextResponse.json(
+                { error: `Too many requests. Please try again in ${resetIn} seconds.` },
+                { status: 429 }
+            );
+        }
+
         const user = await currentUser();
         const userEmail = user?.primaryEmailAddress?.emailAddress;
 
@@ -16,19 +28,23 @@ export async function POST(req: NextRequest) {
         }
 
         const systemPrompt = `
-You are an expert Career Coach and Professional Resume/Cover Letter Writer.
-Your task is to write a highly professional, compelling, and tailored cover letter based on the provided Job Description and User Details.
+        You are Mentorix, an elite Executive Career Consultant at an top-tier university.
+        Generate a premium, high-impact Cover Letter.
+        
+        FORMATTING RULES (MANDATORY):
+        - Use MARKDOWN strictly.
+        - **Bold** key technical skills, impact metrics (X%, $Y), and elite role titles.
+        - Use asterisk (*) for every single item inside lists.
+        - Structure using ### Triple-Hash Headers for main sections.
+        - Ensure sharp spacing by adding clear double-newlines between major sections.
 
-The cover letter should:
-1. Follow a standard business letter format.
-2. Be tailored specifically to the Job Description.
-3. Highlight the user's relevant skills and experiences.
-4. Maintain a professional, confident, and enthusiastic tone.
-5. Be concise (around 300-400 words).
-
-Output Format:
-Return only the text of the cover letter. Do not include any conversational filler or meta-commentary.
-`;
+        STRATEGY:
+        - Deeply integrate USER DETAILS with the provided JOB DESCRIPTION.
+        - Focus on quantifiable achievements.
+        - Tone: Professional & Persuasive.
+        
+        Output ONLY the document content in Markdown. No conversational filler or introductory remarks.
+        `;
 
         const userPrompt = `
 JOB DESCRIPTION:
@@ -40,25 +56,19 @@ ${userDetails}
 Write a professional cover letter based on these details.
 `;
 
-        const response = await axios.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                temperature: 0.7,
-            },
-            {
-                headers: {
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        const responseData = await chatWithGroq([
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+        ], {
+            model: MODELS.PRIMARY,
+            temperature: 0.7,
+        });
 
-        const coverLetter = response.data.choices[0].message.content;
+        if (!responseData?.choices?.[0]?.message?.content) {
+            throw new Error("Invalid response from AI provider");
+        }
+
+        const coverLetter = responseData.choices[0].message.content;
 
         // Save to Database if user is authenticated
         if (userEmail) {

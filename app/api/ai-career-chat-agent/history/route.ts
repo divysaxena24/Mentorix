@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { db } from "@/configs/db";
-import { chatHistoryTable } from "@/configs/schema";
+import { db } from "@/lib/db/db";
+import { chatHistoryTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
@@ -93,6 +93,12 @@ export async function DELETE(req: NextRequest) {
 
         if (!chatId) {
             return NextResponse.json({ error: "Chat ID is required" }, { status: 400 });
+        }
+
+        if (chatId === "all") {
+            await db.delete(chatHistoryTable)
+                .where(eq(chatHistoryTable.userEmail, email));
+            return NextResponse.json({ message: "All chat history deleted successfully" });
         }
 
         // Delete all messages for this chatId and user
