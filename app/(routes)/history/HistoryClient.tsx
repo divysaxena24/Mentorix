@@ -144,7 +144,7 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-                <TabsList className="bg-white/5 border border-white/10 p-1.5 rounded-2xl h-auto flex flex-wrap gap-1">
+                <TabsList className="bg-white/5 border border-white/10 p-1.5 rounded-2xl h-auto flex flex-nowrap overflow-x-auto gap-1 w-full justify-start md:justify-center scrollbar-hide">
                     {[
                         { id: "roadmaps", label: "Roadmaps", icon: Map },
                         { id: "chats", label: "AI Advisor", icon: MessageSquare },
@@ -156,7 +156,7 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
                         <TabsTrigger
                             key={tab.id}
                             value={tab.id}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-slate-400 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/5"
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-slate-400 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-white/5 whitespace-nowrap shrink-0"
                         >
                             <tab.icon className="w-4 h-4" />
                             {tab.label}
