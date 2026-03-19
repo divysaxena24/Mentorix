@@ -30,7 +30,7 @@ export default function LandingPage() {
                 <div className="px-12 h-24 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-all duration-300 group">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-[0_0_30px_rgba(37,99,235,0.4)] group-hover:rotate-3 transition-transform">
-                            S
+                            M
                         </div>
                         <h1 className="text-2xl font-black text-white tracking-tighter">
                             Mentorix
@@ -66,8 +66,8 @@ export default function LandingPage() {
             <main className="flex-1 pt-32 relative overflow-hidden">
                 <section className="px-6 pb-24 relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 min-h-[80vh]">
                     {/* Left Side: Copy & CTAs */}
-                    <div className="flex-1 text-left animate-fade-in-up">
-                        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-md">
+                    <div className="flex-1 text-center lg:text-left animate-fade-in-up flex flex-col items-center lg:items-start">
+                        <div className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-widest mb-8 backdrop-blur-md">
                             <Sparkles className="w-4 h-4" />
                             AI Career Navigation Platform
                         </div>
@@ -79,13 +79,13 @@ export default function LandingPage() {
                             </span>
                         </h2>
 
-                        <p className="text-lg text-slate-400 max-w-xl mb-10 leading-relaxed font-medium">
+                        <p className="text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed font-medium">
                             Get a measurable Job Readiness Score, optimize your resume, and apply smarter with AI-driven insights.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-start justify-start gap-4 mt-4">
+                        <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 mt-4 w-full sm:w-auto">
                             <SignedIn>
-                                <Link href="/dashboard">
+                                <Link href="/dashboard" className="w-full sm:w-auto">
                                     <button className="relative group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-sm font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] hover:-translate-y-1 flex items-center justify-center gap-3 w-full sm:w-auto">
                                         Go to Dashboard
                                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
