@@ -74,7 +74,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className="flex items-center justify-between px-6 border-b border-white/5 h-20">
                         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-all duration-300 group">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-[0_0_30px_rgba(37,99,235,0.4)] group-hover:scale-110 group-hover:rotate-3 transition-transform">
-                                S
+                                M
                             </div>
                             <h1 className="text-xl font-black text-white tracking-tighter">
                                 Mentorix

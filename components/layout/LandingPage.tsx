@@ -223,7 +223,7 @@ export default function LandingPage() {
             <footer className="border-t border-white/5 bg-slate-950/80 backdrop-blur-xl py-12">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-12 text-slate-500">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg">S</div>
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg">M</div>
                         <span className="font-black text-xl text-white tracking-tighter">Mentorix</span>
                     </div>
                     <p className="text-sm font-bold uppercase tracking-widest">© 2026 Mentorix. Built for Hackathon Excellence.</p>

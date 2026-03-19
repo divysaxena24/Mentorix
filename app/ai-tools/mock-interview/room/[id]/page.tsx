@@ -353,7 +353,7 @@ export default function InterviewRoomPage() {
             {/* Header */}
             <header className="relative z-10 flex items-center justify-between px-8 py-6 border-b border-white/5 bg-slate-950/50 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-xl">S</div>
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-xl">M</div>
                     <div>
                         <h1 className="text-lg font-black uppercase tracking-tight">{interview.topic} Mock Interview</h1>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{interview.difficulty} • {interview.duration}</p>

@@ -163,7 +163,7 @@ export default function SharedChatPage() {
             <footer className="bg-zinc-50 border-t border-zinc-100 py-12 text-center">
                 <div className="flex flex-col items-center gap-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-black text-xl">S</div>
+                        <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-black text-xl">M</div>
                         <span className="text-2xl font-black text-zinc-900 tracking-tighter">Mentorix</span>
                     </div>
                     <p className="text-zinc-400 text-sm font-bold uppercase tracking-[0.3em]">Your Smart Career Companion</p>
