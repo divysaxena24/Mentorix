@@ -1,4 +1,4 @@
-# 🚀 Mentorix: The AI Career Navigator
+# Mentorix: The AI Career Navigator
 
 **Mentorix** is a premium, AI-driven career orchestration platform designed to empower professionals with state-of-the-art tools for career growth, resume architecture, and personalized AI mentorship.
 
@@ -8,28 +8,28 @@
 
 ---
 
-## 📖 Documentation
+## Documentation
 Detailed project documentation is available in the following files:
 - [Requirements Specification](requirements.md) - Functional and Non-functional goals.
 - [Design Architecture](design.md) - Technical stack and UI/UX philosophy.
 
 ---
 
-## ✨ Features
+## Features
 
-### 🛠️ Neural Resume Architect
+### Neural Resume Architect
 - **Dynamic Workspace**: A high-performance, resizable three-pane editor powered by `react-resizable-panels`.
 - **Intelligent Mini-Sidebar**: Responsive navigation that collapses into a sleek icon-only strip at <10% width.
 - **Live Diagnostic Preview**: Real-time rendering of your resume as you build, with glassmorphism overlays.
 - **PDF Finalization**: High-fidelity PDF export with professional typography and layout.
 - **Writing Studio**: Specialized tools for Cover Letters, SOPs, and Motivation Letters.
 
-### 🤖 Intelligent AI Agents
+### Intelligent AI Agents
 - **AI Career Coach**: Specialized chat interface for career guidance using advanced LLM reasoning (Groq).
 - **Custom Agent Builder**: A visual workflow builder for creating specialized AI personas.
 - **Groq-Accelerated Reasoning**: Ultra-fast AI responses powered by Groq's LPU™ Inference Engine.
 
-### 📋 Precision Career Tools
+### Precision Career Tools
 - **Deep Resume Analyzer**: Upload PDF resumes for actionable neural insights and ATS optimization.
 - **Dynamic Roadmap Generator**: Algorithmic career path plotting based on personal goals and timelines.
 - **Premium Course Forge**: Generate full-length courses with projects and curated videos.
@@ -37,7 +37,7 @@ Detailed project documentation is available in the following files:
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -61,7 +61,7 @@ graph TD
 
 ---
 
-## 🔄 User Flow
+## User Flow
 
 ```mermaid
 graph TD
@@ -94,7 +94,7 @@ graph TD
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript)
 - **Styling**: Tailwind CSS, Framer Motion
@@ -106,7 +106,7 @@ graph TD
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -134,5 +134,5 @@ graph TD
 
 ---
 
-## 📄 License
+## License
 Licensed under the MIT License. See `LICENSE` for more information.
