@@ -61,6 +61,39 @@ graph TD
 
 ---
 
+## 🔄 User Flow
+
+```mermaid
+graph TD
+    Start((User Landing)) --> Auth{Authenticated?}
+    Auth -- No --> SignUp[Clerk Sign In/Up]
+    SignUp --> Dashboard[Main Dashboard]
+    Auth -- Yes --> Dashboard
+    
+    Dashboard --> Resume[Neural Resume Architect]
+    Resume --> R1[Build/Edit]
+    R1 --> R2[Live Preview]
+    R2 --> R3[PDF Export]
+    
+    Dashboard --> AI[AI Career Coach]
+    AI --> A1[Groq-Powered Chat]
+    A1 --> A2[Career Guidance]
+    
+    Dashboard --> Tools[Precision Career Tools]
+    Tools --> T1[Resume Analyzer]
+    Tools --> T2[Roadmap Generator]
+    Tools --> T3[Course Forge]
+    
+    T1 --> O1[ATS Score & Insights]
+    T2 --> O2[Personalized Career Path]
+    T3 --> O3[Skill-Gap Courses]
+    
+    R3 & A2 & O1 & O2 & O3 --> Archive[Neural Archive]
+    Archive --> End((Finalized Career Assets))
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript)
