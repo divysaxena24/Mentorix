@@ -6,7 +6,18 @@ import { z } from "zod";
  * instead of crashing with cryptic runtime errors.
  */
 const serverEnvSchema = z.object({
-    GROQ_API_KEY: z.string().min(1, "GROQ_API_KEY is required"),
+    // Groq API keys — support multiple naming formats (all optional; provider-manager handles discovery)
+    GROQ_API_KEY: z.string().optional(),
+    GROQ_API_KEY1: z.string().optional(),
+    GROQ_API_KEY2: z.string().optional(),
+    GROQ_API_KEY3: z.string().optional(),
+    GROQ_API_KEY4: z.string().optional(),
+    GROQ_API_KEY5: z.string().optional(),
+    GROQ_API_KEY_1: z.string().optional(),
+    GROQ_API_KEY_2: z.string().optional(),
+    GROQ_API_KEY_3: z.string().optional(),
+    GROQ_API_KEY_4: z.string().optional(),
+    GROQ_API_KEY_5: z.string().optional(),
     NEXT_PUBLIC_NEON_DB_CONNECTION_STRING: z.string().min(1, "Database connection string is required"),
     NEXT_PUBLIC_SUPABASE_URL: z.string().min(1, "Supabase URL is required"),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "Supabase service role key is required"),

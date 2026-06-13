@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const usersTable = pgTable("users", {
@@ -67,62 +67,6 @@ export const writingStudioDocsTable = pgTable("writing_studio_docs", {
     userDetails: text().notNull(), // Experience, achievements, summary
     generatedContent: text().notNull(), // The final output
     createdAt: timestamp().defaultNow().notNull(),
-});
-
-export const coursesTable = pgTable("courses", {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    userEmail: varchar({ length: 255 }).notNull(),
-    roadmapId: integer(),
-    milestoneId: integer(),
-    title: varchar({ length: 255 }).notNull(),
-    level: varchar({ length: 50 }), // Beginner, Intermediate, Advanced
-    duration: varchar({ length: 100 }), // e.g., "8 weeks"
-    goalType: varchar({ length: 100 }), // Interview Prep, Mastery, etc.
-    description: text(),
-    outcomes: text(), // JSON string
-    capstoneProject: text(),
-    estimatedHours: integer(),
-    generationStatus: varchar({ length: 50 }).default("pending"), // pending, generating, completed, failed
-    content: text().notNull(), // Compatibility for old structure
-    createdAt: timestamp().defaultNow().notNull(),
-});
-
-export const courseModulesTable = pgTable("course_modules", {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    courseId: integer().references(() => coursesTable.id, { onDelete: 'cascade' }),
-    title: varchar({ length: 255 }).notNull(),
-    description: text(),
-    order: integer().notNull(),
-    estimatedHours: integer(),
-});
-
-export const courseLessonsTable = pgTable("course_lessons", {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    moduleId: integer().references(() => courseModulesTable.id, { onDelete: 'cascade' }),
-    title: varchar({ length: 255 }).notNull(),
-    depthLevel: varchar({ length: 50 }),
-    explanation: text(), // 800+ words
-    realWorldExample: text(),
-    codeExample: text(),
-    commonMistakes: text(), // JSON string
-    exercise: text(),
-    interviewQuestions: text(), // JSON string
-    content: text().notNull(), // Compatibility for raw content
-    takeaways: text().notNull(), // Compatibility
-    summary: text(),
-    quiz: text(),
-    videoUrl: text(),
-    videoTitle: text(),
-    order: integer().notNull(),
-});
-
-export const courseProgressTable = pgTable("course_progress", {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    userEmail: varchar({ length: 255 }).notNull(),
-    lessonId: integer().references(() => courseLessonsTable.id, { onDelete: 'cascade' }),
-    completed: boolean().default(false).notNull(),
-    quizScore: integer(),
-    updatedAt: timestamp().defaultNow().notNull(),
 });
 
 // Mentorix Profile Tables
@@ -273,33 +217,6 @@ export const userAchievementsRelations = relations(userAchievementsTable, ({ one
     profile: one(userProfilesTable, {
         fields: [userAchievementsTable.userEmail],
         references: [userProfilesTable.userEmail],
-    }),
-}));
-
-export const coursesRelations = relations(coursesTable, ({ many }) => ({
-    modules: many(courseModulesTable),
-}));
-
-export const courseModulesRelations = relations(courseModulesTable, ({ one, many }) => ({
-    course: one(coursesTable, {
-        fields: [courseModulesTable.courseId],
-        references: [coursesTable.id],
-    }),
-    lessons: many(courseLessonsTable),
-}));
-
-export const courseLessonsRelations = relations(courseLessonsTable, ({ one, many }) => ({
-    module: one(courseModulesTable, {
-        fields: [courseLessonsTable.moduleId],
-        references: [courseModulesTable.id],
-    }),
-    progress: many(courseProgressTable),
-}));
-
-export const courseProgressRelations = relations(courseProgressTable, ({ one }) => ({
-    lesson: one(courseLessonsTable, {
-        fields: [courseProgressTable.lessonId],
-        references: [courseLessonsTable.id],
     }),
 }));
 

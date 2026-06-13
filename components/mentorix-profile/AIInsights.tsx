@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Lightbulb, Map, BookOpen, FileText, PenTool, ArrowUpRight, CheckCircle2, Sparkles, MessageCircle } from "lucide-react"
+import { BarChart3, Lightbulb, Map, FileText, PenTool, ArrowUpRight, CheckCircle2, Sparkles, MessageCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 
@@ -12,7 +12,6 @@ interface AIInsightsProps {
     } | null
     metrics: {
         roadmapsGenerated: number
-        coursesGenerated: number
         docsGenerated: number
         resumesAnalysed: number
         resumesBuilt: number
@@ -68,7 +67,6 @@ export default function AIInsights({ insights, metrics }: AIInsightsProps) {
                         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
                             {[
                                 { label: "Roadmaps", value: metrics.roadmapsGenerated, icon: Map, color: "text-blue-400" },
-                                { label: "Courses", value: metrics.coursesGenerated, icon: BookOpen, color: "text-purple-400" },
                                 { label: "AI Docs", value: metrics.docsGenerated, icon: PenTool, color: "text-green-400" },
                                 { label: "Analysed", value: metrics.resumesAnalysed, icon: FileText, color: "text-yellow-400" },
                                 { label: "Built", value: metrics.resumesBuilt, icon: FileText, color: "text-rose-400" },

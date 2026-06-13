@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import { groq } from "@/lib/ai/groq";
+import { transcribeWithGroqRotation } from "@/lib/ai/groq";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
@@ -34,15 +34,12 @@ export async function POST(req: Request) {
         fs.writeFileSync(tempFilePath, buffer);
 
         try {
-            const transcription = await groq.audio.transcriptions.create({
-                file: fs.createReadStream(tempFilePath),
+            const text = await transcribeWithGroqRotation(tempFilePath, {
                 model: "whisper-large-v3",
                 language: "en",
             });
 
-            return NextResponse.json({
-                text: transcription.text,
-            });
+            return NextResponse.json({ text });
 
         } catch (groqError: any) {
             console.error("[STT_GROQ_ERROR]", groqError.message || groqError);

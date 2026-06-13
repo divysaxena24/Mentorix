@@ -11,8 +11,7 @@ import {
     Zap,
     Target,
     ShieldCheck,
-    PenTool,
-    BookOpen
+    PenTool
 } from "lucide-react"
 import Link from "next/link"
 
@@ -62,15 +61,6 @@ const tools = [
         tag: "New Feature",
         features: ["Premium Templates", "Multi-step Builder", "Instant PDF Export"]
     },
-    {
-        title: "Course Generator",
-        description: "AI-powered educational courses with deep-dive lessons, video lectures, and interactive quizzes.",
-        icon: BookOpen,
-        href: "/ai-tools/course",
-        color: "from-indigo-600 to-violet-500",
-        tag: "Personalized",
-        features: ["Structured Lessons", "YouTube Integration", "AI Quizzes"]
-    }
 ]
 
 export default function AiToolsHub() {

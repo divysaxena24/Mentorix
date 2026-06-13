@@ -11,7 +11,6 @@ import {
     userExperienceTable,
     userAchievementsTable,
     roadmapsTable,
-    coursesTable,
     writingStudioDocsTable,
     resumeAnalysisTable,
     resumesTable,
@@ -364,8 +363,10 @@ export async function POST(req: NextRequest) {
 
     } catch (error: unknown) {
         console.error("Profile Extraction Error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        const err = error as { status?: number; error?: { message?: string }; message?: string };
+        const statusCode = err.status || 500;
+        const groqErrorMessage = err.error?.message || err.message;
+        return NextResponse.json({ error: groqErrorMessage || "Internal Server Error" }, { status: statusCode });
     }
 }
 

@@ -92,10 +92,12 @@ export async function POST(req: NextRequest) {
 
     } catch (error: unknown) {
         console.error("Writing Studio Error:", error);
-        const err = error as { message?: string; response?: { data?: any } };
+        const err = error as { status?: number; message?: string; error?: { message?: string } };
+        const statusCode = err.status || 500;
+        const groqErrorMessage = err.error?.message || err.message;
         return NextResponse.json({
-            error: err.message || "Failed to generate document",
-            details: err.response?.data || err.message
-        }, { status: 500 });
+            error: groqErrorMessage || "Failed to generate document",
+            details: err.message
+        }, { status: statusCode });
     }
 }

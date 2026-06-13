@@ -2,7 +2,6 @@ import { db } from "./db";
 import {
     userProfilesTable,
     roadmapsTable,
-    coursesTable,
     writingStudioDocsTable,
     resumeAnalysisTable,
     resumesTable,
@@ -66,14 +65,13 @@ export async function getFullUserProfile(userEmail: string) {
     // Platform Metrics
     const [
         roadmapsCount,
-        coursesCount,
         docsCount,
         resumesAnalysedCount,
         resumesBuiltCount,
         mentorshipChatsCount
     ] = await Promise.all([
         db.select({ value: count() }).from(roadmapsTable).where(eq(roadmapsTable.userEmail, userEmail)),
-        db.select({ value: count() }).from(coursesTable).where(eq(coursesTable.userEmail, userEmail)),
+
         db.select({ value: count() }).from(writingStudioDocsTable).where(eq(writingStudioDocsTable.userEmail, userEmail)),
         db.select({ value: count() }).from(resumeAnalysisTable).where(eq(resumeAnalysisTable.userEmail, userEmail)),
         db.select({ value: count() }).from(resumesTable).where(eq(resumesTable.userEmail, userEmail)),
@@ -125,7 +123,7 @@ export async function getFullUserProfile(userEmail: string) {
         resumeName: latestAnalysis?.resumeName || null,
         metrics: {
             roadmapsGenerated: roadmapsCount[0]?.value || 0,
-            coursesGenerated: coursesCount[0]?.value || 0,
+
             docsGenerated: docsCount[0]?.value || 0,
             resumesAnalysed: resumesAnalysedCount[0]?.value || 0,
             resumesBuilt: resumesBuiltCount[0]?.value || 0,

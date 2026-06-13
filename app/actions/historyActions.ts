@@ -6,8 +6,7 @@ import {
     chatHistoryTable,
     writingStudioDocsTable,
     resumeAnalysisTable,
-    resumesTable,
-    coursesTable
+    resumesTable
 } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
@@ -26,15 +25,13 @@ export async function getUserHistoryAction() {
             chats,
             writingDocs,
             resumesAnalysed,
-            resumesBuilt,
-            courses
+            resumesBuilt
         ] = await Promise.all([
             db.select().from(roadmapsTable).where(eq(roadmapsTable.userEmail, userEmail)).orderBy(desc(roadmapsTable.createdAt)),
             db.select().from(chatHistoryTable).where(eq(chatHistoryTable.userEmail, userEmail)).orderBy(desc(chatHistoryTable.createdAt)),
             db.select().from(writingStudioDocsTable).where(eq(writingStudioDocsTable.userEmail, userEmail)).orderBy(desc(writingStudioDocsTable.createdAt)),
             db.select().from(resumeAnalysisTable).where(eq(resumeAnalysisTable.userEmail, userEmail)).orderBy(desc(resumeAnalysisTable.createdAt)),
-            db.select().from(resumesTable).where(eq(resumesTable.userEmail, userEmail)).orderBy(desc(resumesTable.createdAt)),
-            db.select().from(coursesTable).where(eq(coursesTable.userEmail, userEmail)).orderBy(desc(coursesTable.createdAt))
+            db.select().from(resumesTable).where(eq(resumesTable.userEmail, userEmail)).orderBy(desc(resumesTable.createdAt))
         ]);
 
         return {
@@ -44,8 +41,7 @@ export async function getUserHistoryAction() {
                 chats,
                 writingDocs,
                 resumesAnalysed,
-                resumesBuilt,
-                courses
+                resumesBuilt
             }
         };
     } catch (error: unknown) {
@@ -54,7 +50,7 @@ export async function getUserHistoryAction() {
     }
 }
 
-export async function deleteHistoryItemAction(type: 'roadmap' | 'chat' | 'writing' | 'analysis' | 'resume' | 'course', id: number | string) {
+export async function deleteHistoryItemAction(type: 'roadmap' | 'chat' | 'writing' | 'analysis' | 'resume', id: number | string) {
     try {
         const user = await currentUser();
         if (!user || !user.primaryEmailAddress?.emailAddress) {
@@ -93,10 +89,6 @@ export async function deleteHistoryItemAction(type: 'roadmap' | 'chat' | 'writin
             case 'resume':
                 table = resumesTable;
                 idColumn = resumesTable.id;
-                break;
-            case 'course':
-                table = coursesTable;
-                idColumn = coursesTable.id;
                 break;
             default:
                 throw new Error("Invalid history type");

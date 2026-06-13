@@ -180,15 +180,19 @@ Platform: ${extractedData.platform}
         } catch (err: unknown) {
             console.error(err)
             const status = (err as any).response?.status;
-            let errorMessage = "Failed to analyze resume. Please try again.";
-
-            if (status === 429) {
-                errorMessage = "The AI is currently under high load (Too Many Requests). Please wait a few seconds and try again.";
-            } else if (status === 413) {
-                errorMessage = "The file or message is too large for the AI to process. Please try a smaller one.";
-            } else if ((err as any).response?.data?.error) {
-                errorMessage = (err as any).response.data.error;
-            }
+            let errorMessage = "Failed to analyze resume. Please try again.";                            if (status === 429) {
+                                errorMessage = "We're currently experiencing high demand. Please wait a moment and try again.";
+                            } else if (status === 413) {
+                                errorMessage = "The resume content is too large and is being optimized. Please try again.";
+                            } else if ((err as any).response?.data?.error) {
+                                const serverError = (err as any).response.data.error;
+                                // Filter out technical jargon for end users
+                                if (serverError.includes("TPM") || serverError.includes("token") || serverError.includes("413")) {
+                                    errorMessage = "We're analyzing your resume. The system is optimizing the analysis to handle the content.";
+                                } else {
+                                    errorMessage = serverError;
+                                }
+                            }
 
             setError(errorMessage)
         } finally {
@@ -222,7 +226,64 @@ Platform: ${extractedData.platform}
         const summaryLines = doc.splitTextToSize(result.summary, 170)
         doc.text(summaryLines, 20, 65)
 
-        let currentY = 65 + (summaryLines.length * 5) + 10
+        let currentY = 65 + (summaryLines.length * 5) + 8
+
+        // Enriched Executive Summary data
+        if (result.executiveSummary) {
+            const es = result.executiveSummary
+
+            // Hiring Impression
+            if (es.overallHiringImpression) {
+                doc.setFontSize(9)
+                doc.setTextColor(100, 100, 100)
+                doc.text("Hiring Impression", 20, currentY)
+                currentY += 5
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const impressionLines = doc.splitTextToSize(`"${es.overallHiringImpression}"`, 170)
+                doc.text(impressionLines, 20, currentY)
+                currentY += impressionLines.length * 5 + 4
+            }
+
+            // Top Strengths & Top Improvements side by side
+            if (es.top3Strengths.length > 0 || es.top3Improvements.length > 0) {
+                const strengthsText = es.top3Strengths.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join("\n")
+                const improvementsText = es.top3Improvements.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join("\n")
+                const strengthLines = strengthsText ? doc.splitTextToSize(strengthsText, 80) : []
+                const improvementLines = improvementsText ? doc.splitTextToSize(improvementsText, 80) : []
+                const maxLines = Math.max(strengthLines.length, improvementLines.length)
+
+                if (strengthsText) {
+                    doc.setFontSize(9)
+                    doc.setTextColor(22, 163, 74)
+                    doc.text("Top Strengths", 20, currentY)
+                }
+                if (improvementsText) {
+                    doc.setFontSize(9)
+                    doc.setTextColor(239, 68, 68)
+                    doc.text("Top Improvements", 108, currentY)
+                }
+                currentY += 5
+                doc.setFontSize(8)
+                doc.setTextColor(80, 80, 80)
+                if (strengthLines.length > 0) doc.text(strengthLines, 20, currentY)
+                if (improvementLines.length > 0) doc.text(improvementLines, 108, currentY)
+                currentY += Math.max(strengthLines.length || 0, improvementLines.length || 0) * 4 + 6
+            }
+
+            // Career Stage
+            if (es.careerStageAssessment) {
+                doc.setFontSize(9)
+                doc.setTextColor(59, 130, 246)
+                doc.text(`Career Stage: `, 20, currentY)
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                doc.text(es.careerStageAssessment, 55, currentY)
+                currentY += 6
+            }
+        }
+
+        currentY += 4
 
         doc.setFontSize(16)
         doc.setTextColor(0, 0, 0)
@@ -230,18 +291,20 @@ Platform: ${extractedData.platform}
         currentY += 10
         autoTable(doc, {
             startY: currentY,
-            head: [['Category', 'Score']],
+            head: [['Category', 'Score', 'Explanation']],
             body: [
-                ['Skills Match', `${result.scoreBreakdown.skills}%`],
-                ['Projects', `${result.scoreBreakdown.projects}%`],
-                ['Experience', `${result.scoreBreakdown.experience}%`],
-                ['ATS Optimization', `${result.scoreBreakdown.ats}%`],
-                ['Impact & Metrics', `${result.scoreBreakdown.impact}%`],
-                ['Industry Fit', `${result.scoreBreakdown.industryFit}%`],
+                ['Skills Match', `${result.scoreBreakdown.skills}%`, result.scoreExplanations?.technicalStrength || result.scoreExplanations?.skills || "—"],
+                ['Projects', `${result.scoreBreakdown.projects}%`, result.scoreExplanations?.projectQuality || result.scoreExplanations?.projects || "—"],
+                ['Experience', `${result.scoreBreakdown.experience}%`, result.scoreExplanations?.experience || "—"],
+                ['ATS Optimization', `${result.scoreBreakdown.ats}%`, result.scoreExplanations?.ats || "—"],
+                ['Impact & Metrics', `${result.scoreBreakdown.impact}%`, result.scoreExplanations?.impact || "—"],
+                ['Industry Fit', `${result.scoreBreakdown.industryFit}%`, result.scoreExplanations?.industryReadiness || result.scoreExplanations?.industryFit || "—"],
             ],
             theme: 'striped',
             headStyles: { fillColor: [0, 0, 0] },
-            margin: { left: 20, right: 20 }
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: 20, right: 20 },
+            columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 20 }, 2: { cellWidth: 115 } }
         })
         currentY = (doc as any).lastAutoTable.finalY + 15
 
@@ -336,6 +399,353 @@ Platform: ${extractedData.platform}
         doc.setTextColor(239, 68, 68)
         const keywordLines = doc.splitTextToSize(result.missingKeywords.join(", "), 170)
         doc.text(keywordLines, 20, currentY)
+        currentY += (keywordLines.length * 5) + 15
+
+        // ─── Helper: add a new page if insufficient space ─────
+        const ensureSpace = (needed: number) => {
+            if (currentY + needed > 260) {
+                doc.addPage()
+                currentY = 20
+            }
+        }
+
+        // ─── 3. SKILLS ANALYSIS ────────────────────────────────
+        if (result.skillsAnalysis) {
+            ensureSpace(50)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Skills Analysis", 20, currentY)
+            currentY += 12
+
+            // Strong areas
+            if (result.skillsAnalysis.strongAreas.length > 0) {
+                doc.setFontSize(10)
+                doc.setTextColor(22, 163, 74)
+                doc.text("Strong Skills", 20, currentY)
+                currentY += 6
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const strongText = result.skillsAnalysis.strongAreas.slice(0, 12).join(", ")
+                const strongLines = doc.splitTextToSize(strongText, 170)
+                doc.text(strongLines, 20, currentY)
+                currentY += strongLines.length * 5 + 6
+            }
+
+            // Missing areas
+            if (result.skillsAnalysis.missingAreas.length > 0) {
+                doc.setFontSize(10)
+                doc.setTextColor(234, 179, 8)
+                doc.text("Missing Skills", 20, currentY)
+                currentY += 6
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const missingText = result.skillsAnalysis.missingAreas.slice(0, 12).join(", ")
+                const missingLines = doc.splitTextToSize(missingText, 170)
+                doc.text(missingLines, 20, currentY)
+                currentY += missingLines.length * 5 + 6
+            }
+
+            // Learning recommendations
+            if (result.skillsAnalysis.learningRecommendations.length > 0) {
+                ensureSpace(30)
+                doc.setFontSize(10)
+                doc.setTextColor(59, 130, 246)
+                doc.text("Skill Gap Summary", 20, currentY)
+                currentY += 6
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const recLines = result.skillsAnalysis.learningRecommendations.slice(0, 4).map((r, i) => `• ${r}`)
+                const recText = recLines.join("\n")
+                const recSplit = doc.splitTextToSize(recText, 170)
+                doc.text(recSplit, 20, currentY)
+                currentY += recSplit.length * 5 + 10
+            }
+        }
+
+        // ─── 4. COMPLETE PROJECT ANALYSIS ──────────────────────
+        if (result.projectAnalysis && result.projectAnalysis.length > 0) {
+            ensureSpace(30)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Complete Project Analysis", 20, currentY)
+            currentY += 10
+
+            for (const proj of result.projectAnalysis) {
+                ensureSpace(50)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[`${proj.projectName}  —  Role Relevance: ${proj.industryRelevance}%  |  Resume Value: ${proj.resumeValue}%`]],
+                    body: [
+                        ['Technologies', (proj.technologyStack || []).slice(0, 8).join(", ")],
+                        ['Key Strength', proj.strengths?.[0] || "—"],
+                        ['Key Improvement', proj.weaknesses?.[0] || "—"],
+                        ['Recruiter Impression', proj.recruiterImpression || "—"],
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [139, 92, 246] },
+                    styles: { fontSize: 9, cellPadding: 4 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 10
+            }
+        }
+
+        // ─── 5. PROJECT SUMMARY ────────────────────────────────
+        if (result.projectComparison) {
+            ensureSpace(40)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Project Summary", 20, currentY)
+            currentY += 10
+
+            // Ranking table
+            if (result.projectComparison.rankingTable && result.projectComparison.rankingTable.length > 0) {
+                const sorted = [...result.projectComparison.rankingTable].sort((a, b) => a.overallRank - b.overallRank)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [['#', 'Project', 'Tech Depth', 'Scalability', 'Innovation', 'Industry']],
+                    body: sorted.map((r, i) => [
+                        `#${r.overallRank}`,
+                        r.project,
+                        `${r.technicalDepth}/10`,
+                        `${r.scalability}/10`,
+                        `${r.innovation}/10`,
+                        `${r.industryRelevance}/10`,
+                    ]),
+                    theme: 'striped',
+                    headStyles: { fillColor: [139, 92, 246] },
+                    styles: { fontSize: 9, cellPadding: 4 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 8
+            }
+
+            // Key project stats
+            const projectStats: { label: string; value: string | undefined }[] = [
+                { label: "Best Project", value: result.projectComparison.strongestProject },
+                { label: "Highlight First", value: result.projectComparison.projectThatShouldAppearFirst },
+                { label: "Needs Improvement", value: result.projectComparison.projectThatShouldBeImproved },
+            ]
+            const validStats = projectStats.filter(s => s.value)
+            if (validStats.length > 0) {
+                ensureSpace(20)
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const statsText = validStats.map(s => `${s.label}: ${s.value}`).join("  |  ")
+                const statsLines = doc.splitTextToSize(statsText, 170)
+                doc.text(statsLines, 20, currentY)
+                currentY += statsLines.length * 5 + 10
+            }
+        }
+
+        // ─── 6. COMPLETE EXPERIENCE ANALYSIS ───────────────────
+        if (result.experienceAnalysis && result.experienceAnalysis.length > 0) {
+            ensureSpace(30)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Complete Experience Analysis", 20, currentY)
+            currentY += 10
+
+            for (const exp of result.experienceAnalysis) {
+                ensureSpace(45)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[`${exp.role} @ ${exp.organization}  —  Role Relevance: ${exp.technicalDepth}%`]],
+                    body: [
+                        ['Key Strength', exp.strengths?.[0] || "—"],
+                        ['Improvement Area', exp.weaknesses?.[0] || "—"],
+                        ['Recruiter Impression', exp.recruiterImpression || "—"],
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [6, 182, 212] },
+                    styles: { fontSize: 9, cellPadding: 4 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 8
+            }
+        }
+
+        // ─── 7. EXPERIENCE SUMMARY ─────────────────────────────
+        if (result.experienceComparison) {
+            ensureSpace(25)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Experience Summary", 20, currentY)
+            currentY += 10
+
+            const expStats: { label: string; value: string | undefined }[] = [
+                { label: "Most Relevant", value: result.experienceComparison.mostValuableExperience },
+                { label: "Strongest", value: result.experienceComparison.mostTechnicalExperience },
+                { label: "Needs Rewrite", value: result.experienceComparison.experienceNeedingRewrite },
+            ]
+            const validExpStats = expStats.filter(s => s.value)
+            if (validExpStats.length > 0) {
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const expStatsText = validExpStats.map(s => `${s.label}: ${s.value}`).join("  |  ")
+                const expStatsLines = doc.splitTextToSize(expStatsText, 170)
+                doc.text(expStatsLines, 20, currentY)
+                currentY += expStatsLines.length * 5 + 10
+            }
+        }
+
+        // ─── 8. ATS KEYWORD ANALYSIS ───────────────────────────
+        if (result.atsKeywordAnalysis) {
+            ensureSpace(40)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("ATS Keyword Analysis", 20, currentY)
+            currentY += 10
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [['Category', 'Details']],
+                body: [
+                    ['Matched Keywords', result.atsKeywordAnalysis.matchedKeywords.slice(0, 15).join(", ") || "None"],
+                    ['Missing Keywords', result.atsKeywordAnalysis.missingKeywords.slice(0, 15).join(", ") || "None"],
+                    ['Critical Missing', result.atsKeywordAnalysis.mostImportantMissingKeywords.join(", ") || "None"],
+                    ['Keyword Match', `${result.atsKeywordAnalysis.keywordMatchPercentage}%`],
+                    ['Impact Summary', result.atsKeywordAnalysis.impactOfMissingKeywords || "—"],
+                ],
+                theme: 'grid',
+                headStyles: { fillColor: [100, 100, 100] },
+                styles: { fontSize: 9, cellPadding: 4 },
+                margin: { left: 20, right: 20 }
+            })
+            currentY = (doc as any).lastAutoTable.finalY + 10
+        }
+
+        // ─── 9. TARGET COMPANY READINESS ────────────────────────
+        if (result.faangReadiness) {
+            ensureSpace(30)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Target Company Readiness", 20, currentY)
+            currentY += 10
+
+            for (const [company, data] of Object.entries(result.faangReadiness)) {
+                const cData = data as { readiness: number; strengths: string[]; missingSkills: string[]; expectedImprovementIfFixed: string }
+                ensureSpace(40)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[`${company.charAt(0).toUpperCase() + company.slice(1)}  —  Readiness: ${cData.readiness}%`]],
+                    body: [
+                        ['Strengths', (cData.strengths || []).slice(0, 3).join(", ") || "—"],
+                        ['Missing Skills', (cData.missingSkills || []).slice(0, 5).join(", ") || "—"],
+                        ['Next Step', cData.expectedImprovementIfFixed || "—"],
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [249, 115, 22] },
+                    styles: { fontSize: 9, cellPadding: 4 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 8
+            }
+        }
+
+        // ─── 10. INTERVIEW READINESS ───────────────────────────
+        if (result.interviewReadiness) {
+            ensureSpace(30)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Interview Readiness", 20, currentY)
+            currentY += 10
+
+            const interviewCategories: { key: keyof typeof result.interviewReadiness; label: string }[] = [
+                { key: "dsa", label: "DSA" },
+                { key: "frontend", label: "Frontend" },
+                { key: "backend", label: "Backend" },
+                { key: "systemDesign", label: "System Design" },
+                { key: "fullStack", label: "Full Stack" },
+                { key: "behavioral", label: "Behavioral" },
+            ]
+
+            for (const cat of interviewCategories) {
+                const data = result.interviewReadiness[cat.key]
+                if (!data) continue
+                ensureSpace(30)
+                doc.setFontSize(11)
+                doc.setTextColor(0, 0, 0)
+                doc.text(`${cat.label} — ${data.readiness}%`, 20, currentY)
+                currentY += 6
+                doc.setFontSize(8)
+                doc.setTextColor(80, 80, 80)
+                const recs = data.recommendations || []
+                if (recs.length > 0) {
+                    const recText = recs.slice(0, 3).map((r, i) => `  ${i === 0 ? "✓" : "!"} ${r}`).join("\n")
+                    const recLines = doc.splitTextToSize(recText, 170)
+                    doc.text(recLines, 20, currentY)
+                    currentY += recLines.length * 4 + 4
+                }
+            }
+            currentY += 4
+        }
+
+        // ─── 11. RECRUITER RECOMMENDATION ──────────────────────
+        ensureSpace(50)
+        doc.setFontSize(16)
+        doc.setTextColor(0, 0, 0)
+        doc.text("Recruiter Recommendation", 20, currentY)
+        currentY += 10
+
+        // Build recommended roles from strong skill areas
+        const skillToRole: Record<string, string> = {
+            "AI/ML": "AI/ML Engineer",
+            "Machine Learning": "ML Engineer",
+            "Data Science": "Data Scientist",
+            "Backend": "Backend Engineer",
+            "Frontend": "Frontend Engineer",
+            "Full Stack": "Full Stack Engineer",
+            "DevOps": "DevOps Engineer",
+            "Cloud": "Cloud Engineer",
+            "System Design": "Software Engineer",
+            "Distributed Systems": "Software Engineer",
+            "Cybersecurity": "Security Engineer",
+            "Research Skills": "Research Engineer",
+            "Programming Languages": "Software Engineer",
+        }
+        const recommendedRoles: string[] = []
+        const addedRoles = new Set<string>()
+        if (result.skillsAnalysis?.strongAreas) {
+            for (const area of result.skillsAnalysis.strongAreas) {
+                const role = skillToRole[area]
+                if (role && !addedRoles.has(role)) {
+                    recommendedRoles.push(role)
+                    addedRoles.add(role)
+                }
+            }
+        }
+        if (recommendedRoles.length === 0) {
+            recommendedRoles.push("Software Engineer", "AI Engineer", "Data Scientist")
+        }
+
+        const topRole = result.executiveSummary?.careerStageAssessment || "Not specified"
+        const hiringImpression = result.executiveSummary?.overallHiringImpression || result.summary
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Category', 'Details']],
+            body: [
+                ['Recommended Roles', recommendedRoles.slice(0, 5).join(", ")],
+                ['Career Stage', topRole],
+                ['Growth Potential', result.portfolioIntelligence?.careerGrowthPotentialScore
+                    ? `${result.portfolioIntelligence.careerGrowthPotentialScore}/100 — High potential for rapid career advancement`
+                    : "High — based on project diversity and technical depth"],
+                ['Best Hiring Environment', (() => {
+                    const scores: string[] = []
+                    if (result.portfolioIntelligence?.startupReadinessScore && result.portfolioIntelligence.startupReadinessScore > 60) scores.push("Startups")
+                    if (result.portfolioIntelligence?.faangPotentialScore && result.portfolioIntelligence.faangPotentialScore > 60) scores.push("FAANG / Big Tech")
+                    if (result.portfolioIntelligence?.enterpriseReadinessScore && result.portfolioIntelligence.enterpriseReadinessScore > 60) scores.push("Enterprise / Product-Based")
+                    return scores.length > 0 ? scores.join(", ") : "Startups, AI Companies, Product-Based Companies"
+                })()],
+                ['Hiring Impression', hiringImpression],
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [0, 0, 0] },
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: 20, right: 20 }
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 15
 
         const pageCount = (doc as any).internal.getNumberOfPages()
         for (let i = 1; i <= pageCount; i++) {
@@ -726,7 +1136,7 @@ Platform: ${extractedData.platform}
                                 {loading || isExtracting ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>{isExtracting ? "Extracting Job Data..." : "Analyzing Profile..."}</span>
+                                        <span>{isExtracting ? "Extracting job details..." : "We\'re analyzing your resume. This may take a few moments."}</span>
                                     </>
                                 ) : (
                                     <>

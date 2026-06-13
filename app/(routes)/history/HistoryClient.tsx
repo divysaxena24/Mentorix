@@ -31,7 +31,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { RoadmapItem, ChatItem, ResumeAnalysisItem, UserCourse, WritingDoc, ResumeItem } from "@/types"
+import { RoadmapItem, ChatItem, ResumeAnalysisItem, WritingDoc, ResumeItem } from "@/types"
 
 interface HistoryClientProps {
     initialData: {
@@ -40,7 +40,6 @@ interface HistoryClientProps {
         writingDocs: WritingDoc[];
         resumesAnalysed: ResumeAnalysisItem[];
         resumesBuilt: ResumeItem[];
-        courses: UserCourse[];
     }
 }
 
@@ -53,7 +52,6 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
     const [writingStudioDocs, setWritingStudioDocs] = useState<WritingDoc[]>(initialData.writingDocs)
     const [resumes, setResumes] = useState<ResumeAnalysisItem[]>(initialData.resumesAnalysed)
     const [savedResumes, setSavedResumes] = useState<ResumeItem[]>(initialData.resumesBuilt)
-    const [courses, setCourses] = useState<UserCourse[]>(initialData.courses)
     const [searchQuery, setSearchQuery] = useState("")
 
     const handleDeleteRoadmap = async (id: number) => {
@@ -106,16 +104,6 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
         }
     }
 
-    const handleDeleteCourse = async (id: number) => {
-        try {
-            await axios.delete(`/api/course?id=${id}`)
-            toast.success("Course deleted successfully")
-            setCourses(courses.filter(item => item.id !== id))
-        } catch (err) {
-            toast.error("Failed to delete course")
-        }
-    }
-
     const filterBySearch = (items: any[]): any[] => {
         if (!searchQuery) return items
         return items.filter(item => {
@@ -148,7 +136,6 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
                     {[
                         { id: "roadmaps", label: "Roadmaps", icon: Map },
                         { id: "chats", label: "AI Advisor", icon: MessageSquare },
-                        { id: "courses", label: "Courses", icon: BookOpen },
                         { id: "resumes", label: "Analysis", icon: FileText },
                         { id: "saved_resumes", label: "Built Resumes", icon: Briefcase },
                         { id: "writing_studio", label: "Writing Studio", icon: FileText },
@@ -214,34 +201,6 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
                                     title="No Chats Found"
                                     description={searchQuery ? "No results match your search." : "Start a new conversation with Mentorix to get career advice."}
                                     action={searchQuery ? undefined : { label: "Start Chatting", href: "/ai-tools/ai-chat" }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </TabsContent>
-
-                {/* Courses */}
-                <TabsContent value="courses" className="space-y-4 focus-visible:outline-none focus-visible:ring-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filterBySearch(courses).map((item) => (
-                            <HistoryCard
-                                key={item.id}
-                                icon={<BookOpen className="w-5 h-5 text-emerald-400" />}
-                                title={item.title}
-                                date={new Date(item.createdAt).toLocaleDateString()}
-                                href={`/ai-tools/course?id=${item.id}`}
-                                onDelete={() => handleDeleteCourse(item.id)}
-                                deleteTitle="Delete Course"
-                                deleteDescription="This will permanently delete this generated course."
-                            />
-                        ))}
-                        {filterBySearch(courses).length === 0 && (
-                            <div className="col-span-full">
-                                <EmptyState
-                                    icon={<BookOpen className="w-12 h-12 text-slate-700" />}
-                                    title="No Courses Found"
-                                    description={searchQuery ? "No results match your search." : "Build your first AI course from a roadmap."}
-                                    action={searchQuery ? undefined : { label: "Go to Roadmaps", href: "/ai-tools/roadmap" }}
                                 />
                             </div>
                         )}

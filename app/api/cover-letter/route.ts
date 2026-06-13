@@ -84,8 +84,10 @@ Write a professional cover letter based on these details.
 
     } catch (error: any) {
         console.error("Cover Letter Generation Error:", error.response?.data || error.message);
+        const statusCode = error.status || 500;
+        const groqErrorMessage = error.error?.message || error.message;
         return NextResponse.json({
-            error: error.message || "Failed to generate cover letter",
-        }, { status: 500 });
+            error: groqErrorMessage || "Failed to generate cover letter",
+        }, { status: statusCode });
     }
 }
