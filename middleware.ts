@@ -16,6 +16,7 @@ export default clerkMiddleware(async (auth, request) => {
     }
 });
 
+
 export const config = {
     matcher: [
         // Skip Next.js internals and all static files

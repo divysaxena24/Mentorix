@@ -8,8 +8,17 @@ import { resumeAnalysisTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
 import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
 import { parseResume, serializeResume } from "@/lib/ai/resume-parser";
-import { logTokenDiagnostics, estimatePromptTokens } from "@/lib/ai/token-counter";
-import { autoCompress, compressJobDescription } from "@/lib/ai/prompt-compressor";
+import {
+  logTokenBreakdown,
+  estimateTokens,
+  SAFE_LIMIT,
+  HARD_LIMIT,
+} from "@/lib/ai/token-counter";
+import {
+  autoCompress,
+  compressJobDescription,
+  compressSystemPrompt,
+} from "@/lib/ai/prompt-compressor";
 
 /**
  * Robustly extract and parse JSON from an AI response that may include
@@ -142,7 +151,183 @@ function rescaleScores(output: any): void {
   }
 }
 
-// Forced Refresh: 2026-02-09T06:05:00Z
+// ─── Helper: Send a single analysis request to Groq ─────────────────────
+
+async function sendAnalysisRequest(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+  provider: string,
+  model: string
+): Promise<any> {
+  const aiResponse = await generateAIResponse({
+    systemPrompt,
+    userPrompt,
+    temperature: 0.3,
+    maxTokens,
+    model,
+    feature: "resume-analyzer",
+  });
+
+  let aiOutput;
+  try {
+    aiOutput = extractJson(aiResponse.content);
+    rescaleScores(aiOutput);
+  } catch (parseErr) {
+    console.error("Failed to parse AI response as JSON", { rawContent: aiResponse.content, parseErr });
+    throw new Error("Invalid AI response format: " + String(parseErr));
+  }
+
+  return aiOutput;
+}
+
+// ─── Helper: Save results to database ────────────────────────────────────
+
+async function saveToDatabase(
+  userEmail: string,
+  resumeText: string,
+  resumeName: string,
+  jobDescription: string,
+  fieldOfInterest: string,
+  targetRole: string,
+  aiOutput: any
+): Promise<void> {
+  // Truncate job description for display title to avoid overflow in history cards
+  let displayTitle = jobDescription.trim();
+  if (displayTitle) {
+    // Use first 80 chars as display title, or extract role name
+    const firstLine = displayTitle.split("\n")[0].trim();
+    displayTitle = firstLine.length > 80 ? firstLine.substring(0, 77) + "..." : firstLine;
+  } else if (fieldOfInterest || targetRole) {
+    displayTitle = `${fieldOfInterest}${fieldOfInterest && targetRole ? " - " : ""}${targetRole}`.trim();
+  } else {
+    displayTitle = "Job Readiness Baseline";
+  }
+
+  await db.insert(resumeAnalysisTable).values({
+    userEmail,
+    resumeText,
+    resumeName,
+    jobDescription: displayTitle,
+    analysisData: JSON.stringify(aiOutput),
+  });
+}
+
+// ─── Helper: Split analysis into multiple calls ─────────────────────────
+
+/**
+ * When a single request would exceed the hard token limit, split the
+ * work into separate targeted calls and merge the results.
+ *
+ * Call 1: Core analysis (score, summary, skills, projects, experience, gaps)
+ * Call 2: Advanced analysis (company readiness, interview readiness, growth plan)
+ */
+async function runSplitAnalysis(
+  systemPrompt: string,
+  parsedResume: any,
+  structuredResume: string,
+  jobDescription: string,
+  fieldOfInterest: string,
+  targetRole: string,
+  mode: string,
+  provider: string,
+  model: string,
+  maxOutputTokens: number
+): Promise<any> {
+  console.log("[AI] Running split analysis — Call 1: Core + Call 2: Advanced");
+
+  // ── Call 1: Core Analysis ──
+  const corePrompt = `You are a Career Intelligence Analyst. Analyze this resume and return a JSON with the core fields only.
+
+${mode === "strict_jd" ? `TARGET JD: ${compressJobDescription(jobDescription, 200)}` : ""}
+${mode === "career_intent" ? `CAREER INTENT: ${fieldOfInterest} / ${targetRole}` : ""}
+
+RESUME:\n${structuredResume.substring(0, 6000)}
+
+Return ONLY valid JSON with these fields:
+{
+  "score": 0-100,
+  "summary": "concise summary",
+  "scoreBreakdown": { "skills":0, "projects":0, "experience":0, "ats":0, "impact":0, "industryFit":0 },
+  "strengths":[],
+  "criticalGaps":[],
+  "improvementPoints":[],
+  "missingKeywords":[],
+  "sectionwiseAnalysis":{ "education":"", "experience":"", "projects":"", "skills":"" },
+  "improvementPlan":{ "additionalSkills":[], "newProjectIdeas":[], "projectEnhancements":[] },
+  "executiveSummary":{ "professionalOverview":"", "careerStageAssessment":"", "top3Strengths":[], "top3Improvements":[], "overallHiringImpression":"" },
+  "extendedScores":{ "overallResume":0, "ats":0, "technicalStrength":0, "projectQuality":0, "experience":0, "industryReadiness":0, "communication":0, "leadership":0 },
+  "scoreExplanations":{},
+  "atsKeywordAnalysis":{ "matchedKeywords":[], "missingKeywords":[], "keywordMatchPercentage":0, "mostImportantMissingKeywords":[], "impactOfMissingKeywords":"" },
+  "skillsAnalysis":{ "strongAreas":[], "missingAreas":[], "learningRecommendations":[] },
+  "projectAnalysis":[],
+  "experienceAnalysis":[]
+}`;
+
+  let coreResult: any = {};
+  try {
+    coreResult = await sendAnalysisRequest(
+      "",
+      corePrompt,
+      maxOutputTokens,
+      provider,
+      model
+    );
+  } catch (err) {
+    console.error("[AI] Core analysis call failed:", err);
+    coreResult = {
+      score: 0,
+      summary: "Analysis encountered an issue. Please try again.",
+      scoreBreakdown: { skills: 0, projects: 0, experience: 0, ats: 0, impact: 0, industryFit: 0 },
+      strengths: [],
+      criticalGaps: [],
+      improvementPoints: [],
+      missingKeywords: [],
+      sectionwiseAnalysis: { education: "", experience: "", projects: "", skills: "" },
+    };
+  }
+
+  // ── Call 2: Advanced Analysis ──
+  const advancedPrompt = `You are a Career Intelligence Analyst. Based on this resume, provide advanced analysis.
+
+RESUME:\n${structuredResume.substring(0, 4000)}
+
+Return ONLY valid JSON with these fields:
+{
+  "projectAnalysis":[{ "projectName":"", "technologyStack":[], "domain":"", "complexity":"", "industryRelevance":0, "resumeValue":0, "strengths":[], "weaknesses":[], "recruiterImpression":"" }],
+  "projectComparison":{ "strongestProject":"", "projectThatShouldAppearFirst":"", "projectThatShouldBeImproved":"" },
+  "experienceAnalysis":[{ "role":"", "organization":"", "duration":"", "technicalDepth":0, "strengths":[], "weaknesses":[], "recruiterImpression":"" }],
+  "experienceComparison":{ "mostValuableExperience":"", "mostTechnicalExperience":"", "experienceNeedingRewrite":"" },
+  "faangReadiness":{},
+  "interviewReadiness":{},
+  "portfolioIntelligence":{},
+  "marketBenchmarking":{},
+  "growthPlan":{},
+  "prioritySkills":{},
+  "roleSpecificRoadmap":{ "shortTerm":[], "midTerm":[], "longTerm":[], "expectedTimeline":"" }
+}`;
+
+  let advancedResult: any = {};
+  try {
+    advancedResult = await sendAnalysisRequest(
+      "",
+      advancedPrompt,
+      maxOutputTokens,
+      provider,
+      model
+    );
+  } catch (err) {
+    console.error("[AI] Advanced analysis call failed:", err);
+  }
+
+  // ── Merge results ──
+  return {
+    ...coreResult,
+    ...advancedResult,
+  };
+}
+
+// Forced Refresh: 2026-06-14T00:00:00Z
 export async function POST(req: NextRequest) {
   try {
     // Rate limit check
@@ -376,28 +561,54 @@ OUTPUT JSON SCHEMA
     const parsedResume = parseResume(resumeText);
     const structuredResume = serializeResume(parsedResume);
 
-    // ── PHASE 3/4: Estimate tokens & auto-compress ──
+    // ── Constants ──
     const providerToUse = "groq";
     const modelToUse = MODELS.GROQ_PRIMARY;
+    const MAX_OUTPUT_TOKENS = 2000;
 
-    // Build user prompt with structured data
-    let userPrompt = `
-${mode === "strict_jd" ? `TARGET JOB DESCRIPTION:\n${jobDescription}` : ""}
-${mode === "career_intent" ? `CAREER INTENT:\nField: ${fieldOfInterest}\nTarget: ${targetRole}` : ""}
-${mode === "general" ? "MODE: General Job Readiness Benchmarking" : ""}
+    // ── Build user prompt ──
+    const buildPrompt = (resumeData: string, jd: string): string => {
+      let parts: string[] = [];
+      if (mode === "strict_jd" && jd) {
+        parts.push(`TARGET JOB DESCRIPTION:\n${jd}`);
+      }
+      if (mode === "career_intent") {
+        parts.push(`CAREER INTENT:\nField: ${fieldOfInterest}\nTarget: ${targetRole}`);
+      }
+      if (mode === "general") {
+        parts.push("MODE: General Job Readiness Benchmarking");
+      }
+      parts.push(`\nRESUME DATA:\n${resumeData}`);
+      return parts.join("\n");
+    };
 
-STRUCTURED RESUME DATA:
-${structuredResume}
-`;
+    let activeSystemPrompt = systemPrompt;
+    let userPrompt = buildPrompt(structuredResume, jobDescription);
 
-    // Check token count
-    const tokenEstimate = logTokenDiagnostics(systemPrompt, userPrompt, providerToUse, modelToUse);
+    // ── Pre-flight Token Validation ──
+    let breakdown = logTokenBreakdown(
+      activeSystemPrompt,
+      userPrompt,
+      MAX_OUTPUT_TOKENS,
+      providerToUse,
+      modelToUse
+    );
 
-    // Auto-compress if needed
-    let compressedResume = structuredResume;
-    if (!tokenEstimate.safe || tokenEstimate.usagePercent > 85) {
-      console.log(`[AI] Prompt at ${tokenEstimate.usagePercent}% — auto-compressing...`);
+    let needsCompression = breakdown.isOverSafe; // > 10 000
+    if (needsCompression) {
+      console.log(`[AI] Token total ${breakdown.totalTokens} exceeds safe limit (${SAFE_LIMIT}) — optimizing...`);
 
+      // Step 1: Compress the system prompt (remove verbose examples)
+      if (breakdown.systemPromptTokens > 2000) {
+        const compressedSys = compressSystemPrompt(activeSystemPrompt);
+        const savedSys = estimateTokens(activeSystemPrompt) - estimateTokens(compressedSys);
+        if (savedSys > 200) {
+          console.log(`[AI] System prompt compressed: saved ~${savedSys} tokens`);
+          activeSystemPrompt = compressedSys;
+        }
+      }
+
+      // Step 2: Compress the resume & job description data
       const compressed = autoCompress(
         {
           summary: structuredResume,
@@ -405,7 +616,8 @@ ${structuredResume}
           experienceDescriptions: parsedResume.experiences.map((e) => e.description),
           jobDescription: mode === "strict_jd" ? jobDescription : undefined,
         },
-        Math.floor(tokenEstimate.limit * 0.85) - tokenEstimate.systemPrompt
+        // Target budget: leave room for system prompt + output
+        Math.max(500, Math.floor(HARD_LIMIT - estimateTokens(activeSystemPrompt) - MAX_OUTPUT_TOKENS - 500))
       );
 
       // Rebuild structured resume from compressed data
@@ -417,8 +629,10 @@ ${structuredResume}
         for (let i = 0; i < parsedResume.projects.length; i++) {
           const p = parsedResume.projects[i];
           const desc = compressed.projectDescriptions[i] || p.description;
-          const tech = p.technologies.length > 0 ? ` [${p.technologies.slice(0, 8).join(", ")}]` : "";
-          compressedParts.push(`  - ${p.name}${tech}: ${desc.substring(0, 200)}`);
+          const tech = p.technologies.length > 0
+            ? ` [${p.technologies.slice(0, 6).join(", ")}]`
+            : "";
+          compressedParts.push(`  - ${p.name}${tech}: ${desc.substring(0, 150)}`);
         }
       }
 
@@ -429,67 +643,68 @@ ${structuredResume}
           const desc = compressed.experienceDescriptions[i] || e.description;
           const duration = e.duration ? ` (${e.duration})` : "";
           const company = e.company ? ` @ ${e.company}` : "";
-          compressedParts.push(`  - ${e.role}${company}${duration}: ${desc.substring(0, 200)}`);
+          compressedParts.push(`  - ${e.role}${company}${duration}: ${desc.substring(0, 150)}`);
         }
       }
 
-      compressedResume = compressedParts.join("\n");
+      let compressedResume = compressedParts.join("\n");
 
-      // Also compress JD if present
+      // Compress JD if present
       let finalJD = jobDescription;
       if (mode === "strict_jd" && jobDescription) {
-        finalJD = compressJobDescription(jobDescription, 300);
+        finalJD = compressJobDescription(jobDescription, 250);
       }
 
-      userPrompt = `
-${mode === "strict_jd" ? `TARGET JD (compressed):\n${finalJD}` : ""}
-${mode === "career_intent" ? `CAREER INTENT:\nField: ${fieldOfInterest}\nTarget: ${targetRole}` : ""}
-${mode === "general" ? "MODE: General Job Readiness Benchmarking" : ""}
+      userPrompt = buildPrompt(compressedResume, finalJD);
 
-RESUME DATA:
-${compressedResume}
-`;
+      // Step 3: Re-check tokens after compression
+      breakdown = logTokenBreakdown(
+        activeSystemPrompt,
+        userPrompt,
+        MAX_OUTPUT_TOKENS,
+        providerToUse,
+        modelToUse
+      );
 
-      console.log(`[AI] Compressed prompt: ${estimatePromptTokens(systemPrompt, userPrompt, providerToUse).total} tokens`);
+      // Step 4: If STILL over hard limit, switch to split analysis
+      if (breakdown.isOverHard) {
+        console.log(`[AI] Still at ${breakdown.totalTokens} tokens — above hard cap (${HARD_LIMIT}). Using split analysis.`);
+        const combined = await runSplitAnalysis(
+          activeSystemPrompt,
+          parsedResume,
+          structuredResume,
+          jobDescription,
+          fieldOfInterest,
+          targetRole,
+          mode,
+          providerToUse,
+          modelToUse,
+          MAX_OUTPUT_TOKENS
+        );
+
+        // Save & return combined result
+        const user = await currentUser();
+        const userEmail = user?.primaryEmailAddress?.emailAddress;
+        if (userEmail) {
+          await saveToDatabase(userEmail, resumeText, resumeName, jobDescription, fieldOfInterest, targetRole, combined);
+        }
+        return NextResponse.json(combined);
+      }
     }
 
-    const aiResponse = await generateAIResponse({
-      systemPrompt,
+    // ── Send main analysis request ──
+    let aiOutput = await sendAnalysisRequest(
+      activeSystemPrompt,
       userPrompt,
-      temperature: 0.3,
-      maxTokens: 8192,
-      model: modelToUse,
-      feature: "resume-analyzer"
-    });
-    let aiOutput;
-    try {
-      aiOutput = extractJson(aiResponse.content);
-      // Post-process scores to fix 1-10 vs 0-100 scale issues (mutates in-place)
-      rescaleScores(aiOutput);
-    } catch (parseErr) {
-      console.error("Failed to parse AI response as JSON", { rawContent: aiResponse.content, parseErr });
-      return NextResponse.json({ error: "Invalid AI response format", detail: parseErr?.toString() }, { status: 502 });
-    }
+      MAX_OUTPUT_TOKENS,
+      providerToUse,
+      modelToUse
+    );
 
     const user = await currentUser();
     const userEmail = user?.primaryEmailAddress?.emailAddress;
-
-    // Save to Database if user is authenticated
     if (userEmail) {
-      // Use field/role as title if job description is empty
-      const displayTitle = jobDescription.trim()
-        ? jobDescription
-        : (fieldOfInterest || targetRole)
-          ? `${fieldOfInterest}${fieldOfInterest && targetRole ? ' - ' : ''}${targetRole}`.trim()
-          : "Job Readiness Baseline";
-
-      await db.insert(resumeAnalysisTable).values({
-        userEmail,
-        resumeText,
-        resumeName: resumeName,
-        jobDescription: displayTitle,
-        analysisData: JSON.stringify(aiOutput)
-      });
+      await saveToDatabase(userEmail, resumeText, resumeName, jobDescription, fieldOfInterest, targetRole, aiOutput);
     }
 
     return NextResponse.json(aiOutput);
