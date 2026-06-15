@@ -5,6 +5,7 @@ export interface GenerateParams {
   maxTokens?: number;
   model?: string;
   feature?: string; // for caching key
+  jsonMode?: boolean; // for JSON object response format
   // additional optional fields can be added as needed
 }
 

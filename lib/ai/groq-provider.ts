@@ -23,7 +23,7 @@ const UNAVAILABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
  */
 async function callGroq(params: GenerateParams): Promise<UnifiedResponse> {
   const start = Date.now();
-  const { systemPrompt, userPrompt, temperature, maxTokens, model } = params;
+  const { systemPrompt, userPrompt, temperature, maxTokens, model, jsonMode } = params;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -52,12 +52,18 @@ async function callGroq(params: GenerateParams): Promise<UnifiedResponse> {
     console.log(`[AI] Using Groq Key #${index + 1}`);
 
     try {
-      const response = await client.chat.completions.create({
+      const requestOptions: any = {
         messages: messages as any,
         model: model || MODELS.GROQ_PRIMARY,
         temperature: temperature ?? 0.3,
         max_tokens: maxTokens ?? 4096,
-      });
+      };
+
+      if (jsonMode) {
+        requestOptions.response_format = { type: "json_object" };
+      }
+
+      const response = await client.chat.completions.create(requestOptions);
       const content = response.choices[0]?.message?.content ?? "";
       const duration = Date.now() - start;
       logger.success("Groq", model || MODELS.GROQ_PRIMARY, duration);

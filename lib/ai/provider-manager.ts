@@ -87,7 +87,7 @@ if (process.env.NODE_ENV !== "test") {
 export async function generateAIResponse(
   params: GenerateParams
 ): Promise<UnifiedResponse> {
-  const cacheKey = `ai:${params.feature ?? ""}:${params.systemPrompt}:${params.userPrompt}`;
+  const cacheKey = `ai:${params.feature ??    ""}:${params.jsonMode ? "json:" : ""}:${params.systemPrompt}:${params.userPrompt}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
     logger.hit(cacheKey);

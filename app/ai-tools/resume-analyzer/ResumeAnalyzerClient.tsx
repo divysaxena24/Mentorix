@@ -293,12 +293,12 @@ Platform: ${extractedData.platform}
             startY: currentY,
             head: [['Category', 'Score', 'Explanation']],
             body: [
-                ['Skills Match', `${result.scoreBreakdown.skills}%`, result.scoreExplanations?.technicalStrength || result.scoreExplanations?.skills || "—"],
-                ['Projects', `${result.scoreBreakdown.projects}%`, result.scoreExplanations?.projectQuality || result.scoreExplanations?.projects || "—"],
-                ['Experience', `${result.scoreBreakdown.experience}%`, result.scoreExplanations?.experience || "—"],
-                ['ATS Optimization', `${result.scoreBreakdown.ats}%`, result.scoreExplanations?.ats || "—"],
-                ['Impact & Metrics', `${result.scoreBreakdown.impact}%`, result.scoreExplanations?.impact || "—"],
-                ['Industry Fit', `${result.scoreBreakdown.industryFit}%`, result.scoreExplanations?.industryReadiness || result.scoreExplanations?.industryFit || "—"],
+                ['Skills Match', `${result.scoreBreakdown.skills ?? 0}%`, result.scoreExplanations?.technicalStrength || result.scoreExplanations?.skills || "—"],
+                ['Projects', `${result.scoreBreakdown.projects ?? 0}%`, result.scoreExplanations?.projectQuality || result.scoreExplanations?.projects || "—"],
+                ['Experience', `${result.scoreBreakdown.experience ?? 0}%`, result.scoreExplanations?.experience || "—"],
+                ['ATS Optimization', `${result.scoreBreakdown.ats ?? 0}%`, result.scoreExplanations?.ats || "—"],
+                ['Impact & Metrics', `${result.scoreBreakdown.impact ?? 0}%`, result.scoreExplanations?.impact || "—"],
+                ['Industry Fit', `${result.scoreBreakdown.industryFit ?? 0}%`, result.scoreExplanations?.industryReadiness || result.scoreExplanations?.industryFit || "—"],
             ],
             theme: 'striped',
             headStyles: { fillColor: [0, 0, 0] },
@@ -359,7 +359,7 @@ Platform: ${extractedData.platform}
         autoTable(doc, {
             startY: currentY,
             head: [['Section', 'Feedback']],
-            body: Object.entries(result.sectionwiseAnalysis).map(([section, feedback]) => [
+            body: Object.entries(result.sectionwiseAnalysis || {}).map(([section, feedback]) => [
                 section.charAt(0).toUpperCase() + section.slice(1),
                 feedback
             ]),
@@ -474,7 +474,7 @@ Platform: ${extractedData.platform}
                 ensureSpace(50)
                 autoTable(doc, {
                     startY: currentY,
-                    head: [[`${proj.projectName}  —  Role Relevance: ${proj.industryRelevance}%  |  Resume Value: ${proj.resumeValue}%`]],
+                    head: [[`${proj.projectName ?? "Unnamed Project"}  —  Role Relevance: ${proj.industryRelevance ?? 0}%  |  Resume Value: ${proj.resumeValue ?? 0}%`]],
                     body: [
                         ['Technologies', (proj.technologyStack || []).slice(0, 8).join(", ")],
                         ['Key Strength', proj.strengths?.[0] || "—"],
@@ -505,12 +505,12 @@ Platform: ${extractedData.platform}
                     startY: currentY,
                     head: [['#', 'Project', 'Tech Depth', 'Scalability', 'Innovation', 'Industry']],
                     body: sorted.map((r, i) => [
-                        `#${r.overallRank}`,
+                        `#${r.overallRank ?? 0}`,
                         r.project,
-                        `${r.technicalDepth}/10`,
-                        `${r.scalability}/10`,
-                        `${r.innovation}/10`,
-                        `${r.industryRelevance}/10`,
+                        `${r.technicalDepth ?? 0}/10`,
+                        `${r.scalability ?? 0}/10`,
+                        `${r.innovation ?? 0}/10`,
+                        `${r.industryRelevance ?? 0}/10`,
                     ]),
                     theme: 'striped',
                     headStyles: { fillColor: [139, 92, 246] },
@@ -550,7 +550,7 @@ Platform: ${extractedData.platform}
                 ensureSpace(45)
                 autoTable(doc, {
                     startY: currentY,
-                    head: [[`${exp.role} @ ${exp.organization}  —  Role Relevance: ${exp.technicalDepth}%`]],
+                    head: [[`${exp.role ?? "Unspecified Role"} @ ${exp.organization ?? "Unspecified Company"}  —  Role Relevance: ${exp.technicalDepth ?? 0}%`]],
                     body: [
                         ['Key Strength', exp.strengths?.[0] || "—"],
                         ['Improvement Area', exp.weaknesses?.[0] || "—"],
@@ -604,7 +604,7 @@ Platform: ${extractedData.platform}
                     ['Matched Keywords', result.atsKeywordAnalysis.matchedKeywords.slice(0, 15).join(", ") || "None"],
                     ['Missing Keywords', result.atsKeywordAnalysis.missingKeywords.slice(0, 15).join(", ") || "None"],
                     ['Critical Missing', result.atsKeywordAnalysis.mostImportantMissingKeywords.join(", ") || "None"],
-                    ['Keyword Match', `${result.atsKeywordAnalysis.keywordMatchPercentage}%`],
+                    ['Keyword Match', `${result.atsKeywordAnalysis.keywordMatchPercentage ?? 0}%`],
                     ['Impact Summary', result.atsKeywordAnalysis.impactOfMissingKeywords || "—"],
                 ],
                 theme: 'grid',
@@ -746,6 +746,91 @@ Platform: ${extractedData.platform}
             margin: { left: 20, right: 20 }
         })
         currentY = (doc as any).lastAutoTable.finalY + 15
+
+        // ─── 12. 30/60/90 DAY ACTION PLAN ────────────────────────
+        if (result.growthPlan) {
+            ensureSpace(50)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("30/60/90 Day Action Plan", 20, currentY)
+            currentY += 12
+
+            const phases = [
+                { key: "first30Days" as const, label: "First 30 Days", color: "#3b82f6" },
+                { key: "next60Days" as const, label: "Next 60 Days", color: "#8b5cf6" },
+                { key: "next90Days" as const, label: "Next 90 Days", color: "#22c55e" },
+            ]
+
+            for (const phase of phases) {
+                const data = result.growthPlan[phase.key]
+                if (!data || !data.focus) continue
+                ensureSpace(35)
+                doc.setFontSize(12)
+                doc.setTextColor(59, 130, 246)
+                doc.text(`${phase.label} — ${data.focus}`, 20, currentY)
+                currentY += 7
+
+                if (data.actions.length > 0) {
+                    doc.setFontSize(9)
+                    doc.setTextColor(80, 80, 80)
+                    doc.text("Actions:", 25, currentY)
+                    currentY += 5
+                    const actionsText = data.actions.map((a, i) => `${i + 1}. ${a}`).join("\n")
+                    const actionLines = doc.splitTextToSize(actionsText, 160)
+                    doc.text(actionLines, 30, currentY)
+                    currentY += actionLines.length * 4 + 3
+                }
+
+                if (data.skills.length > 0) {
+                    doc.setFontSize(9)
+                    doc.setTextColor(80, 80, 80)
+                    doc.text("Skills to Learn: ", 25, currentY)
+                    doc.text(data.skills.join(", "), 60, currentY)
+                    currentY += 5
+                }
+
+                if (data.expectedOutcome) {
+                    ensureSpace(15)
+                    doc.setFontSize(8)
+                    doc.setTextColor(100, 100, 100)
+                    const outcomeText = `Expected Outcome: ${data.expectedOutcome}`
+                    const outcomeLines = doc.splitTextToSize(outcomeText, 160)
+                    doc.text(outcomeLines, 25, currentY)
+                    currentY += outcomeLines.length * 4 + 8
+                }
+            }
+        }
+
+        // ─── 13. PRIORITY SKILLS ROADMAP (fallback if growthPlan not available) ───
+        if (!result.growthPlan && result.prioritySkills) {
+            ensureSpace(40)
+            doc.setFontSize(16)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Priority Skills Roadmap", 20, currentY)
+            currentY += 12
+
+            const skillTiers = [
+                { key: "immediate" as const, label: "Immediate (Next 30 Days)", color: "#3b82f6" },
+                { key: "shortTerm" as const, label: "Short Term (30-60 Days)", color: "#8b5cf6" },
+                { key: "longTerm" as const, label: "Long Term (60-90 Days)", color: "#22c55e" },
+            ]
+
+            for (const tier of skillTiers) {
+                const skills = result.prioritySkills[tier.key]
+                if (!skills || skills.length === 0) continue
+                ensureSpace(15)
+                doc.setFontSize(10)
+                doc.setTextColor(59, 130, 246)
+                doc.text(tier.label, 20, currentY)
+                currentY += 6
+                doc.setFontSize(9)
+                doc.setTextColor(80, 80, 80)
+                const skillsText = skills.join(", ")
+                const skillsLines = doc.splitTextToSize(skillsText, 170)
+                doc.text(skillsLines, 25, currentY)
+                currentY += skillsLines.length * 5 + 6
+            }
+        }
 
         const pageCount = (doc as any).internal.getNumberOfPages()
         for (let i = 1; i <= pageCount; i++) {
