@@ -129,285 +129,76 @@ export interface RoadmapInputs {
     targetCompany: string;
 }
 
-// Resume Analysis Types
+// Resume Analysis Types — 5-Section FAANG-Grade Design
 export interface AnalysisResult {
-    // Core (backward compatible)
-    score: number;
-    summary: string;
-    scoreBreakdown: {
-        skills: number;
-        projects: number;
-        experience: number;
-        ats: number;
-        impact: number;
-        industryFit: number;
-    };
-    strengths: string[];
-    criticalGaps: string[];
-    improvementPoints: string[];
-    missingKeywords: string[];
-    sectionwiseAnalysis: {
-        education: string;
-        experience: string;
-        projects: string;
-        skills: string;
-    };
-    improvementPlan?: {
-        additionalSkills: string[];
-        newProjectIdeas: string[];
-        projectEnhancements: string[];
-    };
+  // Overall Score (25% Skills + 30% Projects + 25% Experience + 10% ATS + 10% Company Readiness)
+  overallScore: number;
 
-    // === NEW ENHANCED FIELDS (optional for backward compat) ===
+  // ===== Section 1: Skills Score =====
+  // Formula: Technical Skills Depth 40% + Breadth 20% + Industry Relevance 20% + Core CS Fundamentals 20%
+  skillsScore: number;
+  strongSkills: string[];
+  missingSkills: string[];
+  criticalMissingSkills: string[];
+  skillsRecruiterVerdict: string;
 
-    // 1. Executive Summary
-    executiveSummary?: {
-        professionalOverview: string;
-        careerStageAssessment: string;
-        top3Strengths: string[];
-        top3Improvements: string[];
-        overallHiringImpression: string;
-    };
+  // ===== Section 2: Project Analysis =====
+  // Per-project formula: Technical Depth 30% + Industry Relevance 25% + Scalability 20% + Innovation 15% + Resume Value 10%
+  projects: {
+    projectName: string;
+    technologies: string[];
+    projectScore: number;
+    technicalDepth: number;
+    scalability: number;
+    industryRelevance: number;
+    innovation: number;
+    resumeValue: number;
+    strength: string;
+    improvement: string;
+    recruiterVerdict: string;
+  }[];
 
-    // 2. Extended Scores
-    extendedScores?: {
-        overallResume: number;
-        ats: number;
-        technicalStrength: number;
-        projectQuality: number;
-        experience: number;
-        industryReadiness: number;
-        communication: number;
-        leadership: number;
-    };
-    scoreExplanations?: Record<string, string>;
+  // ===== Section 3: Experience Analysis =====
+  // Per-experience formula: Technical Depth 40% + Role Relevance 25% + Impact 20% + Industry Exposure 15%
+  experiences: {
+    role: string;
+    company: string;
+    duration: string;
+    experienceScore: number;
+    technicalDepth: number;
+    businessImpact: number;
+    roleRelevance: number;
+    industryExposure: number;
+    strength: string;
+    improvement: string;
+    recruiterVerdict: string;
+  }[];
 
-    // 3. ATS Keyword Analysis
-    atsKeywordAnalysis?: {
-        matchedKeywords: string[];
-        missingKeywords: string[];
-        keywordMatchPercentage: number;
-        keywordCoverageHeatmap: { category: string; percentage: number }[];
-        mostImportantMissingKeywords: string[];
-        impactOfMissingKeywords: string;
-    };
+  // ===== Section 4: ATS Score =====
+  atsScore: number;
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  criticalMissingKeywords: string[];
+  expectedATSImprovement: string;
 
-    // === CORE EXTRACTION ===
-    extractedEntities?: {
-        projects: { name: string; technologies: string[]; description: string; domain?: string; hasAI?: boolean; complexity?: string }[];
-        experiences: { role: string; company: string; duration: string; description: string; isResearch?: boolean; isInternship?: boolean }[];
-        skills: string[];
-        education: string[];
-        achievements: string[];
-        certifications: string[];
-        technologies: string[];
-        leadershipActivities: string[];
-        researchWork: string[];
-        hackathons?: string[];
-        openSource?: string[];
-    };
+  // ===== Section 5: Company Readiness =====
+  // Dynamic based on target company/role/JD
+  companyReadinessScore: number;
+  companyReadinessAreas: { area: string; score: number }[];
+  companyReadinessStrengths: string[];
+  companyReadinessWeaknesses: string[];
+  companyReadinessMissingSkills: string[];
+  interviewProbability: string;
+  companyReadinessVerdict: string;
 
-    // === SMART SKILL INFERENCE ===
-    skillInference?: {
-        inferredSkills: { skill: string; source: string; confidence: string }[];
-    };
+  // ===== PDF Detailed Report (not shown on website) =====
+  recruiterReport: string;
 
-    // === ENHANCED SKILLS ANALYSIS (16 categories) ===
-    skillsAnalysis?: {
-        categories: Record<string, {
-            detected: string[];
-            inferred: string[];
-            missing: string[];
-            importanceScore: number;
-            marketDemandScore: number;
-        }>;
-        strongAreas: string[];
-        missingAreas: string[];
-        skillBalanceScore: number;
-        learningRecommendations: string[];
-    };
-
-    // === ENHANCED PROJECT ANALYSIS ===
-    projectAnalysis?: {
-        projectName: string;
-        technologyStack: string[];
-        domain?: string;
-        complexity?: string;
-        technicalComplexity: number;
-        architectureQuality: number;
-        scalabilityScore: number;
-        innovationScore: number;
-        industryRelevance: number;
-        resumeValue: number;
-        recruiterAppeal: number;
-        strengths: string[];
-        weaknesses: string[];
-        missingTechnologies: string[];
-        missingEngineeringPractices: string[];
-        suggestedMetrics: string[];
-        suggestedResumeRewrite: string;
-        suggestedFutureEnhancements: string[];
-        recruiterImpression: string;
-    }[];
-
-    // === PROJECT COMPARISON ENGINE ===
-    projectComparison?: {
-        rankingTable: {
-            project: string;
-            technicalDepth: number;
-            scalability: number;
-            innovation: number;
-            industryRelevance: number;
-            resumeValue: number;
-            overallRank: number;
-        }[];
-        strongestProject: string;
-        weakestProject: string;
-        mostRecruiterFriendly: string;
-        mostTechnicallyImpressive: string;
-        mostInnovative: string;
-        projectThatShouldAppearFirst: string;
-        projectThatShouldBeImproved: string;
-        portfolioDiversityAnalysis: string;
-    };
-
-    // === ENHANCED EXPERIENCE ANALYSIS ===
-    experienceAnalysis?: {
-        role: string;
-        organization: string;
-        duration: string;
-        isResearch?: boolean;
-        isInternship?: boolean;
-        technicalDepth: number;
-        businessImpact: number;
-        ownership: number;
-        leadershipScore: number;
-        communicationScore: number;
-        problemSolving: number;
-        metricsUsage: number;
-        recruiterAppeal: number;
-        strengths: string[];
-        weaknesses: string[];
-        missingMetrics: string[];
-        weakBulletPoints: string[];
-        improvedBullets: string[];
-        suggestedQuantifiableAchievements: string[];
-        recruiterImpression: string;
-    }[];
-
-    // === EXPERIENCE COMPARISON ENGINE ===
-    experienceComparison?: {
-        mostValuableExperience: string;
-        mostTechnicalExperience: string;
-        mostImpactfulExperience: string;
-        mostRecruiterFriendly: string;
-        experienceNeedingRewrite: string;
-        experienceNeedingMoreMetrics: string;
-    };
-
-    // === PORTFOLIO INTELLIGENCE ===
-    portfolioIntelligence?: {
-        portfolioStrengthScore: number;
-        projectDiversityScore: number;
-        experienceStrengthScore: number;
-        leadershipScore: number;
-        researchScore: number;
-        industryReadinessScore: number;
-        careerGrowthPotentialScore: number;
-        faangPotentialScore: number;
-        startupReadinessScore: number;
-        enterpriseReadinessScore: number;
-    };
-
-    // === MARKET BENCHMARKING ===
-    marketBenchmarking?: {
-        comparedToCSStudents: string;
-        comparedToInternshipApplicants: string;
-        comparedToNewGraduates: string;
-        comparedToFAANGApplicants: string;
-        reasoning: string;
-    };
-
-    // === ENHANCED FAANG READINESS ===
-    faangReadiness?: {
-        google: { readiness: number; whyScoreAssigned: string; strengths: string[]; weaknesses: string[]; missingSkills: string[]; expectedImprovementIfFixed: string };
-        amazon: { readiness: number; whyScoreAssigned: string; strengths: string[]; weaknesses: string[]; missingSkills: string[]; expectedImprovementIfFixed: string };
-        microsoft: { readiness: number; whyScoreAssigned: string; strengths: string[]; weaknesses: string[]; missingSkills: string[]; expectedImprovementIfFixed: string };
-        meta: { readiness: number; whyScoreAssigned: string; strengths: string[]; weaknesses: string[]; missingSkills: string[]; expectedImprovementIfFixed: string };
-    };
-
-    // === INTERVIEW READINESS ===
-    interviewReadiness?: {
-        dsa: { readiness: number; recommendations: string[] };
-        frontend: { readiness: number; recommendations: string[] };
-        backend: { readiness: number; recommendations: string[] };
-        fullStack: { readiness: number; recommendations: string[] };
-        behavioral: { readiness: number; recommendations: string[] };
-        systemDesign: { readiness: number; recommendations: string[] };
-    };
-
-    // === FAANG-LEVEL PROJECT RECOMMENDATIONS ===
-    projectRecommendations?: {
-        systemDesign: { title: string; description: string; technologies: string[]; faangCompany: string; systemDesignConcepts: string[]; scalabilityPatterns: string[] }[];
-        lowLevelDesign: { title: string; description: string; technologies: string[]; designPatterns: string[]; concurrencyAspects: string[] }[];
-        distributedSystems: { title: string; description: string; technologies: string[]; consistencyModels: string[]; failureModes: string[] }[];
-    };
-
-    // === ACTIONABLE GAP ANALYSIS ===
-    actionableGapAnalysis?: {
-        skill: string;
-        importance: string;
-        resumeImpact: string;
-        expectedATSImprovement: number;
-        expectedReadinessImprovement: { company: string; improvement: number }[];
-    }[];
-
-    // === RESUME BULLET ANALYZER ===
-    resumeBulletAnalyzer?: {
-        originalBullet: string;
-        qualityScore: number;
-        weaknesses: string[];
-        improvedVersion: string;
-        impactImprovement: string;
-        recruiterAppealImprovement: string;
-    }[];
-
-    // === RESUME COMPARISON (architecture placeholder) ===
-    resumeComparison?: {
-        scoreChange: number | null;
-        newSkillsAdded: string[];
-        improvementTrend: string | null;
-        atsImprovement: number | null;
-    };
-
-    // === PDF ENHANCEMENT: 30/60/90 DAY GROWTH PLAN ===
-    growthPlan?: {
-        first30Days: { focus: string; actions: string[]; skills: string[]; expectedOutcome: string };
-        next60Days: { focus: string; actions: string[]; skills: string[]; expectedOutcome: string };
-        next90Days: { focus: string; actions: string[]; skills: string[]; expectedOutcome: string };
-    };
-
-    // === PDF ENHANCEMENT: PRIORITY SKILLS TO LEARN ===
-    prioritySkills?: {
-        immediate: string[];
-        shortTerm: string[];
-        longTerm: string[];
-    };
-
-    // === PDF ENHANCEMENT: PRIORITY PROJECTS TO BUILD ===
-    priorityProjects?: {
-        quickWins: { title: string; description: string; impact: string }[];
-        portfolioBuilders: { title: string; description: string; impact: string }[];
-        faangLevel: { title: string; description: string; impact: string }[];
-    };
-
-    // === PDF ENHANCEMENT: ROLE-SPECIFIC IMPROVEMENT ROADMAP ===
-    roleSpecificRoadmap?: {
-        shortTerm: string[];
-        midTerm: string[];
-        longTerm: string[];
-        expectedTimeline: string;
-    };
+  // Legacy backward compat — kept for history items
+  score?: number;
+  strengths?: string[];
+  criticalGaps?: string[];
+  improvementPoints?: string[];
 }
 
 export interface ResumeAnalysisItem {

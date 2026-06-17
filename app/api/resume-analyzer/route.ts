@@ -6,7 +6,7 @@ import { db } from "@/lib/db/db";
 import { resumeAnalysisTable } from "@/lib/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
 import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
-import { parseResume, serializeResume, inferSkills } from "@/lib/ai/resume-parser";
+import { extractResume, serializeExtractedResume } from "@/lib/ai/resume-extractor";
 
 /**
  * Robustly extract and parse JSON from an AI response
@@ -152,6 +152,72 @@ async function sendAnalysisRequest(
 }
 
 /**
+ * Normalize AI output to ensure all array fields have defaults.
+ */
+function normalizeAnalysisOutput(output: any): any {
+  if (!output || typeof output !== 'object') return output;
+
+  output.overallScore ??= 0;
+  output.skillsScore ??= 0;
+  output.strongSkills ??= [];
+  output.missingSkills ??= [];
+  output.criticalMissingSkills ??= [];
+  output.skillsRecruiterVerdict ??= "";
+
+  output.projects ??= [];
+  if (Array.isArray(output.projects)) {
+    output.projects = output.projects.map((p: any) => ({
+      projectName: p.projectName || "Unnamed Project",
+      technologies: p.technologies ?? [],
+      projectScore: p.projectScore ?? 0,
+      technicalDepth: p.technicalDepth ?? p.technicalComplexity ?? 0,
+      scalability: p.scalability ?? 0,
+      industryRelevance: p.industryRelevance ?? 0,
+      innovation: p.innovation ?? 0,
+      resumeValue: p.resumeValue ?? 0,
+      strength: p.strength || "",
+      improvement: p.improvement || "",
+      recruiterVerdict: p.recruiterVerdict || "",
+    }));
+  }
+
+  output.experiences ??= [];
+  if (Array.isArray(output.experiences)) {
+    output.experiences = output.experiences.map((e: any) => ({
+      role: e.role || "",
+      company: e.company || "",
+      duration: e.duration || "",
+      experienceScore: e.experienceScore ?? 0,
+      technicalDepth: e.technicalDepth ?? 0,
+      businessImpact: e.businessImpact ?? 0,
+      roleRelevance: e.roleRelevance ?? 0,
+      industryExposure: e.industryExposure ?? e.uniqueness ?? 0,
+      strength: e.strength || "",
+      improvement: e.improvement || "",
+      recruiterVerdict: e.recruiterVerdict || "",
+    }));
+  }
+
+  output.atsScore ??= 0;
+  output.matchedKeywords ??= [];
+  output.missingKeywords ??= [];
+  output.criticalMissingKeywords ??= [];
+  output.expectedATSImprovement ??= "";
+
+  output.companyReadinessScore ??= 0;
+  output.companyReadinessAreas ??= [];
+  output.companyReadinessStrengths ??= [];
+  output.companyReadinessWeaknesses ??= [];
+  output.companyReadinessMissingSkills ??= [];
+  output.interviewProbability ??= "";
+  output.companyReadinessVerdict ??= "";
+
+  output.recruiterReport ??= "";
+
+  return output;
+}
+
+/**
  * Save results to database
  */
 async function saveToDatabase(
@@ -233,135 +299,163 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to extract text from resume" }, { status: 400 });
     }
 
-    // Step 2: Parse resume into structured data
-    const parsedResume = parseResume(resumeText);
-    const structuredResume = serializeResume(parsedResume);
+    // Step 2: Run structured extraction pipeline
+    const extraction = extractResume(resumeText);
 
-    // Step 3: Run skill inference
-    const skillInference = inferSkills(parsedResume);
-
-    // Log extracted data for debugging
-    console.log("=== Extracted Resume Data ===");
-    console.log("Projects:", parsedResume.projects.map(p => ({ name: p.name, tech: p.technologies })));
-    console.log("Experiences:", parsedResume.experiences.map(e => ({ role: e.role, company: e.company })));
-    console.log("Skills:", parsedResume.skills);
-    console.log("Inferred Skills:", skillInference.inferredSkills);
-    console.log("============================");
-
-    // Step 4: Validate data (attempt recovery if needed)
-    // We'll proceed even with partial data, but log issues
-    if (parsedResume.projects.length === 0) {
-      console.warn("No projects detected from resume!");
-    }
-    if (parsedResume.experiences.length === 0) {
-      console.warn("No experiences detected from resume!");
-    }
-    if (parsedResume.skills.length === 0) {
-      console.warn("No skills detected from resume!");
+    // Step 3: Validate extraction — fail early, don't call AI if parsing failed
+    if (!extraction.success || !extraction.data) {
+      console.error("[EXTRACTOR] Extraction failed:", extraction.error);
+      return NextResponse.json({
+        error: extraction.error || "Failed to extract structured data from resume.",
+        detail: `Projects: ${extraction.stats.projectCount}, Experience: ${extraction.stats.experienceCount}, Skills: ${extraction.stats.skillCount}`
+      }, { status: 422 });
     }
 
-    // Step 5: Prepare AI prompt
+    const extractedResume = extraction.data;
+    const structuredResume = serializeExtractedResume(extractedResume);
+
+    console.log("=== EXTRACTION SUMMARY ===");
+    console.log(`Projects: ${extraction.stats.projectCount}, Experience: ${extraction.stats.experienceCount}, Skills: ${extraction.stats.skillCount}, Achievements: ${extraction.stats.achievementCount}`);
+    console.log(`Inferred Skills: ${extractedResume.inferredSkills.length}`);
+
+    // Step 4: Prepare AI prompt — send ONLY structured JSON, never raw text
     const hasJD = !!jobDescription.trim();
     const hasIntent = !!(fieldOfInterest.trim() || targetRole.trim());
     const mode = hasJD ? "strict_jd" : hasIntent ? "career_intent" : "general";
 
-    const systemPrompt = `You are an elite Senior Staff Technical Recruiter and Career Intelligence Analyst with 15+ years of experience.
-Your job is to analyze this resume and provide actionable, specific, and personalized feedback.
+    const systemPrompt = `You are a Senior FAANG Recruiter, Hiring Manager, ATS Expert, and Career Coach. Your job is to analyze the candidate's resume against: 1) Resume Content 2) Target Role 3) Target Company 4) Job Description.
 
-ANALYSIS GUIDELINES:
-1. Focus on the EXTRACTED structured data (projects, experiences, skills) provided in the prompt
-2. For each project, analyze its complexity, technologies used, and recruiter appeal
-3. For each experience, evaluate its relevance, impact, and technical depth
-4. Infer skills even if not explicitly listed, based on projects and experiences
-5. Provide specific recommendations (e.g., "Add Redis caching to Mentorix", not "Improve your project")
-6. Always reference the actual projects and experiences from the resume
-7. Be encouraging but honest about gaps
-8. Tailor recommendations to the target role/field/company if provided
+==================================================
+CRITICAL RULES
+==================================================
 
-OUTPUT JSON SCHEMA:
+DO NOT GENERATE GENERIC FEEDBACK.
+DO NOT HALLUCINATE.
+DO NOT ASSUME SKILLS THAT DO NOT EXIST.
+DO NOT MARK SKILLS AS MISSING IF THEY ARE PRESENT OR CAN BE INFERRED.
+ALL ANALYSIS MUST BE BASED ON ACTUAL RESUME DATA.
+Keep all feedback concise. recruiterReport text must be under 2000 characters.
+
+==================================================
+SKILL INFERENCE RULES — Never mark inferred as missing
+==================================================
+
+Parallel Computing → Concurrency, Performance Engineering
+OpenMP → Multithreading, Synchronization, Concurrency
+Distributed Systems → Scalability, System Design
+React + Next.js → Frontend Development
+Node.js + Express.js → Backend Development
+PostgreSQL + MongoDB → Database Engineering
+AWS + Docker + CI/CD → Cloud & DevOps
+
+==================================================
+SCORING FORMULAS
+==================================================
+
+Skills Score = Technical Skills Depth (40%) + Breadth (20%) + Industry Relevance (20%) + Core CS Fundamentals (20%)
+
+Project Score = Technical Depth (30%) + Industry Relevance (25%) + Scalability (20%) + Innovation (15%) + Resume Value (10%)
+
+Experience Score = Technical Depth (40%) + Role Relevance (25%) + Business Impact (20%) + Industry Exposure (15%)
+
+==================================================
+COMPANY READINESS — MUST depend on target company/role/JD
+==================================================
+
+GOOGLE SWE: DSA 30% + Backend 25% + System Design 20% + Projects 15% + Experience 10%
+GOOGLE AI: ML 30% + Deep Learning 25% + Projects 20% + Research 15% + Deployment 10%
+META SWE: DSA 35% + Backend 25% + Scalability 20% + Projects 20%
+AMAZON SDE: DSA 25% + System Design 25% + Projects 20% + Leadership 15% + Experience 15%
+MICROSOFT SWE: Backend 25% + Cloud 25% + Projects 20% + DSA 20% + Experience 10%
+
+If no company specified: use the most relevant template based on resume strengths.
+
+==================================================
+ATS ANALYSIS — Extract ALL keywords
+==================================================
+
+Match: Languages, Frameworks, Databases, Cloud, DevOps, AI/ML, Core CS
+Never show only 5 keywords if 20+ technologies exist. Target 15-25+ matched keywords.
+
+==================================================
+RECRUITER-GRADE FEEDBACK
+==================================================
+
+Feedback must feel like it was written by a Senior Google Recruiter, Senior Amazon Hiring Manager, or Senior Microsoft Engineer — NOT a generic AI chatbot.
+
+Be specific. Be evidence-based. Be recruiter-grade.
+
+==================================================
+OUTPUT JSON SCHEMA — Return ONLY this exact structure:
+==================================================
+
 {
-  "score": 0-100,
-  "summary": "4-5 sentence executive summary citing specific resume content",
-  "scoreBreakdown": {
-    "skills": 0-100,
-    "projects": 0-100,
-    "experience": 0-100,
-    "ats": 0-100,
-    "impact": 0-100,
-    "industryFit": 0-100
-  },
-  "strengths": ["specific strength 1", "specific strength 2"],
-  "criticalGaps": ["specific gap 1", "specific gap 2"],
-  "improvementPoints": ["specific improvement 1", "specific improvement 2"],
-  "missingKeywords": ["keyword1", "keyword2"],
-  "sectionwiseAnalysis": {
-    "education": "feedback on education",
-    "experience": "feedback on experience",
-    "projects": "feedback on projects",
-    "skills": "feedback on skills"
-  },
-  "improvementPlan": {
-    "additionalSkills": ["skill1", "skill2"],
-    "newProjectIdeas": ["specific project idea 1", "specific project idea 2"],
-    "projectEnhancements": ["specific enhancement to existing project 1", "specific enhancement to existing project 2"]
-  },
-  "executiveSummary": {
-    "professionalOverview": "brief overview",
-    "careerStageAssessment": "stage assessment",
-    "top3Strengths": ["strength1", "strength2", "strength3"],
-    "top3Improvements": ["improvement1", "improvement2", "improvement3"],
-    "overallHiringImpression": "hiring impression"
-  },
-  "projectAnalysis": [
+  "overallScore": 0-100,
+
+  "skillsScore": 0-100,
+  "strongSkills": ["Java", "Python", "React", "Next.js", "PostgreSQL", "MongoDB", "Redis", "AWS", "Docker", "Distributed Systems", "Concurrency", "DSA"],
+  "missingSkills": ["Kubernetes", "GraphQL"],
+  "criticalMissingSkills": ["Kubernetes"],
+  "skillsRecruiterVerdict": "1-2 sentence verdict on skills",
+
+  "projects": [
     {
-      "projectName": "name from extracted data",
-      "technologyStack": ["tech1", "tech2"],
-      "domain": "project domain",
-      "complexity": "Low/Medium/High/Very High",
-      "technicalComplexity": 0-100,
-      "recruiterAppeal": 0-100,
-      "strengths": ["strength1", "strength2"],
-      "weaknesses": ["weakness1", "weakness2"],
-      "suggestedEnhancements": ["specific enhancement1", "specific enhancement2"],
-      "recruiterImpression": "detailed impression"
+      "projectName": "Mentorix",
+      "technologies": ["Next.js", "TypeScript", "PostgreSQL", "Redis", "Docker", "CI/CD", "AI"],
+      "projectScore": 95,
+      "technicalDepth": 96,
+      "scalability": 92,
+      "industryRelevance": 98,
+      "innovation": 93,
+      "resumeValue": 97,
+      "strength": "Full-stack AI platform with Redis caching and Docker deployment",
+      "improvement": "Add Kubernetes for production orchestration",
+      "recruiterVerdict": "Impressive full-stack project demonstrating production-ready engineering skills."
     }
   ],
-  "experienceAnalysis": [
+
+  "experiences": [
     {
-      "role": "role from extracted data",
-      "company": "company from extracted data",
-      "duration": "duration",
-      "isResearch": true/false,
-      "isInternship": true/false,
-      "technicalDepth": 0-100,
-      "businessImpact": 0-100,
-      "recruiterAppeal": 0-100,
-      "strengths": ["strength1", "strength2"],
-      "weaknesses": ["weakness1", "weakness2"],
-      "suggestedImprovements": ["specific improvement1", "specific improvement2"],
-      "recruiterImpression": "detailed impression"
+      "role": "Research Intern",
+      "company": "IIITH",
+      "duration": "May 2025 - July 2025",
+      "experienceScore": 93,
+      "technicalDepth": 96,
+      "businessImpact": 88,
+      "roleRelevance": 95,
+      "industryExposure": 85,
+      "strength": "Advanced CS research in Parallel Computing and Distributed Systems",
+      "improvement": "Quantify speedup achieved with metrics",
+      "recruiterVerdict": "1 sentence recruiter verdict"
     }
   ],
-  "skillsAnalysis": {
-    "strongAreas": ["category1", "category2"],
-    "missingAreas": ["category3", "category4"],
-    "learningRecommendations": ["specific recommendation1", "specific recommendation2"]
-  },
-  "growthPlan": {
-    "first30Days": { "focus": "focus area", "actions": ["action1", "action2"], "skills": ["skill1", "skill2"], "expectedOutcome": "outcome" },
-    "next60Days": { "focus": "focus area", "actions": ["action1", "action2"], "skills": ["skill1", "skill2"], "expectedOutcome": "outcome" },
-    "next90Days": { "focus": "focus area", "actions": ["action1", "action2"], "skills": ["skill1", "skill2"], "expectedOutcome": "outcome" }
-  },
-  "extractedData": {
-    "projects": ${JSON.stringify(parsedResume.projects)},
-    "experiences": ${JSON.stringify(parsedResume.experiences)},
-    "skills": ${JSON.stringify(parsedResume.skills)},
-    "skillInference": ${JSON.stringify(skillInference)}
-  }
+
+  "atsScore": 85,
+  "matchedKeywords": ["Java", "Python", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Redis", "Docker", "AWS", "GitHub Actions", "DSA", "OOP", "DBMS", "OS", "Distributed Systems", "Linux", "HTML", "CSS", "Git"],
+  "missingKeywords": ["Kubernetes", "GraphQL"],
+  "criticalMissingKeywords": ["Kubernetes"],
+  "expectedATSImprovement": "Adding Kubernetes and GraphQL could improve your ATS score by 10-15%.",
+
+  "companyReadinessScore": 88,
+  "companyReadinessAreas": [
+    {"area": "DSA", "score": 90},
+    {"area": "Backend", "score": 88},
+    {"area": "System Design", "score": 80},
+    {"area": "Projects", "score": 92},
+    {"area": "Experience", "score": 85}
+  ],
+  "companyReadinessStrengths": ["Strong DSA foundation", "Full-stack project experience", "Research background"],
+  "companyReadinessWeaknesses": ["Limited system design exposure"],
+  "companyReadinessMissingSkills": ["Distributed consensus algorithms", "Large-scale system design"],
+  "interviewProbability": "High — strong internship candidate with interview potential",
+  "companyReadinessVerdict": "Strong internship candidate with solid CS fundamentals, DSA skills, and project experience. Interview probability is high with focused system design preparation.",
+
+  "recruiterReport": "2-3 paragraph detailed analysis. Keep under 2000 characters. Explain all scores with evidence from resume."
 }
 
-IMPORTANT: ALWAYS include the extractedData section with the provided parsed resume data!
-CRITICAL: Return ONLY valid JSON - no markdown, no code fences, no extra text!`;
+overallScore = skillsScore*0.25 + avg(projectScores)*0.30 + avg(experienceScores)*0.25 + atsScore*0.10 + companyReadinessScore*0.10
+
+CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no extra text, no explanations. Raw JSON only. Keep recruiterReport under 2000 characters to prevent content overflow.`;
 
     let userPromptParts: string[] = [];
     if (mode === "strict_jd" && jobDescription) {
@@ -371,12 +465,12 @@ CRITICAL: Return ONLY valid JSON - no markdown, no code fences, no extra text!`;
       userPromptParts.push(`CAREER INTENT:\nField: ${fieldOfInterest}\nTarget Role: ${targetRole}`);
     }
 
-    userPromptParts.push(`EXTRACTED RESUME DATA:\n${structuredResume}`);
-    userPromptParts.push(`SKILL INFERENCE DATA:\n${JSON.stringify(skillInference, null, 2)}`);
+    // Send ONLY structured JSON to AI — never raw resume text
+    userPromptParts.push(`EXTRACTED RESUME DATA (structured JSON only):\n${structuredResume}`);
 
     const userPrompt = userPromptParts.join("\n\n");
 
-    // Step 6: Send to AI
+    // Step 5: Send to AI
     const providerToUse = "groq";
     const modelToUse = MODELS.GROQ_PRIMARY;
     const MAX_OUTPUT_TOKENS = 8000;
@@ -389,15 +483,52 @@ CRITICAL: Return ONLY valid JSON - no markdown, no code fences, no extra text!`;
       modelToUse
     );
 
-    // Ensure extractedData is always present
-    if (!aiOutput.extractedData) {
-      aiOutput.extractedData = {
-        projects: parsedResume.projects,
-        experiences: parsedResume.experiences,
-        skills: parsedResume.skills,
-        skillInference
-      };
+    // Log full AI output shape before any formatting
+    console.log("=== AI Response Shape ===");
+    console.log(JSON.stringify(aiOutput, null, 2));
+    console.log("==========================");
+
+    // ── Content truncation safety: prevent overflow ──
+    // recruiterReport: max 2500 chars
+    if (aiOutput.recruiterReport && aiOutput.recruiterReport.length > 2500) {
+      aiOutput.recruiterReport = aiOutput.recruiterReport.substring(0, 2497) + "...";
     }
+    // Clip all string fields to reasonable lengths
+    for (const field of ['skillsRecruiterVerdict', 'expectedATSImprovement', 'interviewProbability', 'companyReadinessVerdict']) {
+      if (typeof aiOutput[field] === 'string' && aiOutput[field].length > 500) {
+        aiOutput[field] = aiOutput[field].substring(0, 497) + "...";
+      }
+    }
+    // Clip individual feedback fields in projects/experiences
+    for (const proj of (aiOutput.projects || [])) {
+      if (proj.recruiterVerdict && proj.recruiterVerdict.length > 300) proj.recruiterVerdict = proj.recruiterVerdict.substring(0, 297) + "...";
+      if (proj.strength && proj.strength.length > 300) proj.strength = proj.strength.substring(0, 297) + "...";
+      if (proj.improvement && proj.improvement.length > 300) proj.improvement = proj.improvement.substring(0, 297) + "...";
+    }
+    for (const exp of (aiOutput.experiences || [])) {
+      if (exp.recruiterVerdict && exp.recruiterVerdict.length > 300) exp.recruiterVerdict = exp.recruiterVerdict.substring(0, 297) + "...";
+      if (exp.strength && exp.strength.length > 300) exp.strength = exp.strength.substring(0, 297) + "...";
+      if (exp.improvement && exp.improvement.length > 300) exp.improvement = exp.improvement.substring(0, 297) + "...";
+    }
+
+    // Compute overallScore if AI didn't provide it
+    if (!aiOutput.overallScore && aiOutput.skillsScore !== undefined) {
+      const skillsW = (aiOutput.skillsScore || 0) * 0.25;
+      const projAvg = Array.isArray(aiOutput.projects) && aiOutput.projects.length > 0
+        ? aiOutput.projects.reduce((s: number, p: any) => s + (p.projectScore || 0), 0) / aiOutput.projects.length
+        : 0;
+      const expAvg = Array.isArray(aiOutput.experiences) && aiOutput.experiences.length > 0
+        ? aiOutput.experiences.reduce((s: number, e: any) => s + (e.experienceScore || 0), 0) / aiOutput.experiences.length
+        : 0;
+      const projectsW = projAvg * 0.30;
+      const experienceW = expAvg * 0.25;
+      const atsW = (aiOutput.atsScore || 0) * 0.10;
+      const companyW = (aiOutput.companyReadinessScore || 0) * 0.10;
+      aiOutput.overallScore = Math.round(skillsW + projectsW + experienceW + atsW + companyW);
+    }
+
+    // Step 6: Normalize output to prevent downstream crashes
+    aiOutput = normalizeAnalysisOutput(aiOutput);
 
     // Step 7: Save to database and return
     const user = await currentUser();

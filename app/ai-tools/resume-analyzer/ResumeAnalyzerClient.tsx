@@ -50,6 +50,65 @@ export default function ResumeAnalyzerClient() {
     const searchParams = useSearchParams()
     const selectedId = searchParams.get("id")
 
+    // Normalize analysis result to ensure all arrays have defaults
+    const normalizeResult = useCallback((data: any): AnalysisResult => {
+        if (!data) return data;
+        data.overallScore ??= 0;
+        data.skillsScore ??= 0;
+        data.strongSkills ??= [];
+        data.missingSkills ??= [];
+        data.criticalMissingSkills ??= [];
+        data.skillsRecruiterVerdict ??= "";
+        data.projects ??= [];
+        if (Array.isArray(data.projects)) {
+          data.projects = data.projects.map((p: any) => ({
+            ...p,
+            projectName: p.projectName || 'Unnamed Project',
+            technologies: p.technologies ?? [],
+            projectScore: p.projectScore ?? 0,
+            technicalDepth: p.technicalDepth ?? p.technicalComplexity ?? 0,
+            scalability: p.scalability ?? 0,
+            industryRelevance: p.industryRelevance ?? 0,
+            innovation: p.innovation ?? 0,
+            resumeValue: p.resumeValue ?? 0,
+            strength: p.strength || '',
+            improvement: p.improvement || '',
+            recruiterVerdict: p.recruiterVerdict || '',
+          }));
+        }
+        data.experiences ??= [];
+        if (Array.isArray(data.experiences)) {
+          data.experiences = data.experiences.map((e: any) => ({
+            ...e,
+            role: e.role || '',
+            company: e.company || '',
+            duration: e.duration || '',
+            experienceScore: e.experienceScore ?? 0,
+            technicalDepth: e.technicalDepth ?? 0,
+            businessImpact: e.businessImpact ?? 0,
+            roleRelevance: e.roleRelevance ?? 0,
+            industryExposure: e.industryExposure ?? e.uniqueness ?? 0,
+            strength: e.strength || '',
+            improvement: e.improvement || '',
+            recruiterVerdict: e.recruiterVerdict || '',
+          }));
+        }
+        data.atsScore ??= 0;
+        data.matchedKeywords ??= [];
+        data.missingKeywords ??= [];
+        data.criticalMissingKeywords ??= [];
+        data.expectedATSImprovement ??= "";
+        data.companyReadinessScore ??= 0;
+        data.companyReadinessAreas ??= [];
+        data.companyReadinessStrengths ??= [];
+        data.companyReadinessWeaknesses ??= [];
+        data.companyReadinessMissingSkills ??= [];
+        data.interviewProbability ??= "";
+        data.companyReadinessVerdict ??= "";
+        data.recruiterReport ??= "";
+        return data;
+    }, [])
+
     // Sync URL ID with selection
     useEffect(() => {
         if (selectedId && history.length > 0) {
@@ -58,11 +117,11 @@ export default function ResumeAnalyzerClient() {
                 const analysisDataValue = typeof (found as any).analysisData === 'string'
                     ? JSON.parse((found as any).analysisData)
                     : (found as any).analysisData;
-                setResult(analysisDataValue)
+                setResult(normalizeResult(analysisDataValue))
                 setView("history")
             }
         }
-    }, [selectedId, history])
+    }, [selectedId, history, normalizeResult])
 
     const fetchProfile = useCallback(async () => {
         try {
@@ -175,7 +234,7 @@ Platform: ${extractedData.platform}
             const response = await axios.post("/api/resume-analyzer", formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
-            setResult(response.data)
+            setResult(normalizeResult(response.data))
             fetchHistory()
         } catch (err: unknown) {
             console.error(err)
@@ -204,204 +263,22 @@ Platform: ${extractedData.platform}
         if (!result) return
 
         const doc = new jsPDF()
-        const primaryColor = result.score > 70 ? "#22c55e" : result.score > 40 ? "#eab308" : "#ef4444"
+        const ov = result.overallScore ?? result.score ?? 0
+        const primaryColor = ov > 70 ? "#22c55e" : ov > 40 ? "#eab308" : "#ef4444"
 
         doc.setFontSize(22)
         doc.setTextColor(0, 0, 0)
-        doc.text("Resume ATS Analysis Report", 105, 20, { align: "center" })
+        doc.text("Resume Analysis Report", 105, 20, { align: "center" })
 
         doc.setFontSize(14)
         doc.setTextColor(100, 100, 100)
-        doc.text(`Overall Match Score: `, 20, 40)
+        doc.text(`Overall Score: `, 20, 40)
         doc.setTextColor(primaryColor)
         doc.setFont("helvetica", "bold")
-        doc.text(`${result.score}%`, 70, 40)
+        doc.text(`${ov}%`, 55, 40)
         doc.setFont("helvetica", "normal")
 
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Executive Summary", 20, 55)
-        doc.setFontSize(10)
-        doc.setTextColor(80, 80, 80)
-        const summaryLines = doc.splitTextToSize(result.summary, 170)
-        doc.text(summaryLines, 20, 65)
-
-        let currentY = 65 + (summaryLines.length * 5) + 8
-
-        // Enriched Executive Summary data
-        if (result.executiveSummary) {
-            const es = result.executiveSummary
-
-            // Hiring Impression
-            if (es.overallHiringImpression) {
-                doc.setFontSize(9)
-                doc.setTextColor(100, 100, 100)
-                doc.text("Hiring Impression", 20, currentY)
-                currentY += 5
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const impressionLines = doc.splitTextToSize(`"${es.overallHiringImpression}"`, 170)
-                doc.text(impressionLines, 20, currentY)
-                currentY += impressionLines.length * 5 + 4
-            }
-
-            // Top Strengths & Top Improvements side by side
-            if (es.top3Strengths.length > 0 || es.top3Improvements.length > 0) {
-                const strengthsText = es.top3Strengths.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join("\n")
-                const improvementsText = es.top3Improvements.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join("\n")
-                const strengthLines = strengthsText ? doc.splitTextToSize(strengthsText, 80) : []
-                const improvementLines = improvementsText ? doc.splitTextToSize(improvementsText, 80) : []
-                const maxLines = Math.max(strengthLines.length, improvementLines.length)
-
-                if (strengthsText) {
-                    doc.setFontSize(9)
-                    doc.setTextColor(22, 163, 74)
-                    doc.text("Top Strengths", 20, currentY)
-                }
-                if (improvementsText) {
-                    doc.setFontSize(9)
-                    doc.setTextColor(239, 68, 68)
-                    doc.text("Top Improvements", 108, currentY)
-                }
-                currentY += 5
-                doc.setFontSize(8)
-                doc.setTextColor(80, 80, 80)
-                if (strengthLines.length > 0) doc.text(strengthLines, 20, currentY)
-                if (improvementLines.length > 0) doc.text(improvementLines, 108, currentY)
-                currentY += Math.max(strengthLines.length || 0, improvementLines.length || 0) * 4 + 6
-            }
-
-            // Career Stage
-            if (es.careerStageAssessment) {
-                doc.setFontSize(9)
-                doc.setTextColor(59, 130, 246)
-                doc.text(`Career Stage: `, 20, currentY)
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                doc.text(es.careerStageAssessment, 55, currentY)
-                currentY += 6
-            }
-        }
-
-        currentY += 4
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Score Breakdown", 20, currentY)
-        currentY += 10
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Category', 'Score', 'Explanation']],
-            body: [
-                ['Skills Match', `${result.scoreBreakdown.skills ?? 0}%`, result.scoreExplanations?.technicalStrength || result.scoreExplanations?.skills || "—"],
-                ['Projects', `${result.scoreBreakdown.projects ?? 0}%`, result.scoreExplanations?.projectQuality || result.scoreExplanations?.projects || "—"],
-                ['Experience', `${result.scoreBreakdown.experience ?? 0}%`, result.scoreExplanations?.experience || "—"],
-                ['ATS Optimization', `${result.scoreBreakdown.ats ?? 0}%`, result.scoreExplanations?.ats || "—"],
-                ['Impact & Metrics', `${result.scoreBreakdown.impact ?? 0}%`, result.scoreExplanations?.impact || "—"],
-                ['Industry Fit', `${result.scoreBreakdown.industryFit ?? 0}%`, result.scoreExplanations?.industryReadiness || result.scoreExplanations?.industryFit || "—"],
-            ],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0] },
-            styles: { fontSize: 9, cellPadding: 4 },
-            margin: { left: 20, right: 20 },
-            columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 20 }, 2: { cellWidth: 115 } }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Critical Gaps", 20, currentY)
-        currentY += 10
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Critical Gap']],
-            body: result.criticalGaps.map(g => [g]),
-            theme: 'striped',
-            headStyles: { fillColor: [220, 38, 38] },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Key Strengths", 20, currentY)
-        currentY += 10
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Strength']],
-            body: result.strengths.map(s => [s]),
-            theme: 'striped',
-            headStyles: { fillColor: [22, 163, 74] },
-            margin: { left: 20, right: 20 }
-        })
-
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Actionable Improvements", 20, currentY)
-        currentY += 10
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Actionable Advice']],
-            body: result.improvementPoints.map(p => [p]),
-            theme: 'striped',
-            headStyles: { fillColor: [37, 99, 235] },
-            margin: { left: 20, right: 20 }
-        })
-
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Detailed Section Analysis", 20, currentY)
-        currentY += 10
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Section', 'Feedback']],
-            body: Object.entries(result.sectionwiseAnalysis || {}).map(([section, feedback]) => [
-                section.charAt(0).toUpperCase() + section.slice(1),
-                feedback
-            ]),
-            theme: 'grid',
-            headStyles: { fillColor: [100, 100, 100] },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        if (result.improvementPlan) {
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Strategic Growth Blueprint", 20, currentY)
-            currentY += 10
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [['Category', 'Recommendations']],
-                body: [
-                    ['Target Skills', result.improvementPlan.additionalSkills.join(", ")],
-                    ['Build Next (Project Ideas)', result.improvementPlan.newProjectIdeas.join("\n\n")],
-                    ['Enhance Current Projects', result.improvementPlan.projectEnhancements.join("\n\n")]
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [59, 130, 246] },
-                margin: { left: 20, right: 20 },
-                styles: { fontSize: 9, cellPadding: 5 }
-            })
-            currentY = (doc as any).lastAutoTable.finalY + 15
-        }
-
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Keywords to Add", 20, currentY)
-        currentY += 10
-        doc.setFontSize(11)
-        doc.setTextColor(239, 68, 68)
-        const keywordLines = doc.splitTextToSize(result.missingKeywords.join(", "), 170)
-        doc.text(keywordLines, 20, currentY)
-        currentY += (keywordLines.length * 5) + 15
-
-        // ─── Helper: add a new page if insufficient space ─────
+        let currentY = 50
         const ensureSpace = (needed: number) => {
             if (currentY + needed > 260) {
                 doc.addPage()
@@ -409,426 +286,172 @@ Platform: ${extractedData.platform}
             }
         }
 
-        // ─── 3. SKILLS ANALYSIS ────────────────────────────────
-        if (result.skillsAnalysis) {
-            ensureSpace(50)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Skills Analysis", 20, currentY)
-            currentY += 12
-
-            // Strong areas
-            if (result.skillsAnalysis.strongAreas.length > 0) {
-                doc.setFontSize(10)
-                doc.setTextColor(22, 163, 74)
-                doc.text("Strong Skills", 20, currentY)
-                currentY += 6
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const strongText = result.skillsAnalysis.strongAreas.slice(0, 12).join(", ")
-                const strongLines = doc.splitTextToSize(strongText, 170)
-                doc.text(strongLines, 20, currentY)
-                currentY += strongLines.length * 5 + 6
-            }
-
-            // Missing areas
-            if (result.skillsAnalysis.missingAreas.length > 0) {
-                doc.setFontSize(10)
-                doc.setTextColor(234, 179, 8)
-                doc.text("Missing Skills", 20, currentY)
-                currentY += 6
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const missingText = result.skillsAnalysis.missingAreas.slice(0, 12).join(", ")
-                const missingLines = doc.splitTextToSize(missingText, 170)
-                doc.text(missingLines, 20, currentY)
-                currentY += missingLines.length * 5 + 6
-            }
-
-            // Learning recommendations
-            if (result.skillsAnalysis.learningRecommendations.length > 0) {
-                ensureSpace(30)
-                doc.setFontSize(10)
-                doc.setTextColor(59, 130, 246)
-                doc.text("Skill Gap Summary", 20, currentY)
-                currentY += 6
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const recLines = result.skillsAnalysis.learningRecommendations.slice(0, 4).map((r, i) => `• ${r}`)
-                const recText = recLines.join("\n")
-                const recSplit = doc.splitTextToSize(recText, 170)
-                doc.text(recSplit, 20, currentY)
-                currentY += recSplit.length * 5 + 10
-            }
-        }
-
-        // ─── 4. COMPLETE PROJECT ANALYSIS ──────────────────────
-        if (result.projectAnalysis && result.projectAnalysis.length > 0) {
-            ensureSpace(30)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Complete Project Analysis", 20, currentY)
-            currentY += 10
-
-            for (const proj of result.projectAnalysis) {
-                ensureSpace(50)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [[`${proj.projectName ?? "Unnamed Project"}  —  Role Relevance: ${proj.industryRelevance ?? 0}%  |  Resume Value: ${proj.resumeValue ?? 0}%`]],
-                    body: [
-                        ['Technologies', (proj.technologyStack || []).slice(0, 8).join(", ")],
-                        ['Key Strength', proj.strengths?.[0] || "—"],
-                        ['Key Improvement', proj.weaknesses?.[0] || "—"],
-                        ['Recruiter Impression', proj.recruiterImpression || "—"],
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [139, 92, 246] },
-                    styles: { fontSize: 9, cellPadding: 4 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 10
-            }
-        }
-
-        // ─── 5. PROJECT SUMMARY ────────────────────────────────
-        if (result.projectComparison) {
-            ensureSpace(40)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Project Summary", 20, currentY)
-            currentY += 10
-
-            // Ranking table
-            if (result.projectComparison.rankingTable && result.projectComparison.rankingTable.length > 0) {
-                const sorted = [...result.projectComparison.rankingTable].sort((a, b) => a.overallRank - b.overallRank)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [['#', 'Project', 'Tech Depth', 'Scalability', 'Innovation', 'Industry']],
-                    body: sorted.map((r, i) => [
-                        `#${r.overallRank ?? 0}`,
-                        r.project,
-                        `${r.technicalDepth ?? 0}/10`,
-                        `${r.scalability ?? 0}/10`,
-                        `${r.innovation ?? 0}/10`,
-                        `${r.industryRelevance ?? 0}/10`,
-                    ]),
-                    theme: 'striped',
-                    headStyles: { fillColor: [139, 92, 246] },
-                    styles: { fontSize: 9, cellPadding: 4 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 8
-            }
-
-            // Key project stats
-            const projectStats: { label: string; value: string | undefined }[] = [
-                { label: "Best Project", value: result.projectComparison.strongestProject },
-                { label: "Highlight First", value: result.projectComparison.projectThatShouldAppearFirst },
-                { label: "Needs Improvement", value: result.projectComparison.projectThatShouldBeImproved },
-            ]
-            const validStats = projectStats.filter(s => s.value)
-            if (validStats.length > 0) {
-                ensureSpace(20)
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const statsText = validStats.map(s => `${s.label}: ${s.value}`).join("  |  ")
-                const statsLines = doc.splitTextToSize(statsText, 170)
-                doc.text(statsLines, 20, currentY)
-                currentY += statsLines.length * 5 + 10
-            }
-        }
-
-        // ─── 6. COMPLETE EXPERIENCE ANALYSIS ───────────────────
-        if (result.experienceAnalysis && result.experienceAnalysis.length > 0) {
-            ensureSpace(30)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Complete Experience Analysis", 20, currentY)
-            currentY += 10
-
-            for (const exp of result.experienceAnalysis) {
-                ensureSpace(45)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [[`${exp.role ?? "Unspecified Role"} @ ${exp.organization ?? "Unspecified Company"}  —  Role Relevance: ${exp.technicalDepth ?? 0}%`]],
-                    body: [
-                        ['Key Strength', exp.strengths?.[0] || "—"],
-                        ['Improvement Area', exp.weaknesses?.[0] || "—"],
-                        ['Recruiter Impression', exp.recruiterImpression || "—"],
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [6, 182, 212] },
-                    styles: { fontSize: 9, cellPadding: 4 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 8
-            }
-        }
-
-        // ─── 7. EXPERIENCE SUMMARY ─────────────────────────────
-        if (result.experienceComparison) {
-            ensureSpace(25)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Experience Summary", 20, currentY)
-            currentY += 10
-
-            const expStats: { label: string; value: string | undefined }[] = [
-                { label: "Most Relevant", value: result.experienceComparison.mostValuableExperience },
-                { label: "Strongest", value: result.experienceComparison.mostTechnicalExperience },
-                { label: "Needs Rewrite", value: result.experienceComparison.experienceNeedingRewrite },
-            ]
-            const validExpStats = expStats.filter(s => s.value)
-            if (validExpStats.length > 0) {
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const expStatsText = validExpStats.map(s => `${s.label}: ${s.value}`).join("  |  ")
-                const expStatsLines = doc.splitTextToSize(expStatsText, 170)
-                doc.text(expStatsLines, 20, currentY)
-                currentY += expStatsLines.length * 5 + 10
-            }
-        }
-
-        // ─── 8. ATS KEYWORD ANALYSIS ───────────────────────────
-        if (result.atsKeywordAnalysis) {
-            ensureSpace(40)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("ATS Keyword Analysis", 20, currentY)
-            currentY += 10
-
-            autoTable(doc, {
-                startY: currentY,
-                head: [['Category', 'Details']],
-                body: [
-                    ['Matched Keywords', result.atsKeywordAnalysis.matchedKeywords.slice(0, 15).join(", ") || "None"],
-                    ['Missing Keywords', result.atsKeywordAnalysis.missingKeywords.slice(0, 15).join(", ") || "None"],
-                    ['Critical Missing', result.atsKeywordAnalysis.mostImportantMissingKeywords.join(", ") || "None"],
-                    ['Keyword Match', `${result.atsKeywordAnalysis.keywordMatchPercentage ?? 0}%`],
-                    ['Impact Summary', result.atsKeywordAnalysis.impactOfMissingKeywords || "—"],
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [100, 100, 100] },
-                styles: { fontSize: 9, cellPadding: 4 },
-                margin: { left: 20, right: 20 }
-            })
-            currentY = (doc as any).lastAutoTable.finalY + 10
-        }
-
-        // ─── 9. TARGET COMPANY READINESS ────────────────────────
-        if (result.faangReadiness) {
-            ensureSpace(30)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Target Company Readiness", 20, currentY)
-            currentY += 10
-
-            for (const [company, data] of Object.entries(result.faangReadiness)) {
-                const cData = data as { readiness: number; strengths: string[]; missingSkills: string[]; expectedImprovementIfFixed: string }
-                ensureSpace(40)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [[`${company.charAt(0).toUpperCase() + company.slice(1)}  —  Readiness: ${cData.readiness}%`]],
-                    body: [
-                        ['Strengths', (cData.strengths || []).slice(0, 3).join(", ") || "—"],
-                        ['Missing Skills', (cData.missingSkills || []).slice(0, 5).join(", ") || "—"],
-                        ['Next Step', cData.expectedImprovementIfFixed || "—"],
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [249, 115, 22] },
-                    styles: { fontSize: 9, cellPadding: 4 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 8
-            }
-        }
-
-        // ─── 10. INTERVIEW READINESS ───────────────────────────
-        if (result.interviewReadiness) {
-            ensureSpace(30)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Interview Readiness", 20, currentY)
-            currentY += 10
-
-            const interviewCategories: { key: keyof typeof result.interviewReadiness; label: string }[] = [
-                { key: "dsa", label: "DSA" },
-                { key: "frontend", label: "Frontend" },
-                { key: "backend", label: "Backend" },
-                { key: "systemDesign", label: "System Design" },
-                { key: "fullStack", label: "Full Stack" },
-                { key: "behavioral", label: "Behavioral" },
-            ]
-
-            for (const cat of interviewCategories) {
-                const data = result.interviewReadiness[cat.key]
-                if (!data) continue
-                ensureSpace(30)
-                doc.setFontSize(11)
-                doc.setTextColor(0, 0, 0)
-                doc.text(`${cat.label} — ${data.readiness}%`, 20, currentY)
-                currentY += 6
-                doc.setFontSize(8)
-                doc.setTextColor(80, 80, 80)
-                const recs = data.recommendations || []
-                if (recs.length > 0) {
-                    const recText = recs.slice(0, 3).map((r, i) => `  ${i === 0 ? "✓" : "!"} ${r}`).join("\n")
-                    const recLines = doc.splitTextToSize(recText, 170)
-                    doc.text(recLines, 20, currentY)
-                    currentY += recLines.length * 4 + 4
-                }
-            }
-            currentY += 4
-        }
-
-        // ─── 11. RECRUITER RECOMMENDATION ──────────────────────
-        ensureSpace(50)
-        doc.setFontSize(16)
+        // ─── Score Summary ────────────────────────────────────────
+        ensureSpace(40)
+        doc.setFontSize(14)
         doc.setTextColor(0, 0, 0)
-        doc.text("Recruiter Recommendation", 20, currentY)
-        currentY += 10
+        doc.text("Score Summary", 20, currentY)
+        currentY += 8
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Category', 'Score']],
+            body: [
+                [`Skills`, `${result.skillsScore ?? 0}%`],
+                [`Projects`, `${(result.projects || []).reduce((s, p) => s + (p.projectScore || 0), 0) / Math.max((result.projects || []).length, 1)}%`],
+                [`Experience`, `${(result.experiences || []).reduce((s, e) => s + (e.experienceScore || 0), 0) / Math.max((result.experiences || []).length, 1)}%`],
+                [`ATS`, `${result.atsScore ?? 0}%`],
+                [`Company Readiness`, `${result.companyReadinessScore ?? 0}%`],
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [0, 0, 0] },
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: 20, right: 20 }
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 10
 
-        // Build recommended roles from strong skill areas
-        const skillToRole: Record<string, string> = {
-            "AI/ML": "AI/ML Engineer",
-            "Machine Learning": "ML Engineer",
-            "Data Science": "Data Scientist",
-            "Backend": "Backend Engineer",
-            "Frontend": "Frontend Engineer",
-            "Full Stack": "Full Stack Engineer",
-            "DevOps": "DevOps Engineer",
-            "Cloud": "Cloud Engineer",
-            "System Design": "Software Engineer",
-            "Distributed Systems": "Software Engineer",
-            "Cybersecurity": "Security Engineer",
-            "Research Skills": "Research Engineer",
-            "Programming Languages": "Software Engineer",
-        }
-        const recommendedRoles: string[] = []
-        const addedRoles = new Set<string>()
-        if (result.skillsAnalysis?.strongAreas) {
-            for (const area of result.skillsAnalysis.strongAreas) {
-                const role = skillToRole[area]
-                if (role && !addedRoles.has(role)) {
-                    recommendedRoles.push(role)
-                    addedRoles.add(role)
-                }
-            }
-        }
-        if (recommendedRoles.length === 0) {
-            recommendedRoles.push("Software Engineer", "AI Engineer", "Data Scientist")
-        }
-
-        const topRole = result.executiveSummary?.careerStageAssessment || "Not specified"
-        const hiringImpression = result.executiveSummary?.overallHiringImpression || result.summary
-
+        // ─── Skills ───────────────────────────────────────────────
+        ensureSpace(30)
+        doc.setFontSize(14)
+        doc.setTextColor(0, 0, 0)
+        doc.text("Skills Score", 20, currentY)
+        currentY += 8
         autoTable(doc, {
             startY: currentY,
             head: [['Category', 'Details']],
             body: [
-                ['Recommended Roles', recommendedRoles.slice(0, 5).join(", ")],
-                ['Career Stage', topRole],
-                ['Growth Potential', result.portfolioIntelligence?.careerGrowthPotentialScore
-                    ? `${result.portfolioIntelligence.careerGrowthPotentialScore}/100 — High potential for rapid career advancement`
-                    : "High — based on project diversity and technical depth"],
-                ['Best Hiring Environment', (() => {
-                    const scores: string[] = []
-                    if (result.portfolioIntelligence?.startupReadinessScore && result.portfolioIntelligence.startupReadinessScore > 60) scores.push("Startups")
-                    if (result.portfolioIntelligence?.faangPotentialScore && result.portfolioIntelligence.faangPotentialScore > 60) scores.push("FAANG / Big Tech")
-                    if (result.portfolioIntelligence?.enterpriseReadinessScore && result.portfolioIntelligence.enterpriseReadinessScore > 60) scores.push("Enterprise / Product-Based")
-                    return scores.length > 0 ? scores.join(", ") : "Startups, AI Companies, Product-Based Companies"
-                })()],
-                ['Hiring Impression', hiringImpression],
+                ['Strong Skills', (result.strongSkills || []).join(", ") || "None"],
+                ['Missing Skills', (result.missingSkills || []).join(", ") || "None"],
+                ['Critical Missing', (result.criticalMissingSkills || []).join(", ") || "None"],
+                ['Verdict', result.skillsRecruiterVerdict || "—"],
             ],
             theme: 'grid',
-            headStyles: { fillColor: [0, 0, 0] },
+            headStyles: { fillColor: [22, 163, 74] },
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: 20, right: 20 }
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 10
+
+        // ─── Projects ─────────────────────────────────────────────
+        if ((result.projects || []).length > 0) {
+            ensureSpace(20)
+            doc.setFontSize(14)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Project Analysis", 20, currentY)
+            currentY += 8
+            for (const proj of result.projects || []) {
+                ensureSpace(40)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[`${proj.projectName || "Unnamed"} — Score: ${proj.projectScore || 0}%`]],
+                    body: [
+                        ['Technologies', (proj.technologies || []).join(", ")],
+                        ['Technical Depth (30%)', `${proj.technicalDepth || proj.technicalComplexity || 0}%`],
+                        ['Industry Relevance (25%)', `${proj.industryRelevance || 0}%`],
+                        ['Scalability (20%)', `${proj.scalability || 0}%`],
+                        ['Innovation (15%)', `${proj.innovation || 0}%`],
+                        ['Resume Value (10%)', `${proj.resumeValue || 0}%`],
+                        ['Strength', proj.strength || "—"],
+                        ['Improvement', proj.improvement || "—"],
+                        ['Verdict', proj.recruiterVerdict || "—"],
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [139, 92, 246] },
+                    styles: { fontSize: 8, cellPadding: 3 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 6
+            }
+        }
+
+        // ─── Experiences ──────────────────────────────────────────
+        if ((result.experiences || []).length > 0) {
+            ensureSpace(20)
+            doc.setFontSize(14)
+            doc.setTextColor(0, 0, 0)
+            doc.text("Experience Analysis", 20, currentY)
+            currentY += 8
+            for (const exp of result.experiences || []) {
+                ensureSpace(40)
+                autoTable(doc, {
+                    startY: currentY,
+                    head: [[`${exp.role || "Unspecified"} @ ${exp.company || "Unspecified"} — Score: ${exp.experienceScore || 0}%`]],
+                    body: [
+                        ['Duration', exp.duration || "—"],
+                        ['Technical Depth (40%)', `${exp.technicalDepth || 0}%`],
+                        ['Role Relevance (25%)', `${exp.roleRelevance || 0}%`],
+                        ['Business Impact (20%)', `${exp.businessImpact || 0}%`],
+                        ['Industry Exposure (15%)', `${exp.industryExposure || 0}%`],
+                        ['Strength', exp.strength || "—"],
+                        ['Improvement', exp.improvement || "—"],
+                        ['Verdict', exp.recruiterVerdict || "—"],
+                    ],
+                    theme: 'grid',
+                    headStyles: { fillColor: [6, 182, 212] },
+                    styles: { fontSize: 8, cellPadding: 3 },
+                    margin: { left: 20, right: 20 }
+                })
+                currentY = (doc as any).lastAutoTable.finalY + 6
+            }
+        }
+
+        // ─── ATS ──────────────────────────────────────────────────
+        ensureSpace(30)
+        doc.setFontSize(14)
+        doc.setTextColor(0, 0, 0)
+        doc.text("ATS Score", 20, currentY)
+        currentY += 8
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Category', 'Details']],
+            body: [
+                ['Matched Keywords', (result.matchedKeywords || []).join(", ") || "None"],
+                ['Missing Keywords', (result.missingKeywords || []).join(", ") || "None"],
+                ['Critical Missing', (result.criticalMissingKeywords || []).join(", ") || "None"],
+                ['Expected Improvement', result.expectedATSImprovement || "—"],
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [234, 179, 8] },
+            styles: { fontSize: 9, cellPadding: 4 },
+            margin: { left: 20, right: 20 }
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 10
+
+        // ─── Company Readiness ────────────────────────────────────
+        ensureSpace(30)
+        doc.setFontSize(14)
+        doc.setTextColor(0, 0, 0)
+        doc.text("Company Readiness", 20, currentY)
+        currentY += 8
+        const areaRows = (result.companyReadinessAreas || []).map(a => [a.area, `${a.score}%`])
+        areaRows.push(['Verdict', result.companyReadinessVerdict || "—"])
+        areaRows.push(['Interview Probability', result.interviewProbability || "—"])
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Area', 'Score']],
+            body: areaRows,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246] },
             styles: { fontSize: 9, cellPadding: 4 },
             margin: { left: 20, right: 20 }
         })
         currentY = (doc as any).lastAutoTable.finalY + 15
 
-        // ─── 12. 30/60/90 DAY ACTION PLAN ────────────────────────
-        if (result.growthPlan) {
-            ensureSpace(50)
-            doc.setFontSize(16)
+        // ─── Recruiter Report ─────────────────────────────────────
+        if (result.recruiterReport) {
+            ensureSpace(30)
+            doc.setFontSize(14)
             doc.setTextColor(0, 0, 0)
-            doc.text("30/60/90 Day Action Plan", 20, currentY)
-            currentY += 12
-
-            const phases = [
-                { key: "first30Days" as const, label: "First 30 Days", color: "#3b82f6" },
-                { key: "next60Days" as const, label: "Next 60 Days", color: "#8b5cf6" },
-                { key: "next90Days" as const, label: "Next 90 Days", color: "#22c55e" },
-            ]
-
-            for (const phase of phases) {
-                const data = result.growthPlan[phase.key]
-                if (!data || !data.focus) continue
-                ensureSpace(35)
-                doc.setFontSize(12)
-                doc.setTextColor(59, 130, 246)
-                doc.text(`${phase.label} — ${data.focus}`, 20, currentY)
-                currentY += 7
-
-                if (data.actions.length > 0) {
-                    doc.setFontSize(9)
-                    doc.setTextColor(80, 80, 80)
-                    doc.text("Actions:", 25, currentY)
-                    currentY += 5
-                    const actionsText = data.actions.map((a, i) => `${i + 1}. ${a}`).join("\n")
-                    const actionLines = doc.splitTextToSize(actionsText, 160)
-                    doc.text(actionLines, 30, currentY)
-                    currentY += actionLines.length * 4 + 3
-                }
-
-                if (data.skills.length > 0) {
-                    doc.setFontSize(9)
-                    doc.setTextColor(80, 80, 80)
-                    doc.text("Skills to Learn: ", 25, currentY)
-                    doc.text(data.skills.join(", "), 60, currentY)
-                    currentY += 5
-                }
-
-                if (data.expectedOutcome) {
-                    ensureSpace(15)
-                    doc.setFontSize(8)
-                    doc.setTextColor(100, 100, 100)
-                    const outcomeText = `Expected Outcome: ${data.expectedOutcome}`
-                    const outcomeLines = doc.splitTextToSize(outcomeText, 160)
-                    doc.text(outcomeLines, 25, currentY)
-                    currentY += outcomeLines.length * 4 + 8
-                }
-            }
-        }
-
-        // ─── 13. PRIORITY SKILLS ROADMAP (fallback if growthPlan not available) ───
-        if (!result.growthPlan && result.prioritySkills) {
-            ensureSpace(40)
-            doc.setFontSize(16)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Priority Skills Roadmap", 20, currentY)
-            currentY += 12
-
-            const skillTiers = [
-                { key: "immediate" as const, label: "Immediate (Next 30 Days)", color: "#3b82f6" },
-                { key: "shortTerm" as const, label: "Short Term (30-60 Days)", color: "#8b5cf6" },
-                { key: "longTerm" as const, label: "Long Term (60-90 Days)", color: "#22c55e" },
-            ]
-
-            for (const tier of skillTiers) {
-                const skills = result.prioritySkills[tier.key]
-                if (!skills || skills.length === 0) continue
-                ensureSpace(15)
-                doc.setFontSize(10)
-                doc.setTextColor(59, 130, 246)
-                doc.text(tier.label, 20, currentY)
-                currentY += 6
-                doc.setFontSize(9)
-                doc.setTextColor(80, 80, 80)
-                const skillsText = skills.join(", ")
-                const skillsLines = doc.splitTextToSize(skillsText, 170)
-                doc.text(skillsLines, 25, currentY)
-                currentY += skillsLines.length * 5 + 6
+            doc.text("Detailed Analysis", 20, currentY)
+            currentY += 8
+            doc.setFontSize(9)
+            doc.setTextColor(80, 80, 80)
+            const reportLines = doc.splitTextToSize(result.recruiterReport, 170)
+            // Split into pages if needed
+            for (let i = 0; i < reportLines.length; i += 30) {
+                const chunk = reportLines.slice(i, i + 30)
+                ensureSpace(chunk.length * 5 + 10)
+                doc.text(chunk, 20, currentY)
+                currentY += chunk.length * 5 + 5
             }
         }
 
@@ -922,7 +545,7 @@ Platform: ${extractedData.platform}
                                         <div
                                             className="absolute inset-0 z-0 cursor-pointer"
                                             onClick={() => {
-                                                setResult(item.analysisData)
+                                                setResult(normalizeResult(item.analysisData))
                                                 setView("generator")
                                             }}
                                         />
@@ -991,13 +614,13 @@ Platform: ${extractedData.platform}
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-full transition-all duration-1000 ${item.analysisData.score > 70 ? 'bg-green-500' :
-                                                                item.analysisData.score > 40 ? 'bg-yellow-500' : 'bg-red-500'
+                                                            className={`h-full rounded-full transition-all duration-1000 ${(item.analysisData.overallScore ?? item.analysisData.score ?? 0) > 70 ? 'bg-green-500' :
+                                                                (item.analysisData.overallScore ?? item.analysisData.score ?? 0) > 40 ? 'bg-yellow-500' : 'bg-red-500'
                                                                 }`}
-                                                            style={{ width: `${item.analysisData.score}%` }}
+                                                            style={{ width: `${item.analysisData.overallScore ?? item.analysisData.score ?? 0}%` }}
                                                         />
                                                     </div>
-                                                    <span className="text-xs font-black text-white">{item.analysisData.score}%</span>
+                                                    <span className="text-xs font-black text-white">{item.analysisData.overallScore ?? item.analysisData.score ?? 0}%</span>
                                                 </div>
                                             </div>
 
