@@ -23,8 +23,7 @@ import { ResumeAnalysisSkeleton } from "@/components/ToolSkeletons"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { AnalysisResult, ResumeAnalysisItem } from "@/types"
-import { jsPDF } from "jspdf"
-import autoTable from "jspdf-autotable"
+import { generateResumeReportPDF } from "@/lib/pdf/resume-report-pdf"
 import ResultsDisplay from "./ResultsDisplay"
 
 export default function ResumeAnalyzerClient() {
@@ -261,210 +260,14 @@ Platform: ${extractedData.platform}
 
     const downloadAnalysisAsPDF = async () => {
         if (!result) return
-
-        const doc = new jsPDF()
-        const ov = result.overallScore ?? result.score ?? 0
-        const primaryColor = ov > 70 ? "#22c55e" : ov > 40 ? "#eab308" : "#ef4444"
-
-        doc.setFontSize(22)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Resume Analysis Report", 105, 20, { align: "center" })
-
-        doc.setFontSize(14)
-        doc.setTextColor(100, 100, 100)
-        doc.text(`Overall Score: `, 20, 40)
-        doc.setTextColor(primaryColor)
-        doc.setFont("helvetica", "bold")
-        doc.text(`${ov}%`, 55, 40)
-        doc.setFont("helvetica", "normal")
-
-        let currentY = 50
-        const ensureSpace = (needed: number) => {
-            if (currentY + needed > 260) {
-                doc.addPage()
-                currentY = 20
-            }
+        try {
+            const doc = generateResumeReportPDF(result, targetRole, fieldOfInterest)
+            doc.save(`Mentorix_Resume_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+            toast.success("Downloading Mentorix resume report...")
+        } catch (err) {
+            console.error("PDF generation failed:", err)
+            toast.error("Failed to generate PDF. Please try again.")
         }
-
-        // ─── Score Summary ────────────────────────────────────────
-        ensureSpace(40)
-        doc.setFontSize(14)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Score Summary", 20, currentY)
-        currentY += 8
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Category', 'Score']],
-            body: [
-                [`Skills`, `${result.skillsScore ?? 0}%`],
-                [`Projects`, `${(result.projects || []).reduce((s, p) => s + (p.projectScore || 0), 0) / Math.max((result.projects || []).length, 1)}%`],
-                [`Experience`, `${(result.experiences || []).reduce((s, e) => s + (e.experienceScore || 0), 0) / Math.max((result.experiences || []).length, 1)}%`],
-                [`ATS`, `${result.atsScore ?? 0}%`],
-                [`Company Readiness`, `${result.companyReadinessScore ?? 0}%`],
-            ],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0] },
-            styles: { fontSize: 9, cellPadding: 4 },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 10
-
-        // ─── Skills ───────────────────────────────────────────────
-        ensureSpace(30)
-        doc.setFontSize(14)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Skills Score", 20, currentY)
-        currentY += 8
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Category', 'Details']],
-            body: [
-                ['Strong Skills', (result.strongSkills || []).join(", ") || "None"],
-                ['Missing Skills', (result.missingSkills || []).join(", ") || "None"],
-                ['Critical Missing', (result.criticalMissingSkills || []).join(", ") || "None"],
-                ['Verdict', result.skillsRecruiterVerdict || "—"],
-            ],
-            theme: 'grid',
-            headStyles: { fillColor: [22, 163, 74] },
-            styles: { fontSize: 9, cellPadding: 4 },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 10
-
-        // ─── Projects ─────────────────────────────────────────────
-        if ((result.projects || []).length > 0) {
-            ensureSpace(20)
-            doc.setFontSize(14)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Project Analysis", 20, currentY)
-            currentY += 8
-            for (const proj of result.projects || []) {
-                ensureSpace(40)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [[`${proj.projectName || "Unnamed"} — Score: ${proj.projectScore || 0}%`]],
-                    body: [
-                        ['Technologies', (proj.technologies || []).join(", ")],
-                        ['Technical Depth (30%)', `${proj.technicalDepth || proj.technicalComplexity || 0}%`],
-                        ['Industry Relevance (25%)', `${proj.industryRelevance || 0}%`],
-                        ['Scalability (20%)', `${proj.scalability || 0}%`],
-                        ['Innovation (15%)', `${proj.innovation || 0}%`],
-                        ['Resume Value (10%)', `${proj.resumeValue || 0}%`],
-                        ['Strength', proj.strength || "—"],
-                        ['Improvement', proj.improvement || "—"],
-                        ['Verdict', proj.recruiterVerdict || "—"],
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [139, 92, 246] },
-                    styles: { fontSize: 8, cellPadding: 3 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 6
-            }
-        }
-
-        // ─── Experiences ──────────────────────────────────────────
-        if ((result.experiences || []).length > 0) {
-            ensureSpace(20)
-            doc.setFontSize(14)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Experience Analysis", 20, currentY)
-            currentY += 8
-            for (const exp of result.experiences || []) {
-                ensureSpace(40)
-                autoTable(doc, {
-                    startY: currentY,
-                    head: [[`${exp.role || "Unspecified"} @ ${exp.company || "Unspecified"} — Score: ${exp.experienceScore || 0}%`]],
-                    body: [
-                        ['Duration', exp.duration || "—"],
-                        ['Technical Depth (40%)', `${exp.technicalDepth || 0}%`],
-                        ['Role Relevance (25%)', `${exp.roleRelevance || 0}%`],
-                        ['Business Impact (20%)', `${exp.businessImpact || 0}%`],
-                        ['Industry Exposure (15%)', `${exp.industryExposure || 0}%`],
-                        ['Strength', exp.strength || "—"],
-                        ['Improvement', exp.improvement || "—"],
-                        ['Verdict', exp.recruiterVerdict || "—"],
-                    ],
-                    theme: 'grid',
-                    headStyles: { fillColor: [6, 182, 212] },
-                    styles: { fontSize: 8, cellPadding: 3 },
-                    margin: { left: 20, right: 20 }
-                })
-                currentY = (doc as any).lastAutoTable.finalY + 6
-            }
-        }
-
-        // ─── ATS ──────────────────────────────────────────────────
-        ensureSpace(30)
-        doc.setFontSize(14)
-        doc.setTextColor(0, 0, 0)
-        doc.text("ATS Score", 20, currentY)
-        currentY += 8
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Category', 'Details']],
-            body: [
-                ['Matched Keywords', (result.matchedKeywords || []).join(", ") || "None"],
-                ['Missing Keywords', (result.missingKeywords || []).join(", ") || "None"],
-                ['Critical Missing', (result.criticalMissingKeywords || []).join(", ") || "None"],
-                ['Expected Improvement', result.expectedATSImprovement || "—"],
-            ],
-            theme: 'grid',
-            headStyles: { fillColor: [234, 179, 8] },
-            styles: { fontSize: 9, cellPadding: 4 },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 10
-
-        // ─── Company Readiness ────────────────────────────────────
-        ensureSpace(30)
-        doc.setFontSize(14)
-        doc.setTextColor(0, 0, 0)
-        doc.text("Company Readiness", 20, currentY)
-        currentY += 8
-        const areaRows = (result.companyReadinessAreas || []).map(a => [a.area, `${a.score}%`])
-        areaRows.push(['Verdict', result.companyReadinessVerdict || "—"])
-        areaRows.push(['Interview Probability', result.interviewProbability || "—"])
-        autoTable(doc, {
-            startY: currentY,
-            head: [['Area', 'Score']],
-            body: areaRows,
-            theme: 'grid',
-            headStyles: { fillColor: [59, 130, 246] },
-            styles: { fontSize: 9, cellPadding: 4 },
-            margin: { left: 20, right: 20 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 15
-
-        // ─── Recruiter Report ─────────────────────────────────────
-        if (result.recruiterReport) {
-            ensureSpace(30)
-            doc.setFontSize(14)
-            doc.setTextColor(0, 0, 0)
-            doc.text("Detailed Analysis", 20, currentY)
-            currentY += 8
-            doc.setFontSize(9)
-            doc.setTextColor(80, 80, 80)
-            const reportLines = doc.splitTextToSize(result.recruiterReport, 170)
-            // Split into pages if needed
-            for (let i = 0; i < reportLines.length; i += 30) {
-                const chunk = reportLines.slice(i, i + 30)
-                ensureSpace(chunk.length * 5 + 10)
-                doc.text(chunk, 20, currentY)
-                currentY += chunk.length * 5 + 5
-            }
-        }
-
-        const pageCount = (doc as any).internal.getNumberOfPages()
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i)
-            doc.setFontSize(8)
-            doc.setTextColor(150, 150, 150)
-            doc.text(`Generated by Mentorix AI • Page ${i} of ${pageCount}`, 105, 285, { align: "center" })
-        }
-
-        doc.save(`Resume_Analysis_${new Date().toISOString().split('T')[0]}.pdf`)
-        toast.success("Downloading PDF report...")
     }
 
     return (

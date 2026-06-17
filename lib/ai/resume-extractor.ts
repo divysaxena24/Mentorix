@@ -1025,6 +1025,33 @@ function isExperienceStartLine(line: string): boolean {
     }
   }
 
+  // Signal 6: Role keyword appears with company delimiter anywhere in line
+  // Catches long role titles like "AI Automation and Web Development Intern, PIVOT"
+  // without triggering false positives on long description lines.
+  for (const keyword of EXPERIENCE_ROLE_KEYWORDS) {
+    const kwLower = keyword.toLowerCase();
+    if (trimmed.toLowerCase().includes(kwLower)) {
+      // Check if the role keyword is followed by a company delimiter within the next ~40 chars
+      // This ensures it's a role header, not a passing mention in a long description.
+      const kwIdx = trimmed.toLowerCase().indexOf(kwLower);
+      const afterKeyword = trimmed.substring(kwIdx + kwLower.length).trim();
+      const afterKWL = afterKeyword.toLowerCase();
+
+      // Keyword followed by @/at/-/comma then company name (strong header signal)
+      const hasDelimiter = /^(?:\s*,\s*|\s+(?:at|@|–|-|—|of|for|with)\s+)/i.test(afterKeyword);
+
+      // Or keyword is at/near the end of a short line (< 80 chars)
+      const isNearEndOfShortLine = trimmed.length < 80 && afterKWL.replace(/[\s.,;:!?]+$/, "").length < 30;
+
+      // Or keyword ends the line (just whitespace/period after it)
+      const endsLine = /^[\s.,;:!?]*$/.test(afterKWL);
+
+      if (hasDelimiter || isNearEndOfShortLine || endsLine) {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -1480,7 +1507,10 @@ export function extractResume(resumeText: string): ExtractionResult {
   // ── Attempt auto-retry for merge-related issues ──────────────────
   // When validation fails due to merged sections or placeholder tokens,
   // try a different, more aggressive parsing strategy on the original text.
-  if (validationErrors.length > 0 && stats.projectCount > 0 && stats.experienceCount > 0) {
+  // Guard: only attempt auto-retry if we have at least some content to work with
+  // Use OR (not AND) so that a zero-count in one section doesn't block
+  // fixing merge issues in the other section.
+  if (validationErrors.length > 0 && (stats.projectCount > 0 || stats.experienceCount > 0)) {
     const mergeErrors = validationErrors.filter(e =>
       e.includes("merged") || e.includes("contains") || e.includes("placeholder")
     );
