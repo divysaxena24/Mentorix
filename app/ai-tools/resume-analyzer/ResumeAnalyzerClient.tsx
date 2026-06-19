@@ -663,7 +663,6 @@ Platform: ${extractedData.platform}
                     <ResultsDisplay
                         result={result}
                         onReset={() => setResult(null)}
-                        onDownload={downloadAnalysisAsPDF}
                     />
                 )}
             </div>

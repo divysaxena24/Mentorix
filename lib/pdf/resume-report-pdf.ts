@@ -1,676 +1,502 @@
+// lib/pdf/resume-report-pdf.ts
 import { jsPDF } from "jspdf"
 import { AnalysisResult } from "@/types"
 
-// ─── Color Palette — Professional Report ──────────────────────────────
+/**
+ * Professional styling constants based on the design brief.
+ */
 const C = {
-  bg: "#FFFFFF",
-  text: "#1E293B",
-  muted: "#64748B",
-  light: "#F1F5F9",
-  border: "#E2E8F0",
-  primary: "#4F46E5",
-  accent: "#7C3AED",
-  success: "#059669",
+  // Text colors
+  text: "#111827",
+  secondary: "#6B7280",
+  // Light backgrounds
+  tableHeader: "#F8FAFC",
+  zebraOdd: "#FFFFFF",
+  zebraEven: "#F8FAFC",
+  // Borders
+  border: "#E5E7EB",
+  // Accents
+  primary: "#6366F1",
+  success: "#16A34A",
   warning: "#D97706",
   danger: "#DC2626",
-  orange: "#D97706",
-  headerBg: "#0F172A",
+  // Misc
+  white: "#FFFFFF",
 }
 
-const getScoreColor = (s: number) => s >= 80 ? C.success : s >= 60 ? C.warning : s >= 40 ? C.orange : C.danger
-const getScoreLabel = (s: number) => s >= 80 ? "Excellent" : s >= 60 ? "Good" : s >= 40 ? "Fair" : "Needs Work"
+// Helper to convert hex to RGB for jsPDF color functions
+function hexToRgb(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return [r, g, b]
+}
+function setTextColor(d: jsPDF, hex: string) { const [r, g, b] = hexToRgb(hex); d.setTextColor(r, g, b) }
+function setFillColor(d: jsPDF, hex: string) { const [r, g, b] = hexToRgb(hex); d.setFillColor(r, g, b) }
+function setDrawColor(d: jsPDF, hex: string) { const [r, g, b] = hexToRgb(hex); d.setDrawColor(r, g, b) }
 
-// ═══════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════
+/** Layout helpers */
+const MARGIN = 24 // page margin in pt
+const PAGE_WIDTH = (d: jsPDF) => d.internal.pageSize.getWidth()
+const PAGE_HEIGHT = (d: jsPDF) => d.internal.pageSize.getHeight()
 
-function hexRgb(hex: string): [number, number, number] {
-  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
+function pageBackground(d: jsPDF) { setFillColor(d, C.white); d.rect(0, 0, PAGE_WIDTH(d), PAGE_HEIGHT(d), "F") }
+
+// Header with logo placeholder
+function addHeader(d: jsPDF, pw: number) {
+  const h = 20;
+  // Background
+  setFillColor(d, C.white);
+  d.rect(0, 0, pw, h, "F");
+  // Logo placeholder (grey box)
+  setFillColor(d, "#E5E7EB");
+  d.rect(MARGIN, 4, 12, 12, "F");
+  // Title text next to logo
+  setTextColor(d, C.primary);
+  d.setFontSize(10);
+  d.setFont("helvetica", "bold");
+  d.text("MENTORIX", MARGIN + 20, h / 2 + 2);
+  setTextColor(d, C.secondary);
+  d.setFont("helvetica", "normal");
+  d.text("Resume Intelligence Report", MARGIN + d.getTextWidth("MENTORIX  ") + 28, h / 2 + 2);
+  const date = new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  d.text(date, pw - MARGIN, h / 2 + 2, { align: "right" });
 }
 
-function txt(d: jsPDF, hex: string) { const [r, g, b] = hexRgb(hex); d.setTextColor(r, g, b) }
-function fill(d: jsPDF, hex: string) { const [r, g, b] = hexRgb(hex); d.setFillColor(r, g, b) }
-function drw(d: jsPDF, hex: string) { const [r, g, b] = hexRgb(hex); d.setDrawColor(r, g, b) }
 
-function pageBg(d: jsPDF, pw: number, ph: number) {
-  fill(d, C.bg); d.rect(0, 0, pw, ph, "F")
+function addFooter(d: jsPDF, pageNum: number, pw: number, ph: number) {
+  setDrawColor(d, C.border)
+  d.setLineWidth(0.3)
+  d.line(MARGIN, ph - 12, pw - MARGIN, ph - 12)
+  setTextColor(d, C.secondary)
+  d.setFontSize(7)
+  d.setFont("helvetica", "normal")
+  d.text(`Mentorix AI Assessment • Page ${pageNum}`, pw / 2, ph - 6, { align: "center" })
 }
 
-// ─── Header — clean brand bar ────────────────────────────────────────
-function addHeader(d: jsPDF, m: number, pw: number) {
-  fill(d, C.headerBg); d.rect(0, 0, pw, 18, "F")
-  txt(d, "#FFFFFF")
-  d.setFontSize(9); d.setFont("helvetica", "bold")
-  d.text("MENTORIX", m, 12)
-  d.setFont("helvetica", "normal"); d.setFontSize(7)
-  txt(d, "#94A3B8"); d.text("Resume Intelligence Report", m + d.getTextWidth("MENTORIX  "), 12)
-  const ds = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-  d.text(ds, pw - m, 12, { align: "right" })
+function sectionTitle(d: jsPDF, title: string, y: number, pw: number) {
+  setTextColor(d, C.primary)
+  d.setFontSize(19)
+  d.setFont("helvetica", "bold")
+  d.text(title.toUpperCase(), MARGIN, y)
+  setDrawColor(d, C.primary)
+  d.setLineWidth(0.4)
+  d.line(MARGIN, y + 2, pw - MARGIN, y + 2)
+  return y + 20
 }
 
-// ─── Footer — clean page number ──────────────────────────────────────
-function addFooter(d: jsPDF, pn: number, tp: number, m: number, pw: number, ph: number) {
-  drw(d, C.border); d.setLineWidth(0.3)
-  d.line(m, ph - 14, pw - m, ph - 14)
-  d.setFontSize(7); d.setFont("helvetica", "normal")
-  txt(d, C.muted)
-  d.text(`Mentorix AI Assessment  ·  Page ${pn} of ${tp}`, pw / 2, ph - 7, { align: "center" })
+function progressBar(d: jsPDF, x: number, y: number, w: number, pct: number, color: string) {
+  const clamped = Math.min(100, Math.max(0, pct))
+  const fillW = Math.max(2, (clamped / 100) * w)
+  setFillColor(d, "#E5E7EB")
+  d.rect(x, y, w, 5, "F")
+  setFillColor(d, color)
+  d.rect(x, y, fillW, 5, "F")
 }
 
-// ─── Section Title ────────────────────────────────────────────────────
-function section(d: jsPDF, title: string, y: number, m: number, pw: number): number {
-  drw(d, C.primary); d.setLineWidth(0.5)
-  d.line(m, y, pw - m, y)
-  txt(d, C.primary)
-  d.setFontSize(11); d.setFont("helvetica", "bold")
-  d.text(title.toUpperCase(), m, y + 4)
-  return y + 10
+function scoreBadge(d: jsPDF, x: number, y: number, score: number) {
+  const color = score >= 80 ? C.success : score >= 60 ? C.warning : C.danger
+  setFillColor(d, color)
+  d.rect(x, y, 38, 12, "F")
+  setTextColor(d, C.white)
+  d.setFontSize(8)
+  d.setFont("helvetica", "bold")
+  d.text(`${Math.round(score)}%`, x + 19, y + 9, { align: "center" })
 }
 
-// ─── Progress Bar (thin, report-style) ────────────────────────────────
-function scoreBar(d: jsPDF, x: number, y: number, w: number, h: number, pct: number, color: string) {
-  const c = Math.min(Math.max(pct, 0), 100)
-  const fw = Math.max(2, (c / 100) * w)
-  fill(d, C.light); d.rect(x, y, w, h, "F")
-  fill(d, color); d.rect(x, y, fw, h, "F")
-}
+/** Main export */
+export function generateResumeReportPDF(result: AnalysisResult, targetRole?: string, fieldOfInterest?: string): jsPDF {
+  const doc = new jsPDF()
+  const pw = PAGE_WIDTH(doc)
+  const ph = PAGE_HEIGHT(doc)
+  let pageNum = 1
 
-// ─── Score Table Row ──────────────────────────────────────────────────
-function scoreRow(d: jsPDF, x: number, y: number, w: number, label: string, score: number, desc: string) {
-  const sc = getScoreColor(score)
-  const sl = getScoreLabel(score)
-  // Label
-  txt(d, C.text); d.setFontSize(8); d.setFont("helvetica", "bold")
-  d.text(label, x, y + 3)
-  // Bar
-  scoreBar(d, x + 74, y, w - 150, 5, score, sc)
-  // Percentage
-  txt(d, sc); d.setFontSize(8); d.setFont("helvetica", "bold")
-  d.text(`${Math.round(score)}%`, x + w - 74, y + 3, { align: "right" })
-  // Label
-  txt(d, C.muted); d.setFontSize(6); d.setFont("helvetica", "normal")
-  d.text(sl, x + w - 26, y + 3, { align: "right" })
-  // Description
-  txt(d, C.muted); d.setFontSize(6.5)
-  d.text(desc, x + 74, y + 8)
-}
+  // ------- Page 1 – Cover & Executive Summary -------
+  pageBackground(doc)
+  addHeader(doc, pw)
+  setTextColor(doc, C.text)
+  doc.setFontSize(24)
+  doc.setFont("helvetica", "bold")
+  doc.text("Resume Intelligence Report", pw / 2, 48, { align: "center" })
+  const overall = result.overallScore ?? 0
+  const subtitle = overall >= 80 ? "Exceptional Candidate Profile" : overall >= 60 ? "Strong Candidate Foundation" : overall >= 40 ? "Candidate With Development Areas" : "Early Career Profile – Growth Potential"
+  doc.setFontSize(12)
+  doc.setFont("helvetica", "normal")
+  setTextColor(doc, C.secondary)
+  doc.text(subtitle, pw / 2, 58, { align: "center" })
+  const scColor = overall >= 80 ? C.success : overall >= 60 ? C.warning : C.danger
+  setFillColor(doc, scColor)
+  doc.circle(pw / 2, 88, 22, "F")
+  setTextColor(doc, C.white)
+  doc.setFontSize(20)
+  doc.text(`${Math.round(overall)}`, pw / 2, 94, { align: "center" })
+  doc.setFontSize(8)
+  doc.text("OVERALL SCORE", pw / 2, 102, { align: "center" })
 
-// ─── Tag (inline colored label) ──────────────────────────────────────
-function tag(d: jsPDF, x: number, y: number, text: string, color: string) {
-  const tw = d.getTextWidth(text) + 8
-  fill(d, color); d.rect(x, y, tw, 9, "F")
-  txt(d, "#FFFFFF"); d.setFontSize(6); d.setFont("helvetica", "bold")
-  d.text(text, x + tw / 2, y + 6.5, { align: "center" })
-  return tw + 3
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// MAIN EXPORT
-// ═══════════════════════════════════════════════════════════════════════
-export function generateResumeReportPDF(
-  result: AnalysisResult,
-  targetRole?: string,
-  fieldOfInterest?: string,
-): jsPDF {
-  const d = new jsPDF()
-  const pw = d.internal.pageSize.getWidth()
-  const ph = d.internal.pageSize.getHeight()
-  const M = 14
-  const cw = pw - 2 * M
-
-  // ─── Data ───────────────────────────────────────────────────────────
-  const s = {
-    ov: result.overallScore ?? result.score ?? 0,
-    ss: result.skillsScore ?? 0,
-    strong: result.strongSkills ?? [],
-    missing: result.missingSkills ?? [],
-    crit: result.criticalMissingSkills ?? [],
-    sv: result.skillsRecruiterVerdict || "",
-    projs: result.projects ?? [],
-    exps: result.experiences ?? [],
-    ats: result.atsScore ?? 0,
-    mk: result.matchedKeywords ?? [],
-    misk: result.missingKeywords ?? [],
-    ck: result.criticalMissingKeywords ?? [],
-    atsImp: result.expectedATSImprovement || "",
-    crs: result.companyReadinessScore ?? 0,
-    cra: result.companyReadinessAreas ?? [],
-    crStr: result.companyReadinessStrengths ?? [],
-    crWk: result.companyReadinessWeaknesses ?? [],
-    crMiss: result.companyReadinessMissingSkills ?? [],
-    iv: result.interviewProbability || "",
-    crv: result.companyReadinessVerdict || "",
-    rr: result.recruiterReport || "",
-  }
-
-  const avgPs = s.projs.length > 0 ? Math.round(s.projs.reduce((a, p) => a + (p.projectScore || 0), 0) / s.projs.length) : 0
-  const avgEs = s.exps.length > 0 ? Math.round(s.exps.reduce((a, e) => a + (e.experienceScore || 0), 0) / s.exps.length) : 0
-
-  let cp = 1
-  const TP = 7
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGE 1 — Executive Summary
-  // ═══════════════════════════════════════════════════════════════════
-  pageBg(d, pw, ph)
-  addHeader(d, M, pw)
-
-  // Report title block
-  txt(d, C.text)
-  d.setFontSize(22); d.setFont("helvetica", "bold")
-  d.text("Resume Intelligence Report", pw / 2, 40, { align: "center" })
-  txt(d, C.muted)
-  d.setFontSize(11); d.setFont("helvetica", "normal")
-  const tagLine = s.ov >= 80 ? "Exceptional Candidate Profile" : s.ov >= 60 ? "Strong Candidate Foundation" : s.ov >= 40 ? "Candidate With Development Areas" : "Early Career Profile — Significant Growth Potential"
-  d.text(tagLine, pw / 2, 49, { align: "center" })
-
-  // Overall score — large, clean
-  const sc = getScoreColor(s.ov)
-  const [sr, sg, sb] = hexRgb(sc)
-  d.setFillColor(sr, sg, sb)
-  d.rect((pw - 50) / 2, 60, 50, 50, "F")
-  txt(d, "#FFFFFF"); d.setFontSize(28); d.setFont("helvetica", "bold")
-  d.text(`${Math.round(s.ov)}`, pw / 2, 88, { align: "center" })
-  txt(d, "#FFFFFF"); d.setFontSize(7); d.setFont("helvetica", "bold")
-  d.text("OVERALL SCORE", pw / 2, 100, { align: "center" })
-
-  // Target info
-  let ty = 122
-  if (targetRole || fieldOfInterest) {
-    txt(d, C.muted); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text("TARGET ROLE", pw / 2, ty, { align: "center" })
-    txt(d, C.text); d.setFontSize(10); d.setFont("helvetica", "normal")
-    d.text(targetRole || fieldOfInterest || "", pw / 2, ty + 8, { align: "center" })
-    ty += 20
-  }
-
-  // Quick stats row
-  drw(d, C.border); d.setLineWidth(0.3)
-  d.line(M, ty, pw - M, ty)
-  ty += 6
-  const qStats = [
-    { label: "Skills Evaluated", value: `${s.strong.length + s.missing.length + s.crit.length}` },
-    { label: "Projects", value: `${s.projs.length}` },
-    { label: "Experience Entries", value: `${s.exps.length}` },
-    { label: "Keywords Matched", value: `${s.mk.length}` },
+  // Quick stats table
+  let y = 122
+  const colW = (pw - 2 * MARGIN - 12) / 4
+  const headers = ["SKILLS", "PROJECTS", "EXPERIENCES", "KEYWORDS"]
+  setTextColor(doc, C.secondary)
+  doc.setFontSize(7)
+  doc.setFont("helvetica", "bold")
+  headers.forEach((h, i) => doc.text(h, MARGIN + i * (colW + 3), y))
+  y += 5
+  setDrawColor(doc, C.border)
+  doc.line(MARGIN, y, pw - MARGIN, y)
+  y += 3
+  const values = [
+    `${(result.strongSkills?.length ?? 0) + (result.missingSkills?.length ?? 0) + (result.criticalMissingSkills?.length ?? 0)}`,
+    `${result.projects?.length ?? 0}`,
+    `${result.experiences?.length ?? 0}`,
+    `${result.matchedKeywords?.length ?? 0}`,
   ]
-  const qw = (cw - 20) / 4
-  for (let i = 0; i < qStats.length; i++) {
-    const qx = M + i * (qw + 6)
-    fill(d, C.light); d.rect(qx, ty, qw, 24, "F")
-    txt(d, C.primary); d.setFontSize(14); d.setFont("helvetica", "bold")
-    d.text(qStats[i].value, qx + qw / 2, ty + 10, { align: "center" })
-    txt(d, C.muted); d.setFontSize(6); d.setFont("helvetica", "bold")
-    d.text(qStats[i].label.toUpperCase(), qx + qw / 2, ty + 20, { align: "center" })
-  }
+  setTextColor(doc, C.primary)
+  doc.setFontSize(13)
+  values.forEach((v, i) => doc.text(v, MARGIN + i * (colW + 3), y + 5))
+  y += 12
 
-  // Verdict / summary text
-  const vt = d.splitTextToSize(
-    s.ov >= 80
-      ? "This candidate presents an exceptionally strong profile with demonstrated technical depth and relevant experience. Highly competitive for target roles."
-      : s.ov >= 60
-        ? "This candidate shows solid foundational skills with clear strengths in key areas. Targeted improvements in specific skill gaps would significantly strengthen their profile."
-        : s.ov >= 40
-          ? "This candidate has promising elements but needs focused development in several areas to be competitive for their target roles."
-          : "This candidate is in early career stages with significant room for development. Focusing on building core skills and project experience will be key.",
-    cw,
-  )
-  txt(d, C.text); d.setFontSize(8); d.setFont("helvetica", "normal")
-  d.text(vt, M, ty + 34)
+  // Executive summary paragraph
+  const summary = overall >= 80 ? "This candidate presents an exceptionally strong profile with demonstrated technical depth and relevant experience. Highly competitive for target roles." : overall >= 60 ? "This candidate shows solid foundational skills with clear strengths in key areas. Targeted improvements in specific skill gaps would significantly strengthen their profile." : overall >= 40 ? "This candidate has promising elements but needs focused development in several areas to be competitive for their target roles." : "This candidate is in early career stages with significant room for development. Focusing on building core skills and project experience will be key."
+  doc.setFontSize(11)
+  setTextColor(doc, C.text)
+  doc.setFont("helvetica", "normal")
+  const paragraph = doc.splitTextToSize(summary, pw - 2 * MARGIN)
+  doc.text(paragraph, MARGIN, y)
+  y += paragraph.length * 5 + 8
 
-  addFooter(d, 1, TP, M, pw, ph)
+  // Verdict tagline
+  setFillColor(doc, C.tableHeader)
+  doc.rect(MARGIN, y, pw - 2 * MARGIN, 10, "F")
+  setTextColor(doc, scColor)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "bold")
+  doc.text(overall >= 80 ? "EXCELLENT" : overall >= 60 ? "GOOD" : overall >= 40 ? "FAIR" : "NEEDS WORK", MARGIN + 4, y + 7)
+  setTextColor(doc, C.secondary)
+  doc.text(`Profile Rating: ${targetRole || fieldOfInterest || "General"}`, MARGIN + 60, y + 7)
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGE 2 — Score Dashboard
-  // ═══════════════════════════════════════════════════════════════════
-  d.addPage(); cp++
-  pageBg(d, pw, ph)
-  addHeader(d, M, pw)
-  let y = M + 22
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
 
-  y = section(d, "Score Summary", y, M, pw)
-
-  // Column headers
-  txt(d, C.muted); d.setFontSize(6); d.setFont("helvetica", "bold")
-  d.text("METRIC", M, y + 2)
-  d.text("SCORE", M + cw - 74, y + 2, { align: "right" })
-  d.text("STATUS", M + cw - 26, y + 2, { align: "right" })
-  drw(d, C.border); d.setLineWidth(0.3)
-  d.line(M, y + 4, M + cw, y + 4)
-  y += 8
+  // ------- Page 2 – Score Dashboard & Skills -------
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+  y = sectionTitle(doc, "Score Summary", y, pw)
 
   const metrics = [
-    { label: "Skills Assessment", value: s.ss, desc: "Technical breadth and depth evaluation" },
-    { label: "Project Quality", value: avgPs, desc: s.projs.length > 0 ? `Across ${s.projs.length} project(s)` : "No projects analyzed" },
-    { label: "Experience Relevance", value: avgEs, desc: s.exps.length > 0 ? `Across ${s.exps.length} experience(s)` : "No experiences analyzed" },
-    { label: "ATS Compatibility", value: s.ats, desc: `${s.mk.length} matched · ${s.misk.length} missing keywords` },
-    { label: "Company Readiness", value: s.crs, desc: s.iv ? `Interview probability: ${s.iv}` : "Target role readiness" },
+    { label: "Skills Assessment", value: result.skillsScore ?? 0, desc: `${result.strongSkills?.length ?? 0} strong – ${result.missingSkills?.length ?? 0} missing – ${result.criticalMissingSkills?.length ?? 0} critical` },
+    { label: "Project Quality", value: result.projects?.reduce((a, p) => a + (p.projectScore ?? 0), 0) / (result.projects?.length || 1) ?? 0, desc: `${result.projects?.length ?? 0} project(s)` },
+    { label: "Experience Relevance", value: result.experiences?.reduce((a, e) => a + (e.experienceScore ?? 0), 0) / (result.experiences?.length || 1) ?? 0, desc: `${result.experiences?.length ?? 0} experience(s)` },
+    { label: "ATS Compatibility", value: result.atsScore ?? 0, desc: `${result.matchedKeywords?.length ?? 0} matched – ${result.missingKeywords?.length ?? 0} missing` },
+    { label: "Company Readiness", value: result.companyReadinessScore ?? 0, desc: result.interviewProbability || "" },
   ]
-  for (const m of metrics) {
-    scoreRow(d, M, y, cw, m.label, m.value, m.desc)
-    y += 15
-  }
 
-  // Skills Assessment section
-  y += 4
-  y = section(d, "Skills Assessment", y, M, pw)
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "bold")
+  metrics.forEach((m, i) => {
+    if (y + 14 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    if (i % 2 === 1) { setFillColor(doc, C.zebraEven); doc.rect(MARGIN, y, pw - 2 * MARGIN, 12, "F") }
+    setTextColor(doc, C.text)
+    doc.text(m.label, MARGIN + 4, y + 8)
+    progressBar(doc, MARGIN + 80, y + 4, pw - MARGIN - 140, m.value, scoreBadgeColor(m.value))
+    doc.setFontSize(8)
+    setTextColor(doc, scoreBadgeColor(m.value))
+    doc.text(`${Math.round(m.value)}%`, pw - MARGIN - 50, y + 8, { align: "right" })
+    y += 14
+  })
 
+  // End of Score Summary – start new page for Skills
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+
+  // ------- Skills Assessment -------
+  y = sectionTitle(doc, "Skills Assessment", y, pw)
   const skillGroups = [
-    { label: "Strong Skills", items: s.strong, color: C.success },
-    { label: "Missing Skills", items: s.missing, color: C.warning },
-    { label: "Critical Gaps", items: s.crit, color: C.danger },
+    { label: "Strong Skills", items: result.strongSkills ?? [], color: C.success },
+    { label: "Missing Skills", items: result.missingSkills ?? [], color: C.warning },
+    { label: "Critical Gaps", items: result.criticalMissingSkills ?? [], color: C.danger },
   ]
-  for (const g of skillGroups) {
-    if (g.items.length === 0) continue
-    if (y + 10 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    txt(d, g.color); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text(`${g.label}  (${g.items.length})`, M, y)
-    y += 5
-    let px = M
-    for (const item of g.items) {
-      const tw = d.getTextWidth(item) + 8
-      if (px + tw + 4 > pw - M) { px = M; y += 10 }
-      px += tag(d, px, y, item, g.color)
-    }
+  skillGroups.forEach(g => {
+    if (g.items.length === 0) return
+    if (y + 30 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setTextColor(doc, g.color)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${g.label} (${g.items.length})`, MARGIN, y + 7)
+    let ySkill = y + 14
+    g.items.forEach(item => {
+      // Skill name
+      setTextColor(doc, C.text)
+      doc.setFontSize(8)
+      doc.text(item, MARGIN + 4, ySkill)
+      // Proficiency bar placeholder (70% width)
+      const barX = MARGIN + 60
+      const barW = pw - MARGIN - 80
+      progressBar(doc, barX, ySkill - 4, barW, 70, g.color)
+      ySkill += 12
+    })
+    y = ySkill + 4
+  })
+
+  // Recruiter verdict block (if present)
+  if (result.skillsRecruiterVerdict) {
+    if (y + 30 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setFillColor(doc, C.tableHeader)
+    doc.rect(MARGIN, y, pw - 2 * MARGIN, 24, "F")
+    setTextColor(doc, C.primary)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text("RECRUITER VERDICT", MARGIN + 4, y + 9)
+    setTextColor(doc, C.text)
+    doc.setFontSize(8)
+    const verdictLines = doc.splitTextToSize(result.skillsRecruiterVerdict, pw - 2 * MARGIN - 8)
+    doc.text(verdictLines, MARGIN + 4, y + 16)
+    y += 28
+  }
+
+  // End of Skills section – start Projects page
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+
+  // ------- Project Analysis -------
+  y = sectionTitle(doc, "Project Analysis", y, pw)
+  result.projects?.forEach((proj, idx) => {
+    if (y + 40 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    // Card background
+    setFillColor(doc, idx % 2 === 0 ? C.zebraOdd : C.zebraEven)
+    doc.rect(MARGIN, y, pw - 2 * MARGIN, 36, "F")
+    setTextColor(doc, C.text)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text(proj.projectName || "Unnamed Project", MARGIN + 4, y + 10)
+    const techList = (proj.technologies || []).slice(0, 5).join(", ")
+    setTextColor(doc, C.secondary)
+    doc.setFontSize(7)
+    doc.text(techList, MARGIN + 4, y + 16)
+    // Score badge on right side
+    scoreBadge(doc, pw - MARGIN - 42, y + 8, proj.projectScore ?? 0)
+    // Dimensions as small bars
+    const dimY = y + 22
+    const dimX = MARGIN + 4
+    const dimW = pw - 2 * MARGIN - 8
+    const dimensions = [
+      { label: "Depth", value: proj.technicalDepth ?? 0 },
+      { label: "Relevance", value: proj.industryRelevance ?? 0 },
+      { label: "Scale", value: proj.scalability ?? 0 },
+      { label: "Innov", value: proj.innovation ?? 0 },
+      { label: "Value", value: proj.resumeValue ?? 0 },
+    ]
+    dimensions.forEach((dItem, i) => {
+      const barY = dimY + i * 4
+      progressBar(doc, dimX, barY, dimW, dItem.value, C.primary)
+    })
+    y += 44
+  })
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
+
+  // ------- Experience Analysis -------
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+  y = sectionTitle(doc, "Experience Analysis", y, pw)
+  setFillColor(doc, C.tableHeader)
+  doc.rect(MARGIN, y, pw - 2 * MARGIN, 12, "F")
+  setTextColor(doc, C.secondary)
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "bold")
+  const headersExp = ["ROLE / COMPANY", "DURATION", "SCORE", "DIMENSIONS"]
+  headersExp.forEach((h, i) => doc.text(h, MARGIN + i * (pw - 2 * MARGIN) / 4, y + 9))
+  y += 14
+  result.experiences?.forEach((exp, idx) => {
+    if (y + 30 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    if (idx % 2 === 1) { setFillColor(doc, C.zebraEven); doc.rect(MARGIN, y, pw - 2 * MARGIN, 24, "F") }
+    setTextColor(doc, C.text)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${exp.role ?? ""} @ ${exp.company ?? ""}`.trim(), MARGIN + 2, y + 8)
+    setTextColor(doc, C.secondary)
+    doc.setFontSize(7)
+    const info = [exp.duration].filter(Boolean).join("  ·  ")
+    doc.text(info, MARGIN + 2, y + 15)
+    scoreBadge(doc, MARGIN + (pw - 2 * MARGIN) * 0.75, y + 2, exp.experienceScore ?? 0)
+    const dims = [
+      `Depth:${exp.technicalDepth ?? 0}%`,
+      `Impact:${exp.businessImpact ?? 0}%`,
+      `Exposure:${exp.industryExposure ?? 0}%`,
+      `Relevance:${exp.roleRelevance ?? 0}%`,
+    ].join(" · ")
+    setTextColor(doc, C.secondary)
+    doc.setFontSize(7)
+    doc.text(dims, MARGIN + (pw - 2 * MARGIN) / 2, y + 22)
+    y += 28
+  })
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
+
+  // ------- ATS Compatibility -------
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+  y = sectionTitle(doc, "ATS Compatibility", y, pw)
+  const atsScore = result.atsScore ?? 0
+  const atsColor = atsScore >= 80 ? C.success : atsScore >= 60 ? C.warning : C.danger
+  // ATS score badge
+  setFillColor(doc, atsColor)
+  doc.rect(MARGIN, y, 20, 18, "F")
+  setTextColor(doc, C.white)
+  doc.setFontSize(11)
+  doc.text(`${Math.round(atsScore)}`, MARGIN + 10, y + 12, { align: "center" })
+  // ATS compatibility bar chart
+  y += 24
+  progressBar(doc, MARGIN, y, pw - 2 * MARGIN, atsScore, atsColor)
+  y += 12
+  const kwGroups = [
+    { label: "Matched", items: result.matchedKeywords ?? [], color: C.success },
+    { label: "Missing", items: result.missingKeywords ?? [], color: C.danger },
+    { label: "Critical", items: result.criticalMissingKeywords ?? [], color: C.warning },
+  ]
+  // render keyword tags as before
+  kwGroups.forEach(g => {
+    if (g.items.length === 0) return
+    if (y + 20 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setTextColor(doc, C.text)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${g.label} (${g.items.length})`, MARGIN, y + 7)
+    let xPos = MARGIN + 60
+    g.items.forEach(item => {
+      const tagW = doc.getTextWidth(item) + 7
+      if (xPos + tagW > pw - MARGIN) { xPos = MARGIN + 60; y += 12 }
+      setFillColor(doc, g.color)
+      doc.rect(xPos, y, tagW, 8, "F")
+      setTextColor(doc, C.white)
+      doc.setFontSize(7)
+      doc.text(item, xPos + tagW / 2, y + 6, { align: "center" })
+      xPos += tagW + 4
+    })
+    y += 18
+  })
+  if (result.expectedATSImprovement) {
+    if (y + 30 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setTextColor(doc, C.warning)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text("EXPECTED ATS IMPROVEMENT", MARGIN, y + 7)
+    setTextColor(doc, C.text)
+    doc.setFontSize(8)
+    const impLines = doc.splitTextToSize(result.expectedATSImprovement, pw - 2 * MARGIN)
+    doc.text(impLines, MARGIN, y + 14)
+    y += impLines.length * 5 + 12
+  }
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
+
+  // ------- Company Readiness -------
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+  y = sectionTitle(doc, "Company Readiness", y, pw)
+  const crScore = result.companyReadinessScore ?? 0
+  const crColor = crScore >= 80 ? C.success : crScore >= 60 ? C.warning : C.danger
+  // Company readiness badge
+  setFillColor(doc, crColor)
+  doc.rect(MARGIN, y, 20, 18, "F")
+  setTextColor(doc, C.white)
+  doc.setFontSize(11)
+  doc.text(`${Math.round(crScore)}`, MARGIN + 10, y + 12, { align: "center" })
+  // Readiness bar chart
+  y += 24
+  progressBar(doc, MARGIN, y, pw - 2 * MARGIN, crScore, crColor)
+  y += 12
+  const crGroups = [
+    { label: "Strengths", items: result.companyReadinessStrengths ?? [], color: C.success },
+    { label: "Weaknesses", items: result.companyReadinessWeaknesses ?? [], color: C.danger },
+    { label: "Missing Skills", items: result.companyReadinessMissingSkills ?? [], color: C.warning },
+  ]
+  crGroups.forEach(g => {
+    if (g.items.length === 0) return
+    if (y + 20 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setTextColor(doc, C.text)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${g.label} (${g.items.length})`, MARGIN, y + 7)
+    let xPos = MARGIN + 60
+    g.items.forEach(item => {
+      const tagW = doc.getTextWidth(item) + 7
+      if (xPos + tagW > pw - MARGIN) { xPos = MARGIN + 60; y += 12 }
+      setFillColor(doc, g.color)
+      doc.rect(xPos, y, tagW, 8, "F")
+      setTextColor(doc, C.white)
+      doc.setFontSize(7)
+      doc.text(item, xPos + tagW / 2, y + 6, { align: "center" })
+      xPos += tagW + 4
+    })
+    y += 18
+  })
+  if (result.companyReadinessAreas?.length) {
+    if (y + 10 > ph - 20) { addFooter(doc, pageNum, pw, ph); doc.addPage(); pageBackground(doc); addHeader(doc, pw); y = MARGIN + 16; pageNum++ }
+    setTextColor(doc, C.text)
+    doc.setFontSize(9)
+    doc.setFont("helvetica", "bold")
+    doc.text("Area Breakdown", MARGIN, y + 7)
     y += 12
+    result.companyReadinessAreas.forEach(areaObj => {
+      const area = areaObj.area ?? ""
+      const score = areaObj.score ?? 0
+      const barColor = score >= 70 ? C.success : score >= 45 ? C.warning : C.danger
+      setTextColor(doc, C.text)
+      doc.setFontSize(7)
+      doc.text(area, MARGIN, y + 5)
+      progressBar(doc, MARGIN + 60, y, pw - MARGIN - 90, score, barColor)
+      setTextColor(doc, barColor)
+      doc.setFontSize(7)
+      doc.text(`${Math.round(score)}%`, pw - MARGIN - 20, y + 5, { align: "right" })
+      y += 12
+    })
   }
+  addFooter(doc, pageNum, pw, ph)
+  pageNum++
 
-  // Verdict
-  if (s.sv) {
-    if (y + 16 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    const vt = d.splitTextToSize(s.sv, cw)
-    fill(d, C.light); d.rect(M, y, cw, 10 + vt.length * 4.5, "F")
-    txt(d, C.primary); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text("RECRUITER VERDICT", M + 4, y + 5)
-    txt(d, C.text); d.setFontSize(7.5); d.setFont("helvetica", "normal")
-    d.text(vt, M + 4, y + 11)
-    y += 12 + vt.length * 4.5
+  // ------- Final Verdict & Recruiter Notes -------
+  doc.addPage()
+  pageBackground(doc)
+  addHeader(doc, pw)
+  y = MARGIN + 16
+  y = sectionTitle(doc, "Final Verdict", y, pw)
+  if (result.companyReadinessVerdict) {
+    const lines = doc.splitTextToSize(result.companyReadinessVerdict, pw - 2 * MARGIN)
+    setTextColor(doc, C.text)
+    doc.setFontSize(11)
+    doc.setFont("helvetica", "normal")
+    doc.text(lines, MARGIN, y)
+    y += lines.length * 5 + 8
   }
-
-  addFooter(d, cp, TP, M, pw, ph)
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGES 3-4 — Project Analysis
-  // ═══════════════════════════════════════════════════════════════════
-  if (s.projs.length > 0) {
-    d.addPage(); cp++
-    pageBg(d, pw, ph)
-    addHeader(d, M, pw)
-    y = M + 22
-    y = section(d, "Project Analysis", y, M, pw)
-
-    for (const proj of s.projs) {
-      // Estimate card height
-      const techs = proj.technologies || []
-      const techLine = techs.length > 0 ? `Tech: ${techs.slice(0, 8).join(", ")}` : ""
-      const hasS = !!proj.strength
-      const hasI = !!proj.improvement
-      const hasV = !!proj.recruiterVerdict
-
-      let ch = 18
-      if (techLine) ch += 8
-      ch += 18 // dimension bars row
-      if (hasS || hasI) ch += 16
-      if (hasV) ch += 10 + d.splitTextToSize(proj.recruiterVerdict!, cw - 8).length * 4.5
-
-      if (y + ch + 4 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-
-      // Project entry — border left accent
-      fill(d, C.light); d.rect(M, y, 2, ch, "F")
-      fill(d, C.bg); d.rect(M + 2, y, cw - 2, ch, "F")
-
-      // Header: name + score
-      txt(d, C.primary); d.setFontSize(9); d.setFont("helvetica", "bold")
-      d.text(proj.projectName || "Unnamed Project", M + 8, y + 7)
-      const sc = getScoreColor(proj.projectScore || 0)
-      const [sr, sg, sb] = hexRgb(sc)
-      d.setFillColor(sr, sg, sb)
-      d.rect(M + cw - 32, y + 2, 24, 9, "F")
-      txt(d, "#FFFFFF"); d.setFontSize(7); d.setFont("helvetica", "bold")
-      d.text(`${Math.round(proj.projectScore || 0)}`, M + cw - 20, y + 8.5, { align: "center" })
-
-      // Tech stack line
-      let iy = y + 10
-      if (techLine) {
-        txt(d, C.muted); d.setFontSize(6.5); d.setFont("helvetica", "normal")
-        d.text(techLine, M + 8, iy + 4)
-        iy += 8
-      }
-
-      // Dimension bars
-      const dims = [
-        { l: "Technical Depth", v: proj.technicalDepth || 0, c: C.primary },
-        { l: "Industry Relevance", v: proj.industryRelevance || 0, c: C.accent },
-        { l: "Scalability", v: proj.scalability || 0, c: "#0891B2" },
-        { l: "Innovation", v: proj.innovation || 0, c: C.warning },
-        { l: "Resume Value", v: proj.resumeValue || 0, c: C.success },
-      ]
-      const bw = (cw - 60) / 5
-      for (let i = 0; i < dims.length; i++) {
-        const dx = M + 8 + i * (bw + 2)
-        scoreBar(d, dx, iy, bw, 4, dims[i].v, dims[i].c)
-        txt(d, C.muted); d.setFontSize(5.5); d.setFont("helvetica", "bold")
-        d.text(dims[i].l, dx + bw / 2, iy + 7, { align: "center" })
-        txt(d, dims[i].c); d.setFontSize(6); d.setFont("helvetica", "bold")
-        d.text(`${Math.round(dims[i].v)}%`, dx + bw / 2, iy + 12.5, { align: "center" })
-      }
-      iy += 16
-
-      // Strength + Improvement
-      if (hasS || hasI) {
-        if (hasS) {
-          txt(d, C.success); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-          d.text("STRENGTH", M + 8, iy)
-          txt(d, C.text); d.setFont("helvetica", "normal")
-          const sl = d.splitTextToSize(proj.strength!, (cw - 24) / 2)
-          d.text(sl, M + 8, iy + 4.5)
-        }
-        if (hasI) {
-          txt(d, C.danger); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-          d.text("IMPROVEMENT", M + cw / 2 + 4, iy)
-          txt(d, C.text); d.setFont("helvetica", "normal")
-          const il = d.splitTextToSize(proj.improvement!, (cw - 24) / 2)
-          d.text(il, M + cw / 2 + 4, iy + 4.5)
-        }
-        iy += hasS && hasI ? 14 : 10
-      }
-
-      // Verdict
-      if (hasV) {
-        txt(d, C.accent); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-        d.text("RECRUITER VERDICT", M + 8, iy)
-        txt(d, C.muted); d.setFont("helvetica", "italic")
-        const vl = d.splitTextToSize(proj.recruiterVerdict!, cw - 16)
-        d.text(vl, M + 8, iy + 4.5)
-      }
-
-      y += ch + 6
-    }
-    addFooter(d, cp, TP, M, pw, ph)
+  if (result.recruiterReport) {
+    const lines = doc.splitTextToSize(result.recruiterReport, pw - 2 * MARGIN)
+    setTextColor(doc, C.text)
+    doc.setFontSize(11)
+    doc.setFont("helvetica", "normal")
+    doc.text(lines, MARGIN, y)
+    y += lines.length * 5 + 8
   }
+  addFooter(doc, pageNum, pw, ph)
 
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGE 5 — Experience Analysis
-  // ═══════════════════════════════════════════════════════════════════
-  if (s.exps.length > 0) {
-    d.addPage(); cp++
-    pageBg(d, pw, ph)
-    addHeader(d, M, pw)
-    y = M + 22
-    y = section(d, "Experience Analysis", y, M, pw)
-
-    for (const exp of s.exps) {
-      const hasS = !!exp.strength
-      const hasI = !!exp.improvement
-      const hasV = !!exp.recruiterVerdict
-      let ch = 16
-      ch += 16 // dim bars
-      if (hasS || hasI) ch += 16
-      if (hasV) ch += 10 + d.splitTextToSize(exp.recruiterVerdict!, cw - 8).length * 4.5
-
-      if (y + ch + 4 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-
-      // Left accent bar
-      fill(d, C.light); d.rect(M, y, 2, ch, "F")
-      fill(d, C.bg); d.rect(M + 2, y, cw - 2, ch, "F")
-
-      // Role + Company + Duration
-      txt(d, C.primary); d.setFontSize(9); d.setFont("helvetica", "bold")
-      d.text(exp.role || "Role", M + 8, y + 7)
-      txt(d, C.muted); d.setFontSize(7); d.setFont("helvetica", "normal")
-      const co = exp.company || ""
-      const du = exp.duration || ""
-      d.text(co, M + 8 + d.getTextWidth(exp.role || "Role") + 6, y + 7)
-      if (du) d.text(du, M + cw - 8, y + 7, { align: "right" })
-
-      // Score badge
-      const sc = getScoreColor(exp.experienceScore || 0)
-      const [sr, sg, sb] = hexRgb(sc)
-      d.setFillColor(sr, sg, sb)
-      d.rect(M + cw - 32, y + 2, 24, 9, "F")
-      txt(d, "#FFFFFF"); d.setFontSize(7); d.setFont("helvetica", "bold")
-      d.text(`${Math.round(exp.experienceScore || 0)}`, M + cw - 20, y + 8.5, { align: "center" })
-
-      // Dimension bars
-      const dims = [
-        { l: "Technical Depth", v: exp.technicalDepth || 0, c: C.primary },
-        { l: "Business Impact", v: exp.businessImpact || 0, c: C.accent },
-        { l: "Industry Exposure", v: exp.industryExposure || 0, c: "#0891B2" },
-        { l: "Role Relevance", v: exp.roleRelevance || 0, c: C.success },
-      ]
-      let iy = y + 12
-      const bw = (cw - 48) / 4
-      for (let i = 0; i < dims.length; i++) {
-        const dx = M + 8 + i * (bw + 2)
-        scoreBar(d, dx, iy, bw, 4, dims[i].v, dims[i].c)
-        txt(d, C.muted); d.setFontSize(5.5); d.setFont("helvetica", "bold")
-        d.text(dims[i].l, dx + bw / 2, iy + 7, { align: "center" })
-        txt(d, dims[i].c); d.setFontSize(6); d.setFont("helvetica", "bold")
-        d.text(`${Math.round(dims[i].v)}%`, dx + bw / 2, iy + 12.5, { align: "center" })
-      }
-      iy += 16
-
-      if (hasS || hasI) {
-        if (hasS) {
-          txt(d, C.success); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-          d.text("STRENGTH", M + 8, iy)
-          txt(d, C.text); d.setFont("helvetica", "normal")
-          const sl = d.splitTextToSize(exp.strength!, (cw - 24) / 2)
-          d.text(sl, M + 8, iy + 4.5)
-        }
-        if (hasI) {
-          txt(d, C.danger); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-          d.text("IMPROVEMENT", M + cw / 2 + 4, iy)
-          txt(d, C.text); d.setFont("helvetica", "normal")
-          const il = d.splitTextToSize(exp.improvement!, (cw - 24) / 2)
-          d.text(il, M + cw / 2 + 4, iy + 4.5)
-        }
-        iy += hasS && hasI ? 14 : 10
-      }
-
-      if (hasV) {
-        txt(d, C.accent); d.setFontSize(6.5); d.setFont("helvetica", "bold")
-        d.text("VERDICT", M + 8, iy)
-        txt(d, C.muted); d.setFont("helvetica", "italic")
-        const vl = d.splitTextToSize(exp.recruiterVerdict!, cw - 16)
-        d.text(vl, M + 8, iy + 4.5)
-      }
-
-      y += ch + 6
-    }
-    addFooter(d, cp, TP, M, pw, ph)
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGE 6 — ATS Compatibility
-  // ═══════════════════════════════════════════════════════════════════
-  d.addPage(); cp++
-  pageBg(d, pw, ph)
-  addHeader(d, M, pw)
-  y = M + 22
-  y = section(d, "ATS Compatibility Analysis", y, M, pw)
-
-  // ATS Score + Overview
-  fill(d, C.light); d.rect(M, y, cw, 32, "F")
-  const scA = getScoreColor(s.ats)
-  const [ar, ag, ab] = hexRgb(scA)
-  d.setFillColor(ar, ag, ab)
-  d.rect(M + 6, y + 4, 28, 24, "F")
-  txt(d, "#FFFFFF"); d.setFontSize(14); d.setFont("helvetica", "bold")
-  d.text(`${Math.round(s.ats)}`, M + 20, y + 19, { align: "center" })
-  txt(d, "#FFFFFF"); d.setFontSize(5); d.setFont("helvetica", "bold")
-  d.text("ATS", M + 20, y + 26, { align: "center" })
-
-  txt(d, C.text); d.setFontSize(9); d.setFont("helvetica", "bold")
-  d.text("ATS Score Overview", M + 42, y + 10)
-  const kwC = [
-    { l: "Matched", n: s.mk.length, c: C.success },
-    { l: "Missing", n: s.misk.length, c: C.danger },
-    { l: "Critical", n: s.ck.length, c: C.warning },
-  ]
-  let kx = M + 44
-  for (const kw of kwC) {
-    txt(d, kw.c); d.setFontSize(10); d.setFont("helvetica", "bold")
-    d.text(`${kw.n}`, kx, y + 22)
-    txt(d, C.muted); d.setFontSize(6); d.setFont("helvetica", "bold")
-    d.text(kw.l, kx, y + 28)
-    kx += 28
-  }
-  y += 36
-
-  // Keywords
-  const kwG = [
-    { l: "Matched Keywords", items: s.mk, c: C.success },
-    { l: "Missing Keywords", items: s.misk, c: C.danger },
-    { l: "Critical Missing", items: s.ck, c: C.warning },
-  ]
-  for (const g of kwG) {
-    if (g.items.length === 0) continue
-    if (y + 10 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    txt(d, g.c); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text(g.l, M, y)
-    y += 5
-    let px = M
-    for (const item of g.items.slice(0, 20)) {
-      px += tag(d, px, y, item, g.c)
-      if (px + 20 > pw - M) { px = M; y += 10 }
-    }
-    y += 12
-  }
-
-  if (s.atsImp) {
-    if (y + 16 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    const il = d.splitTextToSize(s.atsImp, cw)
-    fill(d, C.light); d.rect(M, y, cw, 12 + il.length * 4.5, "F")
-    txt(d, C.warning); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text("EXPECTED ATS IMPROVEMENT", M + 4, y + 5)
-    txt(d, C.text); d.setFontSize(7.5); d.setFont("helvetica", "normal")
-    d.text(il, M + 4, y + 11)
-    y += 14 + il.length * 4.5
-  }
-
-  addFooter(d, 6, TP, M, pw, ph)
-
-  // ═══════════════════════════════════════════════════════════════════
-  // PAGE 7 — Company Readiness + Recruiter Notes
-  // ═══════════════════════════════════════════════════════════════════
-  d.addPage(); cp++
-  pageBg(d, pw, ph)
-  addHeader(d, M, pw)
-  y = M + 22
-  y = section(d, "Company Readiness Assessment", y, M, pw)
-
-  // Readiness overview
-  fill(d, C.light); d.rect(M, y, cw, 28, "F")
-  const scR = getScoreColor(s.crs)
-  const [rr, rg, rb] = hexRgb(scR)
-  d.setFillColor(rr, rg, rb)
-  d.rect(M + 6, y + 3, 24, 22, "F")
-  txt(d, "#FFFFFF"); d.setFontSize(12); d.setFont("helvetica", "bold")
-  d.text(`${Math.round(s.crs)}`, M + 18, y + 17, { align: "center" })
-  txt(d, "#FFFFFF"); d.setFontSize(5); d.setFont("helvetica", "bold")
-  d.text("READY", M + 18, y + 23, { align: "center" })
-
-  const rl = s.crs >= 80 ? "Highly Prepared" : s.crs >= 60 ? "Moderately Prepared" : s.crs >= 40 ? "Partially Prepared" : "Needs Preparation"
-  txt(d, C.text); d.setFontSize(9); d.setFont("helvetica", "bold")
-  d.text(rl, M + 38, y + 10)
-  if (s.iv) {
-    txt(d, C.primary); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text(s.iv, M + 38, y + 19)
-  }
-  y += 34
-
-  // Strengths / Weaknesses / Missing
-  if (s.crStr.length > 0 || s.crWk.length > 0 || s.crMiss.length > 0) {
-    y = section(d, "Key Findings", y, M, pw)
-
-    if (s.crStr.length > 0) {
-      txt(d, C.success); d.setFontSize(7); d.setFont("helvetica", "bold")
-      d.text("Strengths", M, y)
-      y += 5
-      let px = M
-      for (const st of s.crStr) {
-        px += tag(d, px, y, st, C.success)
-        if (px + 20 > pw - M) { px = M; y += 10 }
-      }
-      y += 14
-    }
-
-    if (s.crWk.length > 0) {
-      if (y + 10 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-      txt(d, C.danger); d.setFontSize(7); d.setFont("helvetica", "bold")
-      d.text("Weaknesses", M, y)
-      y += 5
-      let px = M
-      for (const w of s.crWk) {
-        px += tag(d, px, y, w, C.danger)
-        if (px + 20 > pw - M) { px = M; y += 10 }
-      }
-      y += 14
-    }
-
-    if (s.crMiss.length > 0) {
-      if (y + 10 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-      txt(d, C.warning); d.setFontSize(7); d.setFont("helvetica", "bold")
-      d.text("Missing Skills", M, y)
-      y += 5
-      let px = M
-      for (const ms of s.crMiss) {
-        px += tag(d, px, y, ms, C.warning)
-        if (px + 20 > pw - M) { px = M; y += 10 }
-      }
-      y += 14
-    }
-  }
-
-  // Area Breakdown
-  if (s.cra.length > 0) {
-    if (y + 10 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    y = section(d, "Area Breakdown", y, M, pw)
-    // Column headers
-    txt(d, C.muted); d.setFontSize(6); d.setFont("helvetica", "bold")
-    d.text("AREA", M, y + 2)
-    d.text("SCORE", M + cw - 6, y + 2, { align: "right" })
-    drw(d, C.border); d.setLineWidth(0.3)
-    d.line(M, y + 4, M + cw, y + 4)
-    y += 8
-    for (const a of s.cra.slice(0, 6)) {
-      if (y + 8 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-      const ac = a.score >= 70 ? C.success : a.score >= 45 ? C.warning : C.danger
-      txt(d, C.text); d.setFontSize(7.5); d.setFont("helvetica", "normal")
-      d.text(a.area, M, y + 3)
-      scoreBar(d, M + 52, y + 1, cw - 100, 5, a.score, ac)
-      txt(d, ac); d.setFontSize(7.5); d.setFont("helvetica", "bold")
-      d.text(`${Math.round(a.score)}%`, pw - M, y + 3, { align: "right" })
-      y += 8
-    }
-    y += 4
-  }
-
-  // Final Verdict
-  if (s.crv) {
-    if (y + 16 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    const vl = d.splitTextToSize(s.crv, cw)
-    fill(d, C.light); d.rect(M, y, cw, 12 + vl.length * 4.5, "F")
-    txt(d, C.primary); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text("FINAL VERDICT", M + 4, y + 5)
-    txt(d, C.text); d.setFontSize(7.5); d.setFont("helvetica", "italic")
-    d.text(vl, M + 4, y + 11)
-    y += 14 + vl.length * 4.5
-  }
-
-  // Recruiter Notes
-  if (s.rr) {
-    const rl = d.splitTextToSize(s.rr, cw)
-    const rh = 12 + rl.length * 4.5
-    if (y + rh + 4 > ph - 20) { addFooter(d, cp, TP, M, pw, ph); d.addPage(); cp++; pageBg(d, pw, ph); addHeader(d, M, pw); y = M + 22 }
-    fill(d, C.light); d.rect(M, y, cw, rh, "F")
-    txt(d, C.accent); d.setFontSize(7); d.setFont("helvetica", "bold")
-    d.text("DETAILED RECRUITER NOTES", M + 4, y + 5)
-    txt(d, C.text); d.setFontSize(7.5); d.setFont("helvetica", "normal")
-    d.text(rl, M + 4, y + 11)
-  }
-
-  addFooter(d, cp, TP, M, pw, ph)
-  return d
+  return doc
 }
+
+/** Helper to decide badge color based on a percentage */
+function scoreBadgeColor(pct: number): string { return pct >= 80 ? C.success : pct >= 60 ? C.warning : C.danger }

@@ -1,7 +1,7 @@
 "use client"
 
 import {
-    Download, Target, Briefcase, Search, UserCheck,
+    Target, Briefcase, Search, UserCheck,
     Medal, Star, Flag, Building2, TrendingUp, Shield,
     CheckCircle2, AlertTriangle, ArrowRight, Brain,
     BarChart3, Award, Zap
@@ -12,7 +12,6 @@ import { AnalysisResult } from "@/types"
 interface ResultsDisplayProps {
     result: AnalysisResult;
     onReset: () => void;
-    onDownload: () => void;
 }
 
 // ─── Animated Radial Progress with Glow ────────────────────────────────
@@ -525,7 +524,7 @@ function CandidateBenchmark({ scores }: { scores: Record<string, number> }) {
 }
 
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────
-export default function ResultsDisplay({ result, onReset, onDownload }: ResultsDisplayProps) {
+export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps) {
     const s = {
         overallScore: result.overallScore ?? result.score ?? 0,
         skillsScore: result.skillsScore ?? 0,
@@ -666,20 +665,7 @@ export default function ResultsDisplay({ result, onReset, onDownload }: ResultsD
 
                     {/* Action buttons */}
                     <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={onDownload}
-                            className="px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all shadow-lg"
-                            style={{
-                                background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-                                color: "white",
-                                boxShadow: "0 4px 20px rgba(139,92,246,0.3)",
-                            }}
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            Export PDF
-                        </motion.button>
+
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
