@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react"
 import ResumeClient from "./ResumeClient"
 
 export const metadata: Metadata = {
-    title: "Resume Architect | Mentorix Professional Tools",
+    title: "Mentorix",
     description: "Build a professional, high-impact resume with Mentorix's AI Resume Architect. Feature-rich, interactive, and optimized for applicant tracking systems.",
 }
 

@@ -213,6 +213,7 @@ function normalizeAnalysisOutput(output: any): any {
   output.companyReadinessVerdict ??= "";
 
   output.recruiterReport ??= "";
+  output.targetRole ??= "";
 
   return output;
 }
@@ -227,14 +228,16 @@ async function saveToDatabase(
   jobDescription: string,
   fieldOfInterest: string,
   targetRole: string,
+  targetCompany: string,
   aiOutput: any
 ): Promise<void> {
   let displayTitle = jobDescription.trim();
   if (displayTitle) {
     const firstLine = displayTitle.split("\n")[0].trim();
     displayTitle = firstLine.length > 80 ? firstLine.substring(0, 77) + "..." : firstLine;
-  } else if (fieldOfInterest || targetRole) {
-    displayTitle = `${fieldOfInterest}${fieldOfInterest && targetRole ? " - " : ""}${targetRole}`.trim();
+  } else if (fieldOfInterest || targetRole || targetCompany) {
+    const titleParts = [fieldOfInterest, targetRole, targetCompany].filter(Boolean);
+    displayTitle = titleParts.join(" - ");
   } else {
     displayTitle = "Job Readiness Baseline";
   }
@@ -270,6 +273,7 @@ export async function POST(req: NextRequest) {
     const jobDescription = formData.get("jobDescription") as string || "";
     const fieldOfInterest = formData.get("fieldOfInterest") as string || "";
     const targetRole = formData.get("targetRole") as string || "";
+    const targetCompany = formData.get("targetCompany") as string || "";
 
     if (!file && !directResumeText) {
       return NextResponse.json({ error: "Resume file or text is required" }, { status: 400 });
@@ -323,7 +327,23 @@ export async function POST(req: NextRequest) {
     const hasIntent = !!(fieldOfInterest.trim() || targetRole.trim());
     const mode = hasJD ? "strict_jd" : hasIntent ? "career_intent" : "general";
 
-    const systemPrompt = `You are a Senior FAANG Recruiter, Hiring Manager, ATS Expert, and Career Coach. Your job is to analyze the candidate's resume against: 1) Resume Content 2) Target Role 3) Target Company 4) Job Description.
+    const systemPrompt = `You are a Senior Recruiter, Hiring Manager, ATS Expert, and Career Coach. Your job is to analyze the candidate's resume against a TARGET ROLE. You adapt your entire analysis framework to the specific role — you never reuse generic categories across different roles.
+
+==================================================
+CRITICAL RULE: YOU ARE ROLE-DRIVEN, NOT RESUME-DRIVEN
+==================================================
+
+You must first IDENTIFY the target role from: job description, field of interest, or target role name.
+
+Then GENERATE a role-specific competency framework — the evaluation dimensions, categories, and criteria must CHANGE for each role.
+
+RULES:
+- If target role changes, Readiness categories MUST change.
+- If target role changes, Missing skills MUST change.
+- If target role changes, ATS keywords MUST change.
+- If target role changes, Recruiter verdict MUST change.
+- If target role changes, Strengths and Weaknesses MUST change.
+- NEVER reuse generic software engineering categories for non-SWE roles.
 
 ==================================================
 CRITICAL RULES
@@ -335,55 +355,109 @@ DO NOT ASSUME SKILLS THAT DO NOT EXIST.
 DO NOT MARK SKILLS AS MISSING IF THEY ARE PRESENT OR CAN BE INFERRED.
 ALL ANALYSIS MUST BE BASED ON ACTUAL RESUME DATA.
 Keep all feedback concise. recruiterReport text must be under 2000 characters.
+If no specific role/JD provided, do a general analysis but identify the most likely role fit from the resume.
 
 ==================================================
-SKILL INFERENCE RULES — Never mark inferred as missing
+ROLE-SPECIFIC COMPETENCY FRAMEWORKS — Use the RIGHT one
 ==================================================
 
-Parallel Computing → Concurrency, Performance Engineering
-OpenMP → Multithreading, Synchronization, Concurrency
-Distributed Systems → Scalability, System Design
-React + Next.js → Frontend Development
-Node.js + Express.js → Backend Development
-PostgreSQL + MongoDB → Database Engineering
-AWS + Docker + CI/CD → Cloud & DevOps
+SOFTWARE ENGINEER:
+  Categories: DSA, Backend, System Design, Projects, CS Fundamentals
+  Missing Skills: Kubernetes, System Design, Distributed Systems, GraphQL, CI/CD
+  ATS Keywords: Java, Python, JavaScript, React, Node.js, Docker, AWS, Git, SQL, OOP, DSA, Linux, REST APIs
+
+AI / MACHINE LEARNING ENGINEER:
+  Categories: Machine Learning, Deep Learning, LLMs, MLOps, Research, Data Engineering
+  Missing Skills: PyTorch, TensorFlow, MLOps, RAG, Docker, AWS SageMaker, LLM Fine-tuning
+  ATS Keywords: PyTorch, TensorFlow, scikit-learn, Python, NLP, Computer Vision, LLM, RAG, LangChain, Pandas, NumPy, ML, Deep Learning, Hugging Face, Transformers
+
+DATA SCIENTIST:
+  Categories: Statistics, Machine Learning, SQL, Python, Experimentation, Data Visualization
+  Missing Skills: A/B Testing, Hypothesis Testing, Statistical Modeling, Tableau, Power BI, Spark, Feature Engineering
+  ATS Keywords: Python, SQL, R, Machine Learning, Statistics, Pandas, NumPy, Scikit-learn, A/B Testing, Tableau, Power BI, Data Analysis, Regression, Classification, Data Visualization
+
+BUSINESS ANALYST:
+  Categories: SQL, Excel, Data Analysis, Business Acumen, Communication, Stakeholder Management
+  Missing Skills: SQL, Advanced Excel, Power BI, Tableau, Requirements Gathering, BRD, Agile, JIRA
+  ATS Keywords: SQL, Excel, Power BI, Tableau, Business Analysis, Requirements Gathering, BRD, FRD, Data Analysis, Stakeholder Management, Agile, JIRA, Visio, Process Mapping
+
+PRODUCT MANAGER:
+  Categories: Product Strategy, User Research, Analytics, Roadmapping, Leadership, Communication
+  Missing Skills: Product Roadmapping, User Research, A/B Testing, SQL, PRD Writing, Stakeholder Management
+  ATS Keywords: Product Management, Product Strategy, Roadmap, User Research, A/B Testing, SQL, Agile, Scrum, PRD, OKRs, KPI, Data Analysis, User Stories, JIRA
+
+CHARTERED ACCOUNTANT / FINANCE:
+  Categories: Accounting, Taxation, Auditing, Financial Reporting, Compliance, Regulatory Knowledge
+  Missing Skills: GAAP/IFRS, Tax Planning, Internal Audit, Financial Modeling, Risk Assessment, Tally, SAP
+  ATS Keywords: Accounting, Taxation, Audit, Financial Reporting, GAAP, IFRS, Tally, SAP FICO, Compliance, Risk Management, Internal Audit, GST, Income Tax, Financial Analysis, Balance Sheet
+
+MARKETING MANAGER:
+  Categories: Digital Marketing, Content Strategy, SEO/SEM, Analytics, Brand Management, Campaign Management
+  Missing Skills: SEO, SEM, Google Analytics, Content Strategy, Social Media Marketing, CRM, HubSpot
+  ATS Keywords: Digital Marketing, SEO, SEM, Google Analytics, Content Marketing, Social Media, Brand Management, Campaign Analysis, CRM, HubSpot, Marketing Strategy, PPC
+
+UI/UX DESIGNER:
+  Categories: UX Research, Interaction Design, Visual Design, Prototyping, Design Systems, Usability Testing
+  Missing Skills: Figma, User Research, Design Systems, Prototyping, Usability Testing, Accessibility, Motion Design
+  ATS Keywords: UX Design, UI Design, Figma, Sketch, User Research, Prototyping, Design Systems, Wireframing, Usability Testing, Accessibility, Interaction Design, Visual Design
+
+DATA ENGINEER:
+  Categories: ETL, Data Warehousing, Distributed Systems, SQL, Data Modeling, Pipeline Orchestration
+  Missing Skills: Apache Spark, Airflow, DBT, Data Warehousing, Kafka, ETL Pipeline Design, Snowflake, BigQuery
+  ATS Keywords: Python, SQL, Apache Spark, Airflow, ETL, Data Warehousing, Kafka, Snowflake, BigQuery, Data Modeling, DBT, Data Pipeline, Distributed Systems
+
+DEVOPS / SRE ENGINEER:
+  Categories: CI/CD, Containerization, Cloud Platforms, Monitoring, Infrastructure as Code, Security
+  Missing Skills: Terraform, Kubernetes, Helm, Prometheus, Grafana, GitHub Actions, AWS/Azure, Ansible
+  ATS Keywords: Docker, Kubernetes, Terraform, CI/CD, Jenkins, GitHub Actions, AWS, Azure, Linux, Prometheus, Grafana, Helm, Ansible, Infrastructure as Code, Monitoring
+
+If target role doesn't match any listed: GENERATE a custom 5-category framework dynamically based on that role's real-world requirements.
+
+==================================================
+EVERYTHING CHANGES WITH THE ROLE
+==================================================
+
+Company Readiness Areas MUST be role-specific categories from the framework above.
+Missing Skills MUST be the role-specific missing skills listed above.
+ATS Keywords MUST be the role-specific keywords listed above.
+Recruiter Verdict MUST reference the target role explicitly.
+Strengths/Weaknesses MUST be evaluated against target role requirements.
+
+SCORING ADJUSTMENTS BY ROLE:
+- If resume is technical (Java, Python, React) but target role is CHARTERED ACCOUNTANT: readiness score should be LOW (20-35). Missing skills should include Accounting, Taxation, GAAP/IFRS, Tally. Verdict should explain why the technical background doesn't transfer.
+- If resume is technical but target role is BUSINESS ANALYST: readiness moderate (40-55). Missing skills should include SQL, Excel, Power BI, BRD writing. Identify transferable skills like data analysis, communication. Highlight missing business-analysis competencies.
+- If resume is non-technical but target role is SOFTWARE ENGINEER: readiness LOW (15-30). Missing skills should include programming languages, DSA, system design.
+- If resume perfectly matches the target role: readiness HIGH (80-95).
 
 ==================================================
 SCORING FORMULAS
 ==================================================
 
-Skills Score = Technical Skills Depth (40%) + Breadth (20%) + Industry Relevance (20%) + Core CS Fundamentals (20%)
+Skills Score = Depth (40%) + Breadth (20%) + Role Relevance (20%) + Core Competency (20%)
+  — The "Core Competency" must be role-specific (e.g., DSA for SWE, Journal Entries for CA, UX Research for Designer)
 
-Project Score = Technical Depth (30%) + Industry Relevance (25%) + Scalability (20%) + Innovation (15%) + Resume Value (10%)
+Project Score = Technical Skill Relevance (30%) + Role Alignment (25%) + Complexity (20%) + Innovation (15%) + Value (10%)
+  — "Role Alignment" measures how much the project demonstrates skills relevant to the TARGET ROLE
 
-Experience Score = Technical Depth (40%) + Role Relevance (25%) + Business Impact (20%) + Industry Exposure (15%)
-
-==================================================
-COMPANY READINESS — MUST depend on target company/role/JD
-==================================================
-
-GOOGLE SWE: DSA 30% + Backend 25% + System Design 20% + Projects 15% + Experience 10%
-GOOGLE AI: ML 30% + Deep Learning 25% + Projects 20% + Research 15% + Deployment 10%
-META SWE: DSA 35% + Backend 25% + Scalability 20% + Projects 20%
-AMAZON SDE: DSA 25% + System Design 25% + Projects 20% + Leadership 15% + Experience 15%
-MICROSOFT SWE: Backend 25% + Cloud 25% + Projects 20% + DSA 20% + Experience 10%
-
-If no company specified: use the most relevant template based on resume strengths.
+Experience Score = Skill Relevance (40%) + Role Alignment (25%) + Impact (20%) + Exposure (15%)
+  — "Role Alignment" measures how relevant past experience is to the target role
 
 ==================================================
-ATS ANALYSIS — Extract ALL keywords
+ATS ANALYSIS — Role-driven keywords
 ==================================================
 
-Match: Languages, Frameworks, Databases, Cloud, DevOps, AI/ML, Core CS
-Never show only 5 keywords if 20+ technologies exist. Target 15-25+ matched keywords.
+Match keywords from the role-specific keyword lists above. Extract from resume what matches.
+Missing = role-specific keywords NOT found in resume.
+Never use generic tech keywords for non-tech roles.
+Target 12-20+ matched keywords for good coverage.
 
 ==================================================
 RECRUITER-GRADE FEEDBACK
 ==================================================
 
-Feedback must feel like it was written by a Senior Google Recruiter, Senior Amazon Hiring Manager, or Senior Microsoft Engineer — NOT a generic AI chatbot.
-
+Feedback must feel like it was written by a Senior Recruiter for that SPECIFIC role — NOT a generic AI chatbot.
 Be specific. Be evidence-based. Be recruiter-grade.
+Mention the target role by name in the verdict.
 
 ==================================================
 OUTPUT JSON SCHEMA — Return ONLY this exact structure:
@@ -391,12 +465,13 @@ OUTPUT JSON SCHEMA — Return ONLY this exact structure:
 
 {
   "overallScore": 0-100,
+  "targetRole": "Software Engineer",
 
   "skillsScore": 0-100,
-  "strongSkills": ["Java", "Python", "React", "Next.js", "PostgreSQL", "MongoDB", "Redis", "AWS", "Docker", "Distributed Systems", "Concurrency", "DSA"],
+  "strongSkills": ["Java", "Python", "React", "PostgreSQL", "AWS"],
   "missingSkills": ["Kubernetes", "GraphQL"],
   "criticalMissingSkills": ["Kubernetes"],
-  "skillsRecruiterVerdict": "1-2 sentence verdict on skills",
+  "skillsRecruiterVerdict": "1-2 sentence verdict on skills for target role",
 
   "projects": [
     {
@@ -431,10 +506,10 @@ OUTPUT JSON SCHEMA — Return ONLY this exact structure:
   ],
 
   "atsScore": 85,
-  "matchedKeywords": ["Java", "Python", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Redis", "Docker", "AWS", "GitHub Actions", "DSA", "OOP", "DBMS", "OS", "Distributed Systems", "Linux", "HTML", "CSS", "Git"],
+  "matchedKeywords": ["Java", "Python", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Redis", "Docker", "AWS", "GitHub Actions", "Linux", "HTML", "CSS", "Git"],
   "missingKeywords": ["Kubernetes", "GraphQL"],
   "criticalMissingKeywords": ["Kubernetes"],
-  "expectedATSImprovement": "Adding Kubernetes and GraphQL could improve your ATS score by 10-15%.",
+  "expectedATSImprovement": "Adding Kubernetes and GraphQL could improve ATS compatibility by 10-15%.",
 
   "companyReadinessScore": 88,
   "companyReadinessAreas": [
@@ -448,37 +523,72 @@ OUTPUT JSON SCHEMA — Return ONLY this exact structure:
   "companyReadinessWeaknesses": ["Limited system design exposure"],
   "companyReadinessMissingSkills": ["Distributed consensus algorithms", "Large-scale system design"],
   "interviewProbability": "High — strong internship candidate with interview potential",
-  "companyReadinessVerdict": "Strong internship candidate with solid CS fundamentals, DSA skills, and project experience. Interview probability is high with focused system design preparation.",
+  "companyReadinessVerdict": "Strong internship candidate with solid CS fundamentals, DSA skills, and project experience for the target role. Interview probability is high with focused system design preparation.",
 
   "recruiterReport": "2-3 paragraph detailed analysis. Keep under 2000 characters. Explain all scores with evidence from resume."
 }
 
 overallScore = skillsScore*0.25 + avg(projectScores)*0.30 + avg(experienceScores)*0.25 + atsScore*0.10 + companyReadinessScore*0.10
 
-CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no extra text, no explanations. Raw JSON only. Keep recruiterReport under 2000 characters to prevent content overflow.`;
+CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no extra text, no explanations. Raw JSON only. Include "targetRole" field so the UI can display it. Keep recruiterReport under 2000 characters to prevent content overflow.`;
 
     let userPromptParts: string[] = [];
     if (mode === "strict_jd" && jobDescription) {
       userPromptParts.push(`TARGET JOB DESCRIPTION:\n${jobDescription}`);
     }
     if (mode === "career_intent") {
-      userPromptParts.push(`CAREER INTENT:\nField: ${fieldOfInterest}\nTarget Role: ${targetRole}`);
+      let intentParts = [`CAREER INTENT:`];
+      if (fieldOfInterest) intentParts.push(`Field: ${fieldOfInterest}`);
+      if (targetRole) intentParts.push(`Target Role: ${targetRole}`);
+      if (targetCompany) intentParts.push(`Target Company: ${targetCompany}`);
+      userPromptParts.push(intentParts.join("\n"));
     }
 
     // Send ONLY structured JSON to AI — never raw resume text
-    userPromptParts.push(`EXTRACTED RESUME DATA (structured JSON only):\n${structuredResume}`);
+    // Truncate structured resume to prevent exceeding Groq free-tier TPM limits (12k)
+    const MAX_STRUCTURED_CHARS = 3000;
+    const truncatedResume = structuredResume.length > MAX_STRUCTURED_CHARS
+      ? structuredResume.substring(0, MAX_STRUCTURED_CHARS) + "\n[truncated for length]"
+      : structuredResume;
+    userPromptParts.push(`EXTRACTED RESUME DATA (structured JSON only):\n${truncatedResume}`);
+
+    let effectiveSystemPrompt = systemPrompt;
+    let effectiveMaxOutput = 4000; // max output tokens — reduced from 8000 to fit Groq free tier 12k TPM limit
 
     const userPrompt = userPromptParts.join("\n\n");
+
+    // Token budget guard: total = input (est.) + max output must stay under 11k (leaving margin)
+    const estimatedInputTokens = Math.ceil((effectiveSystemPrompt.length + userPrompt.length) / 4);
+    const estimatedTotal = estimatedInputTokens + effectiveMaxOutput;
+    if (estimatedTotal > 11000) {
+      const overflow = estimatedTotal - 11000;
+      console.warn(`[AI] Request too large: est. ${estimatedTotal} tokens (${overflow} over), trimming system prompt...`);
+      // Compress system prompt: keep everything up to the ROLE-SPECIFIC COMPETENCY FRAMEWORKS section,
+      // plus the output schema. Drop verbose role framework examples and scoring details.
+      const schemaIdx = effectiveSystemPrompt.indexOf("OUTPUT JSON SCHEMA");
+      const frameworksIdx = effectiveSystemPrompt.indexOf("ROLE-SPECIFIC COMPETENCY FRAMEWORKS");
+      const rulesIdx = effectiveSystemPrompt.indexOf("CRITICAL RULES");
+      if (schemaIdx > 0) {
+        // Keep: critical rules + schema. Remove: verbose frameworks, scoring formulas, ATS details
+        const headerPart = effectiveSystemPrompt.substring(0, frameworksIdx > 0 ? frameworksIdx : 0);
+        // Keep the schema from OUTPUT JSON SCHEMA onward, truncated to 2500 chars
+        const schemaPart = effectiveSystemPrompt.substring(schemaIdx, Math.min(schemaIdx + 2500, effectiveSystemPrompt.length));
+        effectiveSystemPrompt = headerPart + "\n\n[Role-specific competency frameworks removed for brevity — apply appropriate framework based on target role]\n\n" + schemaPart;
+        console.warn(`[AI] Trimmed system prompt from ${systemPrompt.length} to ${effectiveSystemPrompt.length} chars`);
+      } else if (rulesIdx > 0) {
+        // Fallback: just take first 4000 chars
+        effectiveSystemPrompt = effectiveSystemPrompt.substring(0, 4000) + "\n\n[System prompt truncated for length — follow output schema strictly]\n\n" + effectiveSystemPrompt.substring(effectiveSystemPrompt.lastIndexOf("{"));
+      }
+    }
 
     // Step 5: Send to AI
     const providerToUse = "groq";
     const modelToUse = MODELS.GROQ_PRIMARY;
-    const MAX_OUTPUT_TOKENS = 8000;
 
     let aiOutput = await sendAnalysisRequest(
-      systemPrompt,
+      effectiveSystemPrompt,
       userPrompt,
-      MAX_OUTPUT_TOKENS,
+      effectiveMaxOutput,
       providerToUse,
       modelToUse
     );
@@ -534,7 +644,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no extra text, no
     const user = await currentUser();
     const userEmail = user?.primaryEmailAddress?.emailAddress;
     if (userEmail) {
-      await saveToDatabase(userEmail, resumeText, resumeName, jobDescription, fieldOfInterest, targetRole, aiOutput);
+      await saveToDatabase(userEmail, resumeText, resumeName, jobDescription, fieldOfInterest, targetRole, targetCompany, aiOutput);
     }
 
     return NextResponse.json(aiOutput);

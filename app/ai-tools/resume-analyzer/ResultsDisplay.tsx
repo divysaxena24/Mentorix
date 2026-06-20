@@ -8,10 +8,13 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { AnalysisResult } from "@/types"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface ResultsDisplayProps {
     result: AnalysisResult;
     onReset: () => void;
+    targetRole?: string;
+    targetCompany?: string;
 }
 
 // ─── Animated Radial Progress with Glow ────────────────────────────────
@@ -49,10 +52,6 @@ function AnimatedRadialProgress({
     };
 
     const scoreColor = getStatusColor(clampedScore);
-    const isLow = clampedScore < 40;
-    const isMid = clampedScore >= 40 && clampedScore < 60;
-    const isGood = clampedScore >= 60 && clampedScore < 80;
-    const isGreat = clampedScore >= 80;
 
     return (
         <motion.div
@@ -119,20 +118,19 @@ function AnimatedRadialProgress({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
+            >                    <span
+                className="text-sm font-bold leading-none tracking-tight"
+                style={{ color: scoreColor, fontSize: size * 0.22 }}
             >
-                <span
-                    className="text-xs font-black leading-none tracking-tight"
-                    style={{ color: scoreColor, fontSize: size * 0.2 }}
-                >
                     {clampedScore}
                 </span>
-                <span className="text-[5px] font-bold text-white/30 uppercase tracking-widest leading-none mt-0.5">
+                <span className="text-[10px] font-medium text-white/30 uppercase tracking-widest leading-none mt-0.5">
                     pts
                 </span>
             </motion.div>
 
             {label && (
-                <span className="absolute -bottom-4.5 text-[7px] font-bold text-white/30 uppercase tracking-[0.12em] whitespace-nowrap">
+                <span className="absolute -bottom-5 text-[10px] font-medium text-white/40 uppercase tracking-[0.12em] whitespace-nowrap">
                     {label}
                 </span>
             )}
@@ -163,9 +161,9 @@ function AnimatedScoreBar({
         <div className="w-full">
             {(label || showValue) && (
                 <div className="flex justify-between items-center mb-1">
-                    {label && <span className="text-[9px] font-bold text-white/50 uppercase tracking-wider">{label}</span>}
+                    {label && <span className="text-xs font-medium text-white/50 uppercase tracking-wider">{label}</span>}
                     {showValue && (
-                        <span className="text-[10px] font-black tabular-nums" style={{ color }}>{value}%</span>
+                        <span className="text-xs font-bold tabular-nums" style={{ color }}>{value}%</span>
                     )}
                 </div>
             )}
@@ -209,7 +207,7 @@ function SkillBadge({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClick}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border transition-all duration-200 cursor-default ${onClick ? "cursor-pointer" : ""}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider border transition-all duration-200 cursor-default ${onClick ? "cursor-pointer" : ""}`}
             style={{
                 background: v.bg,
                 color: v.color,
@@ -259,8 +257,7 @@ function MetricCard({
                 style={{ background: `radial-gradient(ellipse at top, ${color}15 0%, transparent 70%)` }}
             />
 
-            <div
-                className="relative h-full backdrop-blur-xl rounded-2xl p-5 border transition-all duration-300 group-hover:border-white/20 group-hover:shadow-2xl"
+            <div className="relative h-full backdrop-blur-xl rounded-2xl p-3 sm:p-5 border transition-all duration-300 group-hover:border-white/20 group-hover:shadow-2xl"
                 style={{
                     background: `linear-gradient(135deg, ${color}08, rgba(255,255,255,0.02))`,
                     borderColor: "rgba(255,255,255,0.08)",
@@ -282,10 +279,10 @@ function MetricCard({
                         >
                             <Icon className="w-3.5 h-3.5" style={{ color }} />
                         </div>
-                        <h3 className="text-[10px] font-black text-white/60 uppercase tracking-[0.12em]">{title}</h3>
+                        <h3 className="text-xs font-semibold text-white/60 uppercase tracking-[0.12em]">{title}</h3>
                     </div>
                     {trend && (
-                        <div className={`flex items-center gap-1 text-[8px] font-bold ${trend === "up" ? "text-green-400" : trend === "down" ? "text-red-400" : "text-yellow-400"}`}>
+                        <div className={`flex items-center gap-1 text-[10px] font-medium ${trend === "up" ? "text-green-400" : trend === "down" ? "text-red-400" : "text-yellow-400"}`}>
                             <TrendingUp className={`w-2.5 h-2.5 ${trend === "down" ? "rotate-180" : trend === "neutral" ? "rotate-90" : ""}`} />
                             {trend === "up" ? "Strong" : trend === "down" ? "Needs Work" : "Stable"}
                         </div>
@@ -294,11 +291,11 @@ function MetricCard({
 
                 {value !== undefined && (
                     <div className="mb-1">
-                        <span className="text-2xl font-black tracking-tight text-white" style={{ fontSize: "1.65rem" }}>
+                        <span className="text-lg font-bold tracking-tight text-white">
                             {value}
                         </span>
                         {subtitle && (
-                            <span className="ml-1.5 text-[9px] font-bold text-white/30 uppercase tracking-wider">{subtitle}</span>
+                            <span className="ml-1.5 text-[10px] font-medium text-white/40 uppercase tracking-wider">{subtitle}</span>
                         )}
                     </div>
                 )}
@@ -323,7 +320,7 @@ function Section({ title, icon: Icon, color = "#8b5cf6", delay = 0, children, cl
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay }}
-            className={`relative group/section ${className}`}
+            className={`relative group/section ${className} my-6`}
         >
             {/* Section glow */}
             <div
@@ -331,19 +328,19 @@ function Section({ title, icon: Icon, color = "#8b5cf6", delay = 0, children, cl
                 style={{ background: `radial-gradient(ellipse at top, ${color}08 0%, transparent 60%)` }}
             />
 
-            <div className="relative backdrop-blur-xl rounded-3xl p-6 sm:p-7 border transition-all duration-300"
+            <div className="relative backdrop-blur-xl rounded-2xl p-4 sm:p-5 border transition-all duration-300"
                 style={{
                     background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
                     borderColor: "rgba(255,255,255,0.06)",
                 }}
             >
                 {/* Section header */}
-                <div className="flex items-center gap-3 mb-5 pb-3 border-b" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5 pb-3 border-b" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
                     <div className="p-2 rounded-xl transition-all duration-300 group-hover/section:scale-110 group-hover/section:shadow-lg"
                         style={{ background: `${color}15` }}>
                         <Icon className="w-4 h-4" style={{ color }} />
                     </div>
-                    <h2 className="text-xs font-black text-white/80 uppercase tracking-[0.12em]">{title}</h2>
+                    <h2 className="text-sm font-semibold text-white/80 uppercase tracking-[0.12em]">{title}</h2>
                     <div className="flex-1" />
                     <div
                         className="h-[1px] flex-1 max-w-[60px] opacity-30"
@@ -374,7 +371,7 @@ function RecruiterVerdict({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
-            className={`relative overflow-hidden rounded-xl border ${variant === "compact" ? "p-3" : "p-4"}`}
+            className={`relative overflow-hidden rounded-xl border ${variant === "compact" ? "p-2.5" : "p-3"}`}
             style={{
                 background: `linear-gradient(135deg, ${color}08, ${color}03)`,
                 borderColor: `${color}20`,
@@ -388,7 +385,7 @@ function RecruiterVerdict({
                 <div className="shrink-0 mt-0.5">
                     <Icon className={variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4"} style={{ color }} />
                 </div>
-                <p className={`leading-relaxed text-white/60 ${variant === "compact" ? "text-[10px]" : "text-[11px]"}`}
+                <p className={`leading-relaxed text-white/60 text-xs sm:text-sm`}
                     style={{ fontStyle: "italic" }}>
                     {text}
                 </p>
@@ -398,7 +395,7 @@ function RecruiterVerdict({
 }
 
 // ─── Enterprise-Grade Progress Bar ────────────────────────────────────
-function MiniProgressBar({ value, color = "#8b5cf6", height = 4, label, showValue = true }: {
+function MiniProgressBar({ value, color = "#8b5cf6", height = 9, label, showValue = true }: {
     value: number;
     color?: string;
     height?: number;
@@ -410,8 +407,8 @@ function MiniProgressBar({ value, color = "#8b5cf6", height = 4, label, showValu
         <div className="w-full">
             {(label || showValue) && (
                 <div className="flex justify-between items-center mb-0.5">
-                    {label && <span className="text-[7px] font-bold text-white/40 uppercase tracking-wider">{label}</span>}
-                    {showValue && <span className="text-[8px] font-bold" style={{ color }}>{value}%</span>}
+                    {label && <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">{label}</span>}
+                    {showValue && <span className="text-[10px] font-semibold" style={{ color }}>{value}%</span>}
                 </div>
             )}
             <div className="w-full rounded-full overflow-hidden" style={{ height, background: "rgba(255,255,255,0.04)" }}>
@@ -437,15 +434,15 @@ function ConfidenceMeter({ score }: { score: number }) {
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="backdrop-blur-xl rounded-2xl p-5 border text-center"
+            className="backdrop-blur-xl rounded-2xl p-3 sm:p-5 border text-center"
             style={{
                 background: "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
                 borderColor: "rgba(255,255,255,0.06)",
             }}
         >
             <div className="flex items-center justify-center gap-2 mb-3">
-                <Shield className="w-4 h-4" style={{ color }} />
-                <span className="text-[10px] font-black uppercase tracking-[0.12em]" style={{ color }}>Analysis Confidence</span>
+                <Shield className="w-3.5 h-3.5" style={{ color }} />
+                <span className="text-xs font-semibold uppercase tracking-[0.12em]" style={{ color }}>Analysis Confidence</span>
             </div>
             <div className="relative w-full max-w-[180px] mx-auto h-2 rounded-full overflow-hidden mb-2"
                 style={{ background: "rgba(255,255,255,0.05)" }}>
@@ -470,12 +467,12 @@ function ConfidenceMeter({ score }: { score: number }) {
                     transition={{ duration: 1.2, ease: "easeOut" }}
                 />
             </div>
-            <div className="flex justify-between text-[7px] font-bold text-white/20 uppercase tracking-wider px-1">
+            <div className="flex justify-between text-[10px] font-medium text-white/30 uppercase tracking-wider px-1">
                 <span>Low</span>
                 <span>Moderate</span>
                 <span>High</span>
             </div>
-            <p className="mt-2 text-[10px] font-bold" style={{ color }}>
+            <p className="mt-2 text-[11px] sm:text-xs font-semibold" style={{ color }}>
                 {level} Confidence
             </p>
         </motion.div>
@@ -499,7 +496,7 @@ function CandidateBenchmark({ scores }: { scores: Record<string, number> }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="backdrop-blur-xl rounded-2xl p-5 border"
+            className="backdrop-blur-xl rounded-2xl p-3 sm:p-5 border"
             style={{
                 background: "linear-gradient(135deg, rgba(139,92,246,0.03), rgba(59,130,246,0.02))",
                 borderColor: "rgba(255,255,255,0.06)",
@@ -507,7 +504,7 @@ function CandidateBenchmark({ scores }: { scores: Record<string, number> }) {
         >
             <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-4 h-4 text-purple-400" />
-                <h3 className="text-[10px] font-black text-white/60 uppercase tracking-[0.12em]">Candidate Benchmark</h3>
+                <h3 className="text-xs font-semibold text-white/60 uppercase tracking-[0.12em]">Candidate Benchmark</h3>
             </div>
             <div className="space-y-2.5">
                 {entries.map(([key, value], i) => (
@@ -524,7 +521,8 @@ function CandidateBenchmark({ scores }: { scores: Record<string, number> }) {
 }
 
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────
-export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps) {
+export default function ResultsDisplay({ result, onReset, targetRole, targetCompany }: ResultsDisplayProps) {
+    const isMobile = useIsMobile()
     const s = {
         overallScore: result.overallScore ?? result.score ?? 0,
         skillsScore: result.skillsScore ?? 0,
@@ -582,18 +580,17 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
     };
 
     return (
-        <motion.div
-            className="space-y-5 max-w-5xl mx-auto pb-12"
+        <motion.div className="flex flex-col items-center justify-center min-h-screen w-full space-y-4 sm:space-y-5 px-4 sm:px-0 pb-12"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
         >
-            {/* ===== HERO SECTION: OVERALL SCORE + TIER + ACTIONS ===== */}
+            {/* ===== HERO SECTION: OVERALL SCORE + TARGET ROLE + TIER + ACTIONS ===== */}
             <motion.div
                 initial={{ opacity: 0, y: -10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.6 }}
-                className="relative overflow-hidden rounded-3xl border p-6 sm:p-8"
+                className="relative overflow-hidden rounded-2xl border p-4 sm:p-5"
                 style={{
                     background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(59,130,246,0.04) 50%, rgba(6,182,212,0.02) 100%)",
                     borderColor: "rgba(139,92,246,0.15)",
@@ -610,8 +607,8 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                     <div className="shrink-0">
                         <AnimatedRadialProgress
                             score={s.overallScore}
-                            size={96}
-                            stroke={8}
+                            size={isMobile ? 80 : 96}
+                            stroke={isMobile ? 7 : 8}
                             gradientId="heroGradient"
                             gradientColors={["#8b5cf6", "#6366f1", "#3b82f6"]}
                             glowColor="rgba(139, 92, 246, 0.35)"
@@ -619,11 +616,29 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                     </div>
 
                     <div className="flex-1 text-center sm:text-left">
+                        {/* Target Role Badge */}
+                        {(targetRole || result.targetRole) && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-[0.12em] mb-2"
+                                style={{
+                                    background: "rgba(99,102,241,0.15)",
+                                    color: "#818cf8",
+                                    border: "1px solid rgba(99,102,241,0.25)",
+                                }}
+                            >
+                                <Briefcase className="w-3 h-3" />
+                                {targetRole || result.targetRole}
+                            </motion.div>
+                        )}
+
                         <motion.div
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.15em] mb-3"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-[0.15em] mb-2"
                             style={{
                                 background: `${tier.color}15`,
                                 color: tier.color,
@@ -635,28 +650,28 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                             {tier.label}
                         </motion.div>
 
-                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2 uppercase">
+                        <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-1 uppercase">
                             Resume Intelligence
-                            <span className="block text-lg sm:text-xl font-bold text-white/30 mt-0.5">
+                            <span className="block text-xs sm:text-sm font-medium text-white/40 mt-0.5">
                                 {s.overallScore >= 80 ? "Exceptional candidate profile" :
-                                 s.overallScore >= 60 ? "Strong foundation detected" :
-                                 s.overallScore >= 40 ? "Opportunities for improvement" :
-                                 "Significant work required"}
+                                    s.overallScore >= 60 ? "Strong foundation detected" :
+                                        s.overallScore >= 40 ? "Opportunities for improvement" :
+                                            "Significant work required"}
                             </span>
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-3 mt-4">
-                            <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase tracking-wider">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3">
+                            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-white/40 font-medium uppercase tracking-wider">
                                 <CheckCircle2 className="w-3 h-3 text-green-400" />
                                 <span>{s.strongSkills.length} strong skills</span>
                             </div>
                             <div className="w-1 h-1 rounded-full bg-white/10" />
-                            <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase tracking-wider">
+                            <div className="flex items-center gap-1.5 text-xs text-white/40 font-medium uppercase tracking-wider">
                                 <BarChart3 className="w-3 h-3 text-blue-400" />
                                 <span>{s.projects.length} projects</span>
                             </div>
                             <div className="w-1 h-1 rounded-full bg-white/10" />
-                            <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold uppercase tracking-wider">
+                            <div className="flex items-center gap-1.5 text-xs text-white/40 font-medium uppercase tracking-wider">
                                 <Briefcase className="w-3 h-3 text-cyan-400" />
                                 <span>{s.experiences.length} experiences</span>
                             </div>
@@ -664,28 +679,27 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                    <div className="flex flex-row sm:flex-col gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
 
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={onReset}
-                            className="px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all border"
+                            className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl"
                             style={{
-                                background: "rgba(255,255,255,0.04)",
-                                color: "rgba(255,255,255,0.7)",
-                                borderColor: "rgba(255,255,255,0.1)",
+                                background: "#ffffff",
+                                color: "#0f172a",
                             }}
                         >
-                            <ArrowRight className="w-3.5 h-3.5" />
-                            New Analysis
+                            <ArrowRight className="w-4 h-4" />
+                            Analyse Another Resume
                         </motion.button>
                     </div>
                 </div>
             </motion.div>
 
             {/* ===== SCORE METRICS GRID ===== */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <MetricCard
                     icon={Target}
                     title="Skills"
@@ -726,31 +740,67 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
 
             {/* ===== COMPANY READINESS — Hero Section ===== */}
             <Section title="Company Readiness" icon={Building2} color="#3b82f6" delay={0.3}>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+                {/* Target badges row */}
+                {(targetCompany || targetRole || result.targetRole) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="flex flex-wrap items-center gap-2 mb-5"
+                    >
+                        {targetCompany && (
+                            <div
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-[0.12em]"
+                                style={{
+                                    background: "rgba(59,130,246,0.15)",
+                                    color: "#60a5fa",
+                                    border: "1px solid rgba(59,130,246,0.25)",
+                                }}
+                            >
+                                <Building2 className="w-2.5 h-2.5" />
+                                {targetCompany}
+                            </div>
+                        )}
+                        {(targetRole || result.targetRole) && (
+                            <div
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-[0.12em]"
+                                style={{
+                                    background: "rgba(99,102,241,0.15)",
+                                    color: "#818cf8",
+                                    border: "1px solid rgba(99,102,241,0.25)",
+                                }}
+                            >
+                                <Briefcase className="w-2.5 h-2.5" />
+                                {targetRole || result.targetRole}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
                     {/* Left: Score + Key Metrics */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <div className="flex items-center gap-5 p-4 rounded-xl"
+                    <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+                        <div className="flex items-center gap-3 sm:gap-5 p-3 sm:p-4 rounded-xl"
                             style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.12)" }}>
                             <AnimatedRadialProgress
                                 score={s.companyReadinessScore}
-                                size={72}
-                                stroke={7}
+                                size={isMobile ? 56 : 72}
+                                stroke={isMobile ? 6 : 7}
                                 gradientId="readinessGradient"
                                 gradientColors={["#3b82f6", "#6366f1", "#8b5cf6"]}
                                 glowColor="rgba(59,130,246,0.3)"
                             />
                             <div>
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1">
+                                <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-0.5">
                                     Readiness Score
                                 </p>
-                                <p className="text-sm font-black text-white">
+                                <p className="text-xs sm:text-sm font-semibold text-white">
                                     {s.companyReadinessScore >= 80 ? "Highly Prepared" :
-                                     s.companyReadinessScore >= 60 ? "Moderately Prepared" :
-                                     s.companyReadinessScore >= 40 ? "Partially Prepared" :
-                                     "Needs Preparation"}
+                                        s.companyReadinessScore >= 60 ? "Moderately Prepared" :
+                                            s.companyReadinessScore >= 40 ? "Partially Prepared" :
+                                                "Needs Preparation"}
                                 </p>
                                 {s.interviewProbability && (
-                                    <div className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold"
+                                    <div className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md text-xs font-medium"
                                         style={{ background: "rgba(59,130,246,0.1)", color: "#60a5fa" }}>
                                         <Zap className="w-2.5 h-2.5" />
                                         {s.interviewProbability}
@@ -762,7 +812,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                         {/* Area Breakdown */}
                         {s.companyReadinessAreas.length > 0 && (
                             <div className="space-y-2">
-                                <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider mb-2">Area Breakdown</p>
+                                <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Area Breakdown</p>
                                 {s.companyReadinessAreas.slice(0, 6).map((area, i) => (
                                     <MiniProgressBar
                                         key={i}
@@ -776,15 +826,15 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                     </div>
 
                     {/* Right: Strengths, Weaknesses, Missing */}
-                    <div className="lg:col-span-3 space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="lg:col-span-3 space-y-2 sm:space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                             {/* Strengths */}
-                            <div className="p-3 rounded-xl border"
+                            <div className="p-2.5 sm:p-3 rounded-xl border"
                                 style={{
                                     background: "rgba(34,197,94,0.04)",
                                     borderColor: "rgba(34,197,94,0.12)",
                                 }}>
-                                <p className="text-[8px] font-bold text-green-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <p className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <CheckCircle2 className="w-2.5 h-2.5" />
                                     Strengths
                                 </p>
@@ -794,7 +844,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                             <SkillBadge key={i} variant="strong">{str}</SkillBadge>
                                         ))
                                     ) : (
-                                        <span className="text-[8px] text-white/20 italic">None identified</span>
+                                        <span className="text-xs text-white/30 italic">None identified</span>
                                     )}
                                 </div>
                             </div>
@@ -805,7 +855,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     background: "rgba(239,68,68,0.04)",
                                     borderColor: "rgba(239,68,68,0.12)",
                                 }}>
-                                <p className="text-[8px] font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <AlertTriangle className="w-2.5 h-2.5" />
                                     Weaknesses
                                 </p>
@@ -815,7 +865,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                             <SkillBadge key={i} variant="critical">{w}</SkillBadge>
                                         ))
                                     ) : (
-                                        <span className="text-[8px] text-white/20 italic">None identified</span>
+                                        <span className="text-xs text-white/30 italic">None identified</span>
                                     )}
                                 </div>
                             </div>
@@ -826,7 +876,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     background: "rgba(234,179,8,0.04)",
                                     borderColor: "rgba(234,179,8,0.12)",
                                 }}>
-                                <p className="text-[8px] font-bold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <AlertTriangle className="w-2.5 h-2.5" />
                                     Missing
                                 </p>
@@ -836,7 +886,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                             <SkillBadge key={i} variant="missing">{ms}</SkillBadge>
                                         ))
                                     ) : (
-                                        <span className="text-[8px] text-white/20 italic">None identified</span>
+                                        <span className="text-xs text-white/30 italic">None identified</span>
                                     )}
                                 </div>
                             </div>
@@ -853,31 +903,31 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
 
             {/* ===== SKILLS ANALYSIS ===== */}
             <Section title="Skills Analysis" icon={Target} color="#8b5cf6" delay={0.4}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
                     {/* Score + Counts */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 rounded-xl"
+                    <div className="space-y-3 sm:space-y-4">
+                        <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl"
                             style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
                             <AnimatedRadialProgress
                                 score={s.skillsScore}
-                                size={60}
-                                stroke={6}
+                                size={isMobile ? 48 : 60}
+                                stroke={isMobile ? 5 : 6}
                                 gradientId="skillsGradient"
                                 gradientColors={["#8b5cf6", "#a78bfa", "#c4b5fd"]}
                                 glowColor="rgba(139,92,246,0.25)"
                             />
-                            <div className="grid grid-cols-3 gap-3 flex-1 text-center">
+                            <div className="grid grid-cols-3 gap-1 sm:gap-3 flex-1 text-center">
                                 <div>
-                                    <p className="text-sm font-black text-green-400">{s.strongSkills.length}</p>
-                                    <p className="text-[7px] font-bold text-white/30 uppercase tracking-wider">Strong</p>
+                                    <p className="text-sm font-bold text-green-400">{s.strongSkills.length}</p>
+                                    <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Strong</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-black text-yellow-400">{s.missingSkills.length}</p>
-                                    <p className="text-[7px] font-bold text-white/30 uppercase tracking-wider">Missing</p>
+                                    <p className="text-sm font-bold text-yellow-400">{s.missingSkills.length}</p>
+                                    <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Missing</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-black text-red-400">{s.criticalMissingSkills.length}</p>
-                                    <p className="text-[7px] font-bold text-white/30 uppercase tracking-wider">Critical</p>
+                                    <p className="text-sm font-bold text-red-400">{s.criticalMissingSkills.length}</p>
+                                    <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Critical</p>
                                 </div>
                             </div>
                         </div>
@@ -889,7 +939,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                     <div className="lg:col-span-2 space-y-3">
                         {s.strongSkills.length > 0 && (
                             <div>
-                                <p className="text-[8px] font-bold text-green-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                <p className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                     <CheckCircle2 className="w-2.5 h-2.5" />
                                     Strong Skills ({s.strongSkills.length})
                                 </p>
@@ -909,7 +959,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                         )}
                         {s.missingSkills.length > 0 && (
                             <div>
-                                <p className="text-[8px] font-bold text-yellow-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                     <AlertTriangle className="w-2.5 h-2.5" />
                                     Missing Skills ({s.missingSkills.length})
                                 </p>
@@ -922,7 +972,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                         )}
                         {s.criticalMissingSkills.length > 0 && (
                             <div>
-                                <p className="text-[8px] font-bold text-red-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                     <AlertTriangle className="w-2.5 h-2.5" />
                                     Critical Missing ({s.criticalMissingSkills.length})
                                 </p>
@@ -948,7 +998,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 + idx * 0.1 }}
                                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                                className="relative group/project rounded-xl p-4 border transition-all duration-300"
+                                className="relative group/project rounded-xl p-3 sm:p-4 border transition-all duration-300"
                                 style={{
                                     background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(139,92,246,0.02))",
                                     borderColor: "rgba(255,255,255,0.06)",
@@ -959,15 +1009,15 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     style={{ background: "radial-gradient(ellipse at top, rgba(59,130,246,0.06), transparent)" }} />
 
                                 <div className="relative">
-                                    <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-start justify-between mb-2 gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-[11px] font-black text-white truncate uppercase tracking-tight">
+                                            <h4 className="text-xs sm:text-sm font-semibold text-white truncate uppercase tracking-tight">
                                                 {proj.projectName}
                                             </h4>
                                             <div className="flex flex-wrap gap-1 mt-1.5">
-                                                {(proj.technologies || []).slice(0, 4).map((t, i) => (
+                                                {(proj.technologies || []).slice(0, 3).map((t, i) => (
                                                     <span key={i}
-                                                        className="text-[6px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider"
+                                                        className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wider"
                                                         style={{
                                                             background: "rgba(139,92,246,0.1)",
                                                             color: "#a78bfa",
@@ -977,11 +1027,11 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                                         {t}
                                                     </span>
                                                 ))}
-                                                {(proj.technologies || []).length > 4 && (
-                                                    <span className="text-[6px] px-1.5 py-0.5 rounded-full font-bold text-white/30"
+                                                {(proj.technologies || []).length > 3 && (
+                                                    <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-medium text-white/30"
                                                         style={{ background: "rgba(255,255,255,0.04)" }}
                                                     >
-                                                        +{proj.technologies.length - 4}
+                                                        +{proj.technologies.length - 3}
                                                     </span>
                                                 )}
                                             </div>
@@ -998,7 +1048,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     </div>
 
                                     {/* Dimension progress bars */}
-                                    <div className="grid grid-cols-5 gap-1 mb-2">
+                                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-1 mb-2">
                                         {[
                                             { label: "Tech", value: proj.technicalDepth || 0, color: "#8b5cf6" },
                                             { label: "Industry", value: proj.industryRelevance || 0, color: "#3b82f6" },
@@ -1013,21 +1063,21 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                                     height={3}
                                                     showValue={false}
                                                 />
-                                                <p className="text-[6px] font-bold text-white/25 mt-0.5 uppercase tracking-wider">{dim.label}</p>
+                                                <p className="text-[8px] sm:text-[10px] font-medium text-white/30 mt-0.5 uppercase tracking-wider">{dim.label}</p>
                                             </div>
                                         ))}
                                     </div>
 
                                     {/* Strength/Improvement */}
-                                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t"
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t"
                                         style={{ borderColor: "rgba(255,255,255,0.04)" }}>
                                         {proj.strength && (
-                                            <p className="text-[8px] text-green-400/70 leading-tight">
+                                            <p className="text-xs text-green-400/70 leading-tight">
                                                 <span className="font-bold text-green-400 mr-0.5">✓</span> {proj.strength}
                                             </p>
                                         )}
                                         {proj.improvement && (
-                                            <p className="text-[8px] text-red-400/70 leading-tight">
+                                            <p className="text-xs text-red-400/70 leading-tight">
                                                 <span className="font-bold text-red-400 mr-0.5">!</span> {proj.improvement}
                                             </p>
                                         )}
@@ -1058,7 +1108,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.6 + idx * 0.1 }}
                                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                                className="relative group/exp rounded-xl p-4 border transition-all duration-300"
+                                className="relative group/exp rounded-xl p-3 sm:p-4 border transition-all duration-300"
                                 style={{
                                     background: "linear-gradient(135deg, rgba(6,182,212,0.04), rgba(59,130,246,0.02))",
                                     borderColor: "rgba(255,255,255,0.06)",
@@ -1070,10 +1120,10 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                 <div className="relative">
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-[11px] font-black text-white truncate uppercase tracking-tight">
+                                            <h4 className="text-sm font-semibold text-white truncate uppercase tracking-tight">
                                                 {exp.role}
                                             </h4>
-                                            <p className="text-[8px] font-bold text-white/40 truncate">
+                                            <p className="text-xs font-medium text-white/40 truncate">
                                                 {exp.company}{exp.duration ? ` • ${exp.duration}` : ""}
                                             </p>
                                         </div>
@@ -1089,7 +1139,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     </div>
 
                                     {/* Dimension bars */}
-                                    <div className="grid grid-cols-4 gap-1.5 mb-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-1.5 mb-2">
                                         {[
                                             { label: "Depth 40%", value: exp.technicalDepth || 0, color: "#06b6d4" },
                                             { label: "Relevance 25%", value: exp.roleRelevance || 0, color: "#22c55e" },
@@ -1103,7 +1153,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                                     height={3}
                                                     showValue={false}
                                                 />
-                                                <p className="text-[6px] font-bold text-white/25 mt-0.5 uppercase tracking-wider">
+                                                <p className="text-[8px] sm:text-[10px] font-medium text-white/30 mt-0.5 uppercase tracking-wider">
                                                     {dim.label}
                                                 </p>
                                             </div>
@@ -1111,15 +1161,15 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                     </div>
 
                                     {/* Strength/Improvement */}
-                                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t"
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 pt-2 border-t"
                                         style={{ borderColor: "rgba(255,255,255,0.04)" }}>
                                         {exp.strength && (
-                                            <p className="text-[8px] text-green-400/70 leading-tight">
+                                            <p className="text-xs text-green-400/70 leading-tight">
                                                 <span className="font-bold text-green-400 mr-0.5">✓</span> {exp.strength}
                                             </p>
                                         )}
                                         {exp.improvement && (
-                                            <p className="text-[8px] text-red-400/70 leading-tight">
+                                            <p className="text-xs text-red-400/70 leading-tight">
                                                 <span className="font-bold text-red-400 mr-0.5">!</span> {exp.improvement}
                                             </p>
                                         )}
@@ -1144,37 +1194,37 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                 {/* ATS Score */}
                 <div className="lg:col-span-2">
                     <Section title="ATS Compatibility" icon={Search} color="#eab308" delay={0.7}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             {/* Score + Counts */}
                             <div className="space-y-3">
-                                <div className="flex items-center gap-4 p-3 rounded-xl"
+                                <div className="flex items-center gap-3 sm:gap-4 p-3 rounded-xl"
                                     style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.12)" }}>
                                     <AnimatedRadialProgress
                                         score={s.atsScore}
-                                        size={54}
-                                        stroke={5.5}
+                                        size={isMobile ? 44 : 54}
+                                        stroke={isMobile ? 4.5 : 5.5}
                                         gradientId="atsGradient"
                                         gradientColors={["#eab308", "#f59e0b", "#d97706"]}
                                         glowColor="rgba(234,179,8,0.25)"
                                     />
-                                    <div className="grid grid-cols-3 gap-2 flex-1 text-center">
+                                    <div className="grid grid-cols-3 gap-1 sm:gap-2 flex-1 text-center">
                                         <div>
-                                            <p className="text-xs font-black text-green-400">{s.matchedKeywords.length}</p>
-                                            <p className="text-[6px] font-bold text-white/30 uppercase tracking-wider">Matched</p>
+                                            <p className="text-sm font-bold text-green-400">{s.matchedKeywords.length}</p>
+                                            <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Matched</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-black text-red-400">{s.missingKeywords.length}</p>
-                                            <p className="text-[6px] font-bold text-white/30 uppercase tracking-wider">Missing</p>
+                                            <p className="text-sm font-bold text-red-400">{s.missingKeywords.length}</p>
+                                            <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Missing</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-black text-orange-400">{s.criticalMissingKeywords.length}</p>
-                                            <p className="text-[6px] font-bold text-white/30 uppercase tracking-wider">Critical</p>
+                                            <p className="text-sm font-bold text-orange-400">{s.criticalMissingKeywords.length}</p>
+                                            <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider">Critical</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {s.expectedATSImprovement && (
-                                    <div className="p-3 rounded-xl text-[9px] text-yellow-400/80 font-medium leading-relaxed"
+                                    <div className="p-3 rounded-xl text-xs text-yellow-400/80 font-medium leading-relaxed"
                                         style={{
                                             background: "rgba(234,179,8,0.06)",
                                             border: "1px solid rgba(234,179,8,0.12)",
@@ -1189,7 +1239,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                             <div className="space-y-2.5">
                                 {s.matchedKeywords.length > 0 && (
                                     <div>
-                                        <p className="text-[7px] font-bold text-green-400 uppercase tracking-wider mb-1">
+                                        <p className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-1">
                                             Matched ({s.matchedKeywords.length})
                                         </p>
                                         <div className="flex flex-wrap gap-1">
@@ -1201,7 +1251,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                 )}
                                 {s.missingKeywords.length > 0 && (
                                     <div>
-                                        <p className="text-[7px] font-bold text-red-400 uppercase tracking-wider mb-1">
+                                        <p className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">
                                             Missing ({s.missingKeywords.length})
                                         </p>
                                         <div className="flex flex-wrap gap-1">
@@ -1213,7 +1263,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                                 )}
                                 {s.criticalMissingKeywords.length > 0 && (
                                     <div>
-                                        <p className="text-[7px] font-bold text-orange-400 uppercase tracking-wider mb-1">
+                                        <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-1">
                                             Critical ({s.criticalMissingKeywords.length})
                                         </p>
                                         <div className="flex flex-wrap gap-1">
@@ -1250,7 +1300,7 @@ export default function ResultsDisplay({ result, onReset }: ResultsDisplayProps)
                 transition={{ delay: 1.2 }}
                 className="text-center pt-2"
             >
-                <p className="text-[8px] text-white/15 font-bold uppercase tracking-[0.2em]">
+                <p className="text-[10px] text-white/20 font-medium uppercase tracking-[0.2em]">
                     Powered by Mentorix AI · Career Intelligence Suite
                 </p>
             </motion.div>

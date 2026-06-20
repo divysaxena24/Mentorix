@@ -86,9 +86,10 @@ export async function getFullUserProfile(userEmail: string) {
         orderBy: [desc(resumeAnalysisTable.createdAt)]
     });
 
-    const insights = profile.insights || {
+    const insights = profile.insights || ({
         jobReadinessScore: 0,
         atsScore: 0,
+        industryAlignment: 0,
         keywordStrength: "Low",
         projectImpact: "Weak",
         breakdown: JSON.stringify({
@@ -100,19 +101,31 @@ export async function getFullUserProfile(userEmail: string) {
         suggestions: "[]",
         sectionAnalysis: "{}",
         improvementPlan: "{}"
-    };
+    } as any);
 
     if (latestAnalysis) {
         const analysisData = JSON.parse(latestAnalysis.analysisData);
-        insights.jobReadinessScore = analysisData.score || 0;
-        insights.atsScore = analysisData.scoreBreakdown?.ats || analysisData.score || 0;
+
+        // Compute average project score from projects array
+        const avgProjectScore = Array.isArray(analysisData.projects) && analysisData.projects.length > 0
+            ? Math.round(analysisData.projects.reduce((s: number, p: any) => s + (p.projectScore || 0), 0) / analysisData.projects.length)
+            : 0;
+
+        // Compute average experience score from experiences array
+        const avgExperienceScore = Array.isArray(analysisData.experiences) && analysisData.experiences.length > 0
+            ? Math.round(analysisData.experiences.reduce((s: number, e: any) => s + (e.experienceScore || 0), 0) / analysisData.experiences.length)
+            : 0;
+
+        insights.jobReadinessScore = analysisData.overallScore || 0;
+        insights.atsScore = analysisData.atsScore || 0;
+        insights.industryAlignment = analysisData.companyReadinessScore || 0;
         insights.breakdown = JSON.stringify({
-            resumeQuality: analysisData.scoreBreakdown?.ats || 0,
-            projectsStrength: analysisData.scoreBreakdown?.projects || 0,
-            skillsCoverage: analysisData.scoreBreakdown?.skills || 0,
-            experience: analysisData.scoreBreakdown?.experience || 0
+            resumeQuality: analysisData.skillsScore || 0,
+            projectsStrength: avgProjectScore,
+            skillsCoverage: analysisData.atsScore || 0,
+            experience: avgExperienceScore
         });
-        insights.suggestions = JSON.stringify(analysisData.criticalGaps || []);
+        insights.suggestions = JSON.stringify(analysisData.criticalMissingSkills || []);
     }
 
     return {

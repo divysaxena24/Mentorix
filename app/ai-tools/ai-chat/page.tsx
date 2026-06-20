@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react"
 import CareerChatClient from "./CareerChatClient"
 
 export const metadata: Metadata = {
-    title: "AI Career Advisory Agent | Mentorix Professional Tools",
+    title: "Mentorix",
     description: "Get personalized career advice, interview preparation tips, and resume revision suggestions from Mentorix's intelligent AI Career Agent. Chat anytime, anywhere.",
 }
 

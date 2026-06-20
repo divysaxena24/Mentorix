@@ -3,7 +3,7 @@ import { Metadata } from "next"
 import WritingClient from "./WritingClient"
 
 export const metadata: Metadata = {
-    title: "AI Writing Studio | Mentorix Professional Tools",
+    title: "Mentorix",
     description: "Generate professionally tailored cover letters, statements of purpose, and motivation letters with Mentorix's AI Writing Studio.",
 }
 

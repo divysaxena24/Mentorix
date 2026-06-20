@@ -32,6 +32,7 @@ export default function ResumeAnalyzerClient() {
     const [jobDescription, setJobDescription] = useState("")
     const [fieldOfInterest, setFieldOfInterest] = useState("")
     const [targetRole, setTargetRole] = useState("")
+    const [targetCompany, setTargetCompany] = useState("")
     const [inputMode, setInputMode] = useState<"url" | "text">("url")
     const [jobUrl, setJobUrl] = useState("")
     const [isExtracting, setIsExtracting] = useState(false)
@@ -105,6 +106,7 @@ export default function ResumeAnalyzerClient() {
         data.interviewProbability ??= "";
         data.companyReadinessVerdict ??= "";
         data.recruiterReport ??= "";
+        data.targetRole ??= "";
         return data;
     }, [])
 
@@ -227,6 +229,7 @@ Platform: ${extractedData.platform}
         } else {
             formData.append("fieldOfInterest", fieldOfInterest)
             formData.append("targetRole", targetRole)
+            formData.append("targetCompany", targetCompany)
         }
 
         try {
@@ -288,9 +291,11 @@ Platform: ${extractedData.platform}
                         <h1 className="text-4xl font-black text-white tracking-tight mb-4 uppercase">
                             Job Readiness <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-purple-500">Analyzer</span>
                         </h1>
-                        <p className="text-lg text-slate-400 leading-relaxed max-w-2xl font-medium">
-                            Upload your resume and paste the job description to get a deeper analysis of your compatibility and actionable improvement points.
-                        </p>
+                        {!result && (
+                            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl font-medium">
+                                Upload your resume and paste the job description to get a deeper analysis of your compatibility and actionable improvement points.
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl self-start md:self-end">
@@ -625,14 +630,25 @@ Platform: ${extractedData.platform}
                                                 className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl px-6 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-medium backdrop-blur-sm"
                                             />
                                         </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Target Company/Role Type</Label>
-                                            <Input
-                                                value={targetRole}
-                                                onChange={(e) => setTargetRole(e.target.value)}
-                                                placeholder="e.g. FAANG, Early-stage Startup, Product MNC..."
-                                                className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl px-6 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-medium backdrop-blur-sm"
-                                            />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Target Role</Label>
+                                                <Input
+                                                    value={targetRole}
+                                                    onChange={(e) => setTargetRole(e.target.value)}
+                                                    placeholder="e.g. Software Engineer, Data Scientist..."
+                                                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl px-6 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-medium backdrop-blur-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Target Company</Label>
+                                                <Input
+                                                    value={targetCompany}
+                                                    onChange={(e) => setTargetCompany(e.target.value)}
+                                                    placeholder="e.g. FAANG, Early-stage Startup, Product MNC..."
+                                                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 h-14 rounded-2xl px-6 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all font-medium backdrop-blur-sm"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -663,6 +679,8 @@ Platform: ${extractedData.platform}
                     <ResultsDisplay
                         result={result}
                         onReset={() => setResult(null)}
+                        targetRole={targetRole || result.targetRole}
+                        targetCompany={targetCompany}
                     />
                 )}
             </div>

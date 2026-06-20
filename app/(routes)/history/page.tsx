@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Activity History | Mentorix",
+    title: "Mentorix",
     description: "Track your career preparation history, roadmaps, and AI advisor conversations.",
 };
 

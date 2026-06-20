@@ -191,6 +191,9 @@ export interface AnalysisResult {
   interviewProbability: string;
   companyReadinessVerdict: string;
 
+  // ===== Target Role (set by the analyzer) =====
+  targetRole?: string;
+
   // ===== PDF Detailed Report (not shown on website) =====
   recruiterReport: string;
 

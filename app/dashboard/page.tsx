@@ -5,7 +5,7 @@ import DashboardContent from "./DashboardContent";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-    title: "Dashboard | Mentorix AI Workspace",
+    title: "Mentorix",
     description: "Your central hub for career growth. Monitor your job readiness, manage generated resumes, and track your personalized learning progress.",
 }
 

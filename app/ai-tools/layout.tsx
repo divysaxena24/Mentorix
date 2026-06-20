@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "AI Tools | Mentorix",
+    title: "Mentorix",
     description: "AI-powered career tools — resume analyzer, roadmap generator, course builder, career chat, and more.",
 };
 

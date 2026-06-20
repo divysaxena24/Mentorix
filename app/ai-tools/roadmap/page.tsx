@@ -10,7 +10,7 @@ import { careerGoalsTable, userSkillsTable } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const metadata: Metadata = {
-    title: "Premium Career Roadmap | Mentorix",
+    title: "Mentorix",
     description: "Generate a personalized, project-driven, outcome-focused career roadmap tailored to your target role, company, and skill gaps.",
 };
 

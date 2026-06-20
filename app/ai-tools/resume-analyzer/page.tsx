@@ -4,7 +4,8 @@ import { Loader2 } from "lucide-react"
 import ResumeAnalyzerClient from "./ResumeAnalyzerClient"
 
 export const metadata: Metadata = {
-    title: "Job Readiness Analyzer | Mentorix Professional Tools",
+    title: "Mentorix",
+
     description: "Analyze your resume against specific job descriptions or field benchmarks. Get an ATS score, identify critical gaps, and get actionable advice to land your dream job.",
 }
 
