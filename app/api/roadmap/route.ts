@@ -164,6 +164,25 @@ ${resumeContext?"Resume: "+resumeContext:""}${combinedExistingSkills.length>0?" 
 3. Projects MUST build sequentially (each week extends previous)
 4. Be CONCISE — no verbose descriptions
 
+## WEEK TOPIC GENERATION RULES
+For EVERY week milestone, generate 8-15 DETAILED learning topics under "learningGoals".
+
+FORBIDDEN generic topics:
+❌ "X Basics" (e.g., Python Basics, ML Basics, RAG Basics, Docker Basics)
+❌ "X Fundamentals" (e.g., Python Fundamentals, ML Fundamentals)
+❌ "Introduction to X" (e.g., Intro to Python, Intro to RAG)
+
+REQUIRED format — specific, detailed, numbered topics:
+✅ "Variables and Data Types" (not "Python Basics")
+✅ "Conditional Statements (if/else/elif)" (not "Control Flow")
+✅ "RAG Retrieval Strategies — Sparse vs Dense" (not "RAG Basics")
+✅ "Docker Compose for Multi-Container Apps" (not "Docker Basics")
+✅ "LangGraph StateGraph and Node Orchestration" (not "LangGraph Intro")
+
+Each topic should be specific enough that a learner knows EXACTLY what they'll study. Include tool/framework names in the topic where applicable.
+
+Estimated study time per week: Calculate dynamically based on topic count and depth. E.g., 10-12 topics = ~8-12 hours, 13-15 topics + deep/difficult topics = ~12-16 hours. More complex/hands-on weeks get more hours. Never hardcode a single value for all weeks.
+
 ${isAiTrack?`## AI/AIML CONSTRAINTS
 FORBIDDEN (unless Beginner): CNN, RNN, LSTM, MNIST, CartPole, Q-Learning, GANs, Sentiment Analysis, generic NLP tutorials, academic AI
 REQUIRED 70%+: LLM Eng, RAG, Agents(LangGraph,CrewAI,MCP), Vector DBs, Embeddings, Eval(RAGAS,DeepEval), Memory, Search, Observability, Prompt Eng, MLOps(DVC,MLflow), Docker, K8s, CI/CD, Production AI, AI System Design
@@ -219,7 +238,10 @@ Return ONLY JSON. No markdown, no code fences, no commentary.
     "resumeImpact":"Medium",
     "interviewTopics":[],
     "expectedDeliverable":"",
-    "estimatedHours":${estimatedHours}
+    "estimatedHours":${estimatedHours},
+    "estimatedStudyTime":"10-14 hours (calculated per week)",
+    "handsOnTasks":["Build X","Implement Y"],
+    "interviewFocus":["Focus 1","Focus 2","Focus 3"]
   }],
   "checkpoints": [{"weekNumber":4,"assessment":"","skillReview":[],"portfolioReview":"","resumeReview":"","mockInterview":"","gapAnalysis":[],"roadmapAdjustment":""}],
   "tips":["tip1","tip2","tip3"],
@@ -262,7 +284,7 @@ Strictly use the ${currentLevel} template. Be concise. JSON only.`;
         ], {
             model: MODELS.GROQ_PRIMARY,
             response_format: { type: "json_object" },
-            max_tokens: Math.min(4500, totalWeeks * 180 + 800),
+            max_tokens: Math.min(6000, totalWeeks * 250 + 1000),
             temperature: 0.3
         });
 

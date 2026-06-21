@@ -76,6 +76,13 @@ export interface PremiumMilestone {
     };
     interviewTopics?: string[];
     expectedDeliverable?: string;
+    // V3 fields — Detailed weekly syllabus
+    /** 8-15 detailed learning topics for this week (numbered list like course syllabus) */
+    estimatedStudyTime?: string;
+    /** 1-3 hands-on tasks / mini-projects for this week */
+    handsOnTasks?: string[];
+    /** 1-3 interview focus areas for this week */
+    interviewFocus?: string[];
 }
 
 /**

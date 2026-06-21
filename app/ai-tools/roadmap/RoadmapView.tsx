@@ -1,10 +1,11 @@
 "use client"
 
 import { PremiumRoadmap, PremiumMilestone, Checkpoint, FinalSummary, RoadmapResult, Milestone } from "@/types"
+import { useState } from "react"
 import {
     Clock, Lightbulb, CheckCircle2, Target, BookOpen, BarChart, Calendar,
     ChevronRight, Award, Zap, Sparkles, Building2,
-    FileText, Rocket, BrainCircuit, ArrowLeft
+    FileText, Rocket, BrainCircuit, ArrowLeft, Square, CheckSquare
 } from "lucide-react"
 
 /** Defensively coerce a value to an array — handles strings, arrays, null/undefined */
@@ -44,6 +45,22 @@ export default function RoadmapView({
     const prem = roadmap as PremiumRoadmap;
     const h = prem.header;
     const checkpoints = prem.checkpoints || [];
+    const totalWeeks = prem.milestones.length;
+    const [checkedWeeks, setCheckedWeeks] = useState<Set<number>>(new Set());
+    const completedCount = checkedWeeks.size;
+    const progressPct = totalWeeks > 0 ? Math.round((completedCount / totalWeeks) * 100) : 0;
+
+    const toggleWeek = (weekNumber: number) => {
+        setCheckedWeeks(prev => {
+            const next = new Set(prev);
+            if (next.has(weekNumber)) {
+                next.delete(weekNumber);
+            } else {
+                next.add(weekNumber);
+            }
+            return next;
+        });
+    };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
@@ -104,6 +121,47 @@ export default function RoadmapView({
                 </div>
             </div>
 
+            {/* ===== PROGRESS BAR ===== */}
+            <div className="bg-white/5 border border-white/10 rounded-[1.5rem] p-6 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Your Progress</h3>
+                    </div>
+                    <span className="text-sm font-bold text-white">
+                        {completedCount} / {totalWeeks} weeks
+                        <span className="text-emerald-400 ml-2">({progressPct}%)</span>
+                    </span>
+                </div>
+                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${progressPct}%` }}
+                    >
+                        {/* Gradient fill that changes color as progress increases */}
+                        <div className={`h-full rounded-full transition-all duration-500 ${
+                            progressPct === 100
+                                ? "bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                                : progressPct > 50
+                                ? "bg-gradient-to-r from-blue-500 to-emerald-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                                : "bg-gradient-to-r from-blue-500 to-purple-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                        }`} />
+                    </div>
+                </div>
+                {/* Animated micro-badges */}
+                <div className="flex items-center gap-4 mt-3">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                        {progressPct === 0
+                            ? "Start checking off weeks as you complete them"
+                            : progressPct === 100
+                            ? "🎉 All weeks completed!"
+                            : `${totalWeeks - completedCount} weeks remaining`}
+                    </span>
+                </div>
+            </div>
+
             {/* ===== WEEKLY TIMELINE ===== */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-4">
@@ -119,27 +177,55 @@ export default function RoadmapView({
                         const isCheckpoint = checkpoints.some(cp => cp.weekNumber === milestone.weekNumber);
                         const isV2 = !!(milestone.theme || milestone.projectToBuild);
 
+                        const isChecked = checkedWeeks.has(milestone.weekNumber);
+
                         return (
                             <div key={milestone.weekNumber} className="relative pl-16">
                                 {/* Timeline line */}
                                 <div className={`absolute left-6 top-0 w-px ${isLast ? "h-8" : "h-full"} bg-gradient-to-b from-blue-500/30 to-purple-500/30`} />
 
                                 {/* Timeline dot */}
-                                <div className={`absolute left-3 top-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-[8px] font-black transition-all duration-300 ${isCheckpoint
+                                <div className={`absolute left-3 top-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-[8px] font-black transition-all duration-300 ${isChecked
+                                    ? "bg-emerald-500/30 border-emerald-500 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                    : isCheckpoint
                                     ? "bg-amber-500/20 border-amber-500 text-amber-400"
                                     : "bg-slate-900 border-blue-500/50 text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-600"
                                 }`}>
-                                    {milestone.weekNumber}
+                                    {isChecked ? <CheckCircle2 className="w-3 h-3" /> : milestone.weekNumber}
                                 </div>
 
                                 {/* Card */}
                                 <div
                                     onClick={() => onSelectMilestone(milestone)}
-                                    className={`cursor-pointer bg-white/5 border ${isCheckpoint ? "border-amber-500/20" : "border-white/5"} hover:border-white/20 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group`}
+                                    className={`cursor-pointer bg-white/5 border rounded-2xl p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl group ${
+                                        isChecked
+                                            ? "border-emerald-500/30 bg-emerald-500/5"
+                                            : isCheckpoint
+                                            ? "border-amber-500/20 hover:border-white/20"
+                                            : "border-white/5 hover:border-white/20"
+                                    }`}
                                 >
                                     {/* Header row */}
                                     <div className="flex items-center justify-between gap-4 mb-3">
                                         <div className="flex items-center gap-3 flex-wrap">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleWeek(milestone.weekNumber);
+                                                }}
+                                                className={`shrink-0 transition-all duration-200 ${
+                                                    isChecked
+                                                        ? "text-emerald-400 hover:text-emerald-300"
+                                                        : "text-slate-600 hover:text-white"
+                                                }`}
+                                                title={isChecked ? "Mark as incomplete" : "Mark as complete"}
+                                            >
+                                                {isChecked ? (
+                                                    <CheckSquare className="w-5 h-5" />
+                                                ) : (
+                                                    <Square className="w-5 h-5" />
+                                                )}
+                                            </button>
                                             <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
                                                 Week {milestone.weekNumber}
                                             </span>
