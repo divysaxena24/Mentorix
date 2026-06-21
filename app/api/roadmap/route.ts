@@ -1,3 +1,18 @@
+/**
+ * MENTORIX PREMIUM ROADMAP ENGINE V3 — MODERN INDUSTRY STANDARD
+ *
+ * Generates hiring-focused career roadmaps optimized for:
+ * Resume Strength, Portfolio Quality, ATS Score, Interview Readiness, Hiring Probability
+ *
+ * Key features: AI/AIML track detection, level-specific templates,
+ * sequential project evolution, resume impact scoring, portfolio-worthy naming,
+ * recruiter quality gate, capstone enforcement, dynamic readiness scoring.
+ *
+ * @route POST /api/roadmap
+ * @body { targetRole, careerGoal, currentLevel, weeklyHours, duration, startDate, targetCompany, focusAreas }
+ * @returns {PremiumRoadmap} JSON roadmap
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeWithGroqLPU } from "@/lib/ai/groq";
 import { MODELS } from "@/lib/ai/models";
@@ -7,108 +22,78 @@ import { currentUser } from "@clerk/nextjs/server";
 import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit";
 import { eq, desc } from "drizzle-orm";
 
+/** AI/AIML role patterns for modern AI track detection */
+const AI_ROLES = [
+    "ai engineer", "ai/ml", "aiml", "generative ai", "applied ai",
+    "llm engineer", "ml engineer", "machine learning engineer",
+    "ai developer", "ai architect",
+];
+
 export async function POST(req: NextRequest) {
     try {
-        // Rate limit check
         const ip = getRequestIP(req);
         const { limited, resetIn } = checkRateLimit(`roadmap:${ip}`, AI_RATE_LIMIT);
         if (limited) {
             return NextResponse.json(
-                { error: `Too many requests. Please try again in ${resetIn} seconds.` },
+                { error: `Too many requests. Try again in ${resetIn}s.` },
                 { status: 429 }
             );
         }
 
         const user = await currentUser();
         const userEmail = user?.primaryEmailAddress?.emailAddress;
-
-        if (!userEmail) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        if (!userEmail) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const body = await req.json();
-        const {
-            targetRole,
-            careerGoal,
-            currentLevel,
-            weeklyHours,
-            duration,
-            startDate,
-            targetCompany,
-        } = body;
+        const { targetRole, careerGoal, currentLevel, weeklyHours, duration, startDate, targetCompany, focusAreas } = body;
 
         if (!targetRole || !duration || !currentLevel) {
             return NextResponse.json({ error: "Target role, duration, and skill level are required" }, { status: 400 });
         }
 
-        // ---- Fetch user's latest resume analysis for personalized gaps ----
-        let resumeContext = "";
-        let analysisMissingSkills: string[] = [];
-        let analysisCriticalGaps: string[] = [];
-        let analysisProjectWeaknesses: string[] = [];
-        let analysisScore = 0;
+        const roleLower = targetRole.toLowerCase();
+        const isAiTrack = AI_ROLES.some((r) => roleLower.includes(r));
 
+        // ---- Resume intelligence ----
+        let resumeContext = "", analysisMissingSkills: string[] = [], analysisCriticalGaps: string[] = [];
+        let analysisProjectWeaknesses: string[] = [], analysisScore = 0;
         try {
             const [latestAnalysis] = await db.select()
                 .from(resumeAnalysisTable)
                 .where(eq(resumeAnalysisTable.userEmail, userEmail))
                 .orderBy(desc(resumeAnalysisTable.createdAt))
                 .limit(1);
-
             if (latestAnalysis?.analysisData) {
                 const parsed = JSON.parse(latestAnalysis.analysisData);
                 analysisScore = parsed.score || 0;
                 analysisMissingSkills = parsed.missingKeywords || parsed.atsKeywordAnalysis?.missingKeywords || [];
                 analysisCriticalGaps = parsed.criticalGaps || [];
                 analysisProjectWeaknesses = (parsed.projectAnalysis || [])
-                     .filter((p: any) => (p.technicalComplexity || 0) < 40)
-                     .map((p: any) => p.projectName || "Untitled");
-
-                resumeContext = `
---- RESUME INTELLIGENCE DATA ---
-Overall Resume Score: ${analysisScore}/100
-Missing Keywords/Skills: ${analysisMissingSkills.join(", ") || "None detected"}
-Critical Gaps: ${analysisCriticalGaps.join(", ") || "None detected"}
-Weak Projects (score < 40): ${analysisProjectWeaknesses.join(", ") || "None detected"}
---------------------------------`;
+                    .filter((p: any) => (p.technicalComplexity || 0) < 40)
+                    .map((p: any) => p.projectName || "Untitled");
+                resumeContext = `Score:${analysisScore}/100 Missing:${analysisMissingSkills.join(",")||"none"} Gaps:${analysisCriticalGaps.join(",")||"none"} WeakProjects:${analysisProjectWeaknesses.join(",")||"none"}`;
             }
-        } catch (e) {
-            console.warn("[Roadmap] Could not fetch resume analysis:", e);
-        }
+        } catch (e) { console.warn("[Roadmap] Resume fetch error:", e); }
 
-        // ---- Fetch career goals for additional context ----
-        let careerRole = targetRole;
-        let careerCompanies = targetCompany || "";
+        // ---- Career goals ----
+        let careerRole = targetRole, careerCompanies = targetCompany || "";
         try {
-            const [goals] = await db.select()
-                .from(careerGoalsTable)
-                .where(eq(careerGoalsTable.userEmail, userEmail))
-                .limit(1);
-
+            const [goals] = await db.select().from(careerGoalsTable).where(eq(careerGoalsTable.userEmail, userEmail)).limit(1);
             if (goals) {
                 if (!targetRole && goals.targetRole) careerRole = goals.targetRole;
                 if (!targetCompany && goals.targetCompanies) careerCompanies = goals.targetCompanies;
             }
-        } catch (e) {
-            console.warn("[Roadmap] Could not fetch career goals:", e);
-        }
+        } catch (e) { console.warn("[Roadmap] Goals fetch error:", e); }
 
-        // ---- Fetch existing skills from profile ----
+        // ---- Profile skills ----
         let profileExistingSkills: string[] = [];
         try {
-            const skills = await db.select()
-                .from(userSkillsTable)
-                .where(eq(userSkillsTable.userEmail, userEmail));
-
+            const skills = await db.select().from(userSkillsTable).where(eq(userSkillsTable.userEmail, userEmail));
             profileExistingSkills = skills.map(s => s.skillName);
-        } catch (e) {
-            console.warn("[Roadmap] Could not fetch skills:", e);
-        }
-
-        // Combine user-provided existing skills with profile skills
+        } catch (e) { console.warn("[Roadmap] Skills fetch error:", e); }
         const combinedExistingSkills = profileExistingSkills;
 
-        // ---- Parse duration to weeks ----
+        // ---- Duration parsing ----
         const durationMatch = duration.match(/(\d+)\s*(Week|Month|Year)/i);
         let totalWeeks = 12;
         if (durationMatch) {
@@ -118,173 +103,158 @@ Weak Projects (score < 40): ${analysisProjectWeaknesses.join(", ") || "None dete
             else if (unit.startsWith("year")) totalWeeks = num * 48;
             else totalWeeks = num;
         }
-        totalWeeks = Math.min(Math.max(totalWeeks, 4), 52); // Clamp between 4-52 weeks
+        totalWeeks = Math.min(Math.max(totalWeeks, 4), 52);
 
-        // ---- Calculate date ranges ----
-        let startDateStr = startDate || "today";
-        let formattedStartDate = "TBD";
-        let formattedEndDate = "TBD";
+        // ---- Date ranges ----
+        let formattedStartDate = "TBD", formattedEndDate = "TBD";
         try {
             const start = startDate ? new Date(startDate) : new Date();
             formattedStartDate = start.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
             const end = new Date(start);
             end.setDate(end.getDate() + totalWeeks * 7);
             formattedEndDate = end.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
-            startDateStr = formattedStartDate;
-        } catch (e) {
-            console.warn("[Roadmap] Could not parse start date:", e);
-        }
+        } catch (e) { console.warn("[Roadmap] Date error:", e); }
 
         const estimatedHours = parseInt(weeklyHours) || 10;
 
-        // ---- Build role-specific focus areas ----
+        // ---- Focus areas ----
         const roleFocusMap: Record<string, string> = {
-            "frontend": "React, Next.js, Performance, System Design, Projects",
-            "backend": "APIs, Databases, Scalability, Caching, Projects",
-            "ai": "Machine Learning, Deep Learning, LLMs, RAG, MLOps, Projects",
-            "devops": "Docker, Kubernetes, AWS, CI/CD, Infrastructure, Projects",
-            "full stack": "Frontend, Backend, Databases, DevOps, Projects",
-            "data science": "Python, Statistics, ML, Data Engineering, Visualisation, Projects",
-            "mobile": "React Native, iOS, Android, Performance, Projects",
+            frontend: "React, Next.js, Perf, System Design",
+            backend: "APIs, Databases, Scalability, Caching",
+            ai: "LLMs, RAG, Agents, LangGraph, MCP, Vector DBs, Embeddings, Prompt Eng, Eval, MLOps, Docker, K8s, CI/CD, Monitoring",
+            devops: "Docker, K8s, AWS, CI/CD, Infra",
+            "full stack": "Frontend, Backend, DB, DevOps",
+            "data science": "Python, Stats, ML, Data Eng, Viz",
+            mobile: "React Native, iOS, Android, Perf",
         };
-        const roleLower = targetRole.toLowerCase();
-        const roleFocus = Object.entries(roleFocusMap).find(([key]) => roleLower.includes(key))?.[1] || "Core Skills, Projects, System Design, Interview Prep";
+        const defaultFocus = Object.entries(roleFocusMap).find(([k]) => roleLower.includes(k))?.[1] || "Core Skills, Projects, System Design, Interview Prep";
+        const focusList = focusAreas ? focusAreas.split(",").map((f: string) => f.trim()).filter(Boolean) : [];
+        const roleFocus = focusList.length > 0 ? focusList.join(", ") : defaultFocus;
 
-        // ---- Company-specific customization ----
+        // ---- Company guide ----
         const companyGuideMap: Record<string, string> = {
-            "google": "Strong emphasis on DSA, System Design, Distributed Systems, and building high-impact projects that showcase scalability.",
-            "amazon": "Focus on Leadership Principles, Scalable Systems, Backend Engineering, and metrics-driven project outcomes.",
-            "meta": "Emphasis on Full-Stack, Frontend Architecture, React/React Native, and building products at scale.",
-            "microsoft": "Focus on System Design, Cloud (Azure), Enterprise Software, and collaborative project architecture.",
-            "netflix": "Emphasis on Microservices, Cloud-Native Architecture, Resilience Patterns, and high-traffic system design.",
-            "uber": "Focus on Distributed Systems, Real-Time Data Processing, GeoSpatial Systems, and high-scale backend design.",
-            "atlassian": "Emphasis on Developer Tools, API Design, Microservices, and collaborative project workflows.",
+            google: "DSA, System Design, Distributed Systems, scalability.",
+            amazon: "Leadership Principles, Scalable Systems, Backend, metrics-driven.",
+            meta: "Full-Stack, Frontend Architecture, React, products at scale.",
+            microsoft: "System Design, Azure, Enterprise Software.",
+            netflix: "Microservices, Cloud-Native, Resilience, high-traffic.",
+            uber: "Distributed Systems, Real-Time Data, GeoSpatial.",
+            atlassian: "Dev Tools, API Design, Microservices, workflows.",
         };
-        const companyLower = targetCompany?.toLowerCase() || "";
-        const companyGuide = Object.entries(companyGuideMap).find(([key]) => companyLower.includes(key))?.[1] || "";
+        const companyGuide = Object.entries(companyGuideMap).find(([k]) => targetCompany?.toLowerCase().includes(k))?.[1] || "";
 
         // ===================================================================
-        // PREMIUM SYSTEM PROMPT
+        // SYSTEM PROMPT — V3 MODERN INDUSTRY STANDARD
         // ===================================================================
-        const systemPrompt = `You are Mentorix, an elite Senior Career Strategist, FAANG Hiring Manager, and Technical Curriculum Designer.
+        const systemPrompt = `You are a Senior Career Strategist & FAANG Hiring Manager. Generate a HIRING-FOCUSED CAREER STRATEGY — NOT an academic syllabus.
 
-Your job is to generate a premium, personalized Career Roadmap that feels like it was crafted by an experienced mentor who deeply understands the user's target role, skill gaps, and career aspirations.
+Optimize for: Resume Strength, Portfolio Quality, ATS Score, Interview Readiness, Company Readiness, Hiring Probability.
 
-## CAREER GOAL
-${careerGoal || `Get hired as a ${targetRole}${targetCompany ? " at " + targetCompany : ""} and build a strong portfolio.`}
+Be concise. Use bullet points and brief descriptions. Keep each milestone/project description to 1-2 sentences max.
 
-## ROADMAP PHILOSOPHY
-- Every week must produce something TANGIBLE. No "Learn X" — instead "Build Y while learning X".
-- The roadmap must be PROJECT-DRIVEN: every major skill connects to a specific project.
-- Complexity must increase week over week. No repetitive content.
-- Be DATE-AWARE: every milestone has a proper date range based on the start date.
+## USER
+Role:${targetRole} Goal:${careerGoal||"Hired as "+targetRole}${targetCompany?" at "+targetCompany:""}
+Level:${currentLevel} Duration:${duration}(${totalWeeks}wks) Hours:${weeklyHours||10}/wk
+Focus:${roleFocus} ${isAiTrack?"AI Track: YES":"AI Track: NO"}
+${resumeContext?"Resume: "+resumeContext:""}${combinedExistingSkills.length>0?" Skills:"+combinedExistingSkills.slice(0,10).join(","):""}${analysisProjectWeaknesses.length>0?" WeakProjects:"+analysisProjectWeaknesses.join(","):""}${companyGuide?" CompanyGuide:"+companyGuide:""}
 
-## ROLE-SPECIFIC CUSTOMIZATION
-Target Role: ${targetRole}
-Focus Areas: ${roleFocus}
+## CORE RULES
+1. Priority: Company → Career Goal → Focus Areas → Resume → Topic
+2. NEVER generate a generic roadmap from Topic alone
+3. Projects MUST build sequentially (each week extends previous)
+4. Be CONCISE — no verbose descriptions
 
-${companyGuide ? `## TARGET COMPANY CUSTOMIZATION\nTarget Company: ${targetCompany}\nCompany Guide: ${companyGuide}` : ""}
+${isAiTrack?`## AI/AIML CONSTRAINTS
+FORBIDDEN (unless Beginner): CNN, RNN, LSTM, MNIST, CartPole, Q-Learning, GANs, Sentiment Analysis, generic NLP tutorials, academic AI
+REQUIRED 70%+: LLM Eng, RAG, Agents(LangGraph,CrewAI,MCP), Vector DBs, Embeddings, Eval(RAGAS,DeepEval), Memory, Search, Observability, Prompt Eng, MLOps(DVC,MLflow), Docker, K8s, CI/CD, Production AI, AI System Design
+TIERS: Tier1(70%+) LLM,RAG,Agents,LangGraph,MCP,VDB,Embeddings,Prompt,Eval,MLOps,Docker,K8s,CI/CD,Monitoring — Tier2(~30%) DL,NLP,RecSys,CV — Tier3(only if asked) RL,GANs,Ethics,Robotics
+`:""}
 
-## RESUME INTELLIGENCE INTEGRATION
-${resumeContext || "No resume data available — generate a well-rounded roadmap."}
-${
-    combinedExistingSkills.length > 0
-        ? `\nUser's existing profile skills (build upon these): ${combinedExistingSkills.join(", ")}`
-        : ""
-}
-${
-    analysisProjectWeaknesses.length > 0
-        ? `\nThese projects were scored as weak — include improvements or rebuilds of similar projects: ${analysisProjectWeaknesses.join(", ")}`
-        : ""
-}
+## LEVEL TEMPLATE (${currentLevel})
+${currentLevel==="Beginner"?`Track:Python→ML→DL→Transformers→RAG. Split:60%fundamentals/30%projects/10%interview.
+Content:Python(NumPy,Pandas),ML basics,DL basics,Transformers,LLM APIs.
+Projects last 40%:guided→simple RAG.
+FORBIDDEN early:K8s,MCP,LangGraph,Multi-Agent,Enterprise AI.
+Gradually introduce advanced in final 25%.`:currentLevel==="Intermediate"?`Track:ProdML→RAG→Agents→Deployment→MLOps. Split:40%skill/40%projects/20%interview.
+Content:ML pipelines,RAG,Agents(tools,memory),Docker deployment.
+Projects last 60%:prod RAG→Agents→Containerize→Monitor.
+SKIP:Python basics,ML intros,academic theory,CNN/RNN tutorials.`:`Track:Enterprise AI→Multi-Agent→SystemDesign→K8s→Observability→Distributed. Split:20%learning/60%building/20%systemDesign.
+Content:Enterprise RAG(hybrid,re-rank),Multi-Agent(LangGraph,MCP),K8s,distributed systems.
+Projects last 80%:distributed AI platform→multi-agent→K8s→load testing→enterprise capstone.
+SKIP ALL:Python,ML basics,tutorials,simple RAG,basic agents,intro Docker,CNN/RNN/MNIST/CartPole. Every week = Senior AI Engineer prep.`}
 
-## OUTPUT STRUCTURE
-Return ONLY valid JSON. No markdown, no code fences, no commentary.
+## PROJECT RULES
+Each project: real problem, portfolio-worthy, improves hiring, has measurable outcomes, increases ATS.
+Output per milestone: name(objective,techStack,difficulty,resumeValue,interviewTopics,expectedOutcome).
+resumeImpact: Low(tutorial) | Medium(prototype) | High(production) | Very High(enterprise: K8s,multi-agent,RAG+eval,capstone).
+NO generic names like "Agent System","Platform","Search Engine","Chat App","Data Pipeline".
+USE names like: Enterprise Knowledge Assistant, AI Career Copilot, Multi-Agent Research Assistant, Autonomous Business Analyst, Production RAG Engine, Vector Search Platform, Agentic Workflow Orchestrator, AI Operations Hub.
+
+## EVOLUTION (${currentLevel})
+${currentLevel==="Beginner"?`W1-4:Python→Data→ML→Eval. W5-8:DL→Transformer→Embeddings→RAG. W9-12:RAG→LLMs→Prompt→Agent. W13-16:Agent→Memory→Deploy→Capstone. No K8s/MCP/LangGraph until W12+.`:currentLevel==="Intermediate"?`W1-4:MLPipe→FeatureStore→Serving→RAG. W5-8:RAG→Eval→Agent→Multi-Agent. W9-12:Docker→API→CI/CD→Monitor. W13-16:ProdSystem→LoadTest→Optimize→Capstone. Skip Python/ML intros.`:`W1-4:EnterpriseRAG→HybridSearch→Multi-Agent→MCP. W5-8:LangGraph→Distributed→Memory→Platform. W9-12:Docker→K8s→Observability→LoadTest. W13-16:SystemDesign→Security→Optimize→EnterpriseCapstone. Skip ALL fundamentals.`}
+
+## OUTPUT
+Return ONLY JSON. No markdown, no code fences, no commentary.
 
 {
   "header": {
-    "roadmapTitle": "Compelling title e.g. 'Master ${targetRole} Engineering at ${targetCompany || "Top Tech"} in ${duration}'",
-    "professionalOverview": "2-3 sentence overview of what this roadmap achieves and why it's structured this way",
+    "roadmapTitle": "${targetCompany?targetCompany+" ":""}${targetRole} — Hiring Strategy in ${duration}",
+    "professionalOverview": "2-3 sentences emphasizing hiring impact",
     "targetRole": "${targetRole}",
-    "targetCompany": "${targetCompany || ""}",
+    "targetCompany": "${targetCompany||""}",
     "currentLevel": "${currentLevel}",
-    "weeklyCommitment": "${weeklyHours || "10"} hours/week",
+    "weeklyCommitment": "${weeklyHours||10} hrs/wk",
     "startDate": "${formattedStartDate}",
     "expectedCompletionDate": "${formattedEndDate}",
-    "totalDuration": "${duration} (${totalWeeks} Weeks)",
-    "estimatedOutcome": "What the user will be capable of after completing this roadmap"
+    "totalDuration": "${duration} (${totalWeeks}wks)",
+    "estimatedOutcome": "Capability after completion"
   },
-  "milestones": [
-    {
-      "weekNumber": 1,
-      "dateRange": "Calculated date range for this week",
-      "milestoneTitle": "Unique milestone title for this week",
-      "objective": "What this week aims to achieve",
-      "difficulty": "Beginner | Intermediate | Advanced",
-      "estimatedHours": ${estimatedHours},
-      "learningFocus": ["Topic 1", "Topic 2", "Topic 3"],
-      "actionableTasks": [
-        "Complete Kaggle Python Course",
-        "Build Data Cleaning Pipeline",
-        "Practice 10 Pandas Exercises"
-      ],
-      "buildThisWeek": "A specific, tangible project for this week",
-      "resources": {
-        "courses": ["Specific course name + platform"],
-        "docs": ["Specific documentation link or name"],
-        "videos": ["Specific video title + channel"],
-        "articles": ["Specific article title + publication"]
-      },
-      "expectedOutcome": ["Understand X", "Be able to build Y", "Master concept Z"],
-      "resumeImpact": "Low | Medium | High",
-      "interviewTopicsCovered": ["Topic 1", "Topic 2"]
-    }
-  ],
-  "checkpoints": [
-    {
-      "weekNumber": 4,
-      "title": "Week 4 Assessment: [Topic] Checkpoint",
-      "quiz": ["Question 1", "Question 2", "Question 3"],
-      "miniProject": "Mini project that validates skills learned so far",
-      "skillValidation": ["Skill 1", "Skill 2"],
-      "progressReview": "2-3 sentence review of what should have been achieved and what to focus on next"
-    }
-  ],
-  "tips": [
-    "Elite career tip 1",
-    "Elite career tip 2",
-    "Elite career tip 3"
-  ],
-  "finalSummary": {
-    "skillsGained": ["Skill 1", "Skill 2", "Skill 3"],
-    "projectsBuilt": ["Project 1", "Project 2", "Project 3"],
-    "interviewAreasCovered": ["DSA", "System Design", "Behavioral"],
-    "resumeImprovements": ["Bullet point rewrite guidance", "New project additions", "Keyword optimization"],
-    "expectedReadinessScore": 82,
-    "readinessTarget": "${targetRole}${targetCompany ? " at " + targetCompany : ""}"
+  "milestones": [{
+    "weekNumber": 1,
+    "dateRange": "calculated",
+    "theme": "short theme",
+    "learningGoals": ["g1"],
+    "skillsCovered": ["s1"],
+    "projectToBuild": {"name":"","objective":"","techStack":[],"difficulty":"","resumeValue":"","interviewTopics":[],"expectedOutcome":""},
+    "resumeImpact":"Medium",
+    "interviewTopics":[],
+    "expectedDeliverable":"",
+    "estimatedHours":${estimatedHours}
+  }],
+  "checkpoints": [{"weekNumber":4,"assessment":"","skillReview":[],"portfolioReview":"","resumeReview":"","mockInterview":"","gapAnalysis":[],"roadmapAdjustment":""}],
+  "tips":["tip1","tip2","tip3"],
+  "finalCapstone":{"projectName":"","objective":"","techStack":[],"expectedOutcome":"Production-ready deployable project"},
+  "finalSummary":{
+    "companyReadinessScore":0-100,"roleReadinessScore":0-100,"interviewReadinessScore":0-100,
+    "portfolioStrength":"Weak|Moderate|Strong|Exceptional","atsReadiness":0-100,
+    "topStrengths":[],"topWeaknesses":[],"criticalMissingSkills":[],
+    "estimatedHiringProbability":"Low|Medium|High|Very High"
   }
 }
 
-## STRICT GENERATION RULES
-1. Generate EXACTLY ${totalWeeks} milestones (one per week).
-2. Generate a checkpoint EVERY 4 weeks (weeks 4, 8, 12, etc.).
-3. Each milestone must have UNIQUE content — no two weeks should cover the same topics.
-4. The "buildThisWeek" field must be a real, specific project (not "Build a Project").
-5. Resources must be HYPER-SPECIFIC (e.g., "Andrew Ng's Machine Learning Specialization on Coursera" not "Online Course").
-6. Difficulty must progress naturally from ${currentLevel === "Beginner" ? "Beginner → Intermediate → Advanced" : currentLevel === "Intermediate" ? "Intermediate → Advanced" : "Advanced → Expert"}.
-7. ${combinedExistingSkills.length > 0 ? `Build upon existing profile skills rather than repeating them: ${combinedExistingSkills.slice(0, 10).join(", ")}` : ""}
-8. Date ranges must be accurate based on start date ${formattedStartDate} and weekly increments.
-9. Interview topics must be role-specific and increase in complexity.`;
+## CAPSTONE
+Must: solve real business problem, be production-ready, deployable, use modern AI, include monitoring, include deployment(Docker).
+FORBIDDEN: Chatbot, Sentiment Analyzer, Image Classifier, Basic Rec Engine.
+ALLOWED: Enterprise Knowledge Assistant, AI Career Copilot, Autonomous Research Agent, AI Ops Platform, Multi-Agent Business Assistant.
 
-        const userPrompt = `Generate a premium career roadmap for a ${currentLevel} level ${targetRole} engineer.
+## QUALITY GATE
+"Would this roadmap impress a recruiter in 2026?" If NO → regenerate.
+Feels like: Senior Career Strategist. NOT: University Professor.
 
-Timeline: ${duration} (${totalWeeks} weeks)
-Weekly Commitment: ${weeklyHours || "10"} hours/week
-Start Date: ${formattedStartDate}
-${targetCompany ? `Target Company: ${targetCompany}` : ""}
-${combinedExistingSkills.length > 0 ? `Existing profile skills: ${combinedExistingSkills.join(", ")}` : ""}
+## READINESS SCORING
+Scores MUST be dynamic based on level+skills+projects+experience. NEVER static.
+Beginner: 20-40% | Intermediate: 40-70% | Advanced: 70-90%
+Scores = CURRENT readiness (before roadmap). Roadmap IS the improvement path. Do NOT inflate scores.
+Hiring probability: Beginner→Low/Med only. Intermediate→Low/Med/High. Advanced→Med/High/VeryHigh(if resume>70).
+NEVER: 90%+ for everyone, Very High for beginners, same scores across levels, ignore skill gaps.
 
-The roadmap must be project-driven, date-aware, and outcome-focused. Every week must include a specific project to build. Generate exactly ${totalWeeks} weekly milestones.`;
+## STRICT RULES
+1. Generate EXACTLY ${totalWeeks} milestones. 2. Checkpoints every 4 weeks. 3. Unique content per week. 4. Difficulty: ${currentLevel==="Beginner"?"Beginner→Int→Adv":currentLevel==="Intermediate"?"Int→Adv":"Adv→Expert"}. 5. Projects build on previous. 6. Accurate dates from ${formattedStartDate}. 7. Use ${currentLevel} template only. 8. ${combinedExistingSkills.length>0?"Build on existing: "+combinedExistingSkills.slice(0,8).join(","):""} 9. Hiring strategy, NOT curriculum. 10. Every recommendation improves employability.${isAiTrack?" 11. Apply AI/AIML constraints.":""}
+`;
+
+        const userPrompt = `Generate a ${totalWeeks}-week ${currentLevel} level ${targetRole} roadmap. ${isAiTrack ? "AI track - no CNN/RNN/MNIST, 70%+ modern topics." : ""}
+Timeline: ${duration}. Hours: ${weeklyHours||10}/wk. Start: ${formattedStartDate}.${targetCompany?" Target:"+targetCompany:""}${combinedExistingSkills.length>0?" Skills:"+combinedExistingSkills.join(","):""}
+Strictly use the ${currentLevel} template. Be concise. JSON only.`;
 
         const responseData = await analyzeWithGroqLPU([
             { role: "system", content: systemPrompt },
@@ -292,8 +262,8 @@ The roadmap must be project-driven, date-aware, and outcome-focused. Every week 
         ], {
             model: MODELS.GROQ_PRIMARY,
             response_format: { type: "json_object" },
-            max_tokens: 8192,
-            temperature: 0.4
+            max_tokens: Math.min(4500, totalWeeks * 180 + 800),
+            temperature: 0.3
         });
 
         if (!responseData?.choices?.[0]?.message?.content) {
@@ -302,17 +272,13 @@ The roadmap must be project-driven, date-aware, and outcome-focused. Every week 
 
         const aiOutput = JSON.parse(responseData.choices[0].message.content);
 
-        // Save to Database
         const inserted = await db.insert(roadmapsTable).values({
             userEmail: userEmail,
             targetField: targetRole,
             roadmapData: JSON.stringify(aiOutput)
         }).returning();
 
-        return NextResponse.json({
-            ...aiOutput,
-            id: inserted[0].id
-        });
+        return NextResponse.json({ ...aiOutput, id: inserted[0].id });
 
     } catch (error: unknown) {
         console.error("Roadmap Generation Error:", error);

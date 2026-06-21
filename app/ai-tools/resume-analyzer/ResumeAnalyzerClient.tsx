@@ -47,6 +47,7 @@ export default function ResumeAnalyzerClient() {
     const [view, setView] = useState<"generator" | "history">("generator")
     const [history, setHistory] = useState<ResumeAnalysisItem[]>([])
     const [fetchingHistory, setFetchingHistory] = useState(false)
+    const [loadingAnalysis, setLoadingAnalysis] = useState(false)
     const searchParams = useSearchParams()
     const selectedId = searchParams.get("id")
 
@@ -110,16 +111,22 @@ export default function ResumeAnalyzerClient() {
         return data;
     }, [])
 
-    // Sync URL ID with selection
+    // Sync URL ID with selection — show skeleton while loading
     useEffect(() => {
-        if (selectedId && history.length > 0) {
-            const found = history.find(h => String(h.id) === selectedId)
-            if (found) {
-                const analysisDataValue = typeof (found as any).analysisData === 'string'
-                    ? JSON.parse((found as any).analysisData)
-                    : (found as any).analysisData;
-                setResult(normalizeResult(analysisDataValue))
-                setView("history")
+        if (selectedId) {
+            if (history.length > 0) {
+                const found = history.find(h => String(h.id) === selectedId)
+                if (found) {
+                    const analysisDataValue = typeof (found as any).analysisData === 'string'
+                        ? JSON.parse((found as any).analysisData)
+                        : (found as any).analysisData;
+                    setResult(normalizeResult(analysisDataValue))
+                    setView("generator")
+                }
+                setLoadingAnalysis(false)
+            } else {
+                // Keep skeleton visible until history finishes loading
+                setLoadingAnalysis(true)
             }
         }
     }, [selectedId, history, normalizeResult])
@@ -151,7 +158,11 @@ export default function ResumeAnalyzerClient() {
     useEffect(() => {
         fetchHistory()
         fetchProfile()
-    }, [fetchHistory, fetchProfile])
+        // If we navigated here with an id but no history yet, show skeleton
+        if (selectedId) {
+            setLoadingAnalysis(true)
+        }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleDeleteHistory = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation()
@@ -446,7 +457,7 @@ Platform: ${extractedData.platform}
                             </div>
                         )}
                     </div>
-                ) : loading ? (
+                ) : loading || loadingAnalysis ? (
                     <ResumeAnalysisSkeleton />
                 ) : !result ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">

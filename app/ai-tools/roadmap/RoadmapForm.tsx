@@ -1,5 +1,23 @@
 "use client"
 
+/**
+ * RoadmapForm — Input form for the V3 Roadmap Engine
+ *
+ * Collects user preferences for roadmap generation:
+ * - Target role with quick-select chips (AI roles prioritized)
+ * - Career goal, target company, focus areas
+ * - Duration, weekly hours, start date, skill level
+ *
+ * Features:
+ * - Company-specific hints (Google, Amazon, Meta, etc.)
+ * - V3 Engine badge indicator
+ * - Level selector (Beginner/Intermediate/Advanced)
+ * - Validates required fields before enabling generation
+ *
+ * @see RoadmapClient — parent component that manages state
+ * @see POST /api/roadmap — V3 engine endpoint
+ */
+
 import { Target, Clock, BarChart, Calendar, Building2, Lightbulb, Sparkles, ChevronRight } from "lucide-react"
 
 interface RoadmapFormProps {
@@ -17,6 +35,8 @@ interface RoadmapFormProps {
     setStartDate: (val: string) => void;
     targetCompany: string;
     setTargetCompany: (val: string) => void;
+    focusAreas: string;
+    setFocusAreas: (val: string) => void;
     onGenerate: () => void;
     loading: boolean;
 }
@@ -35,9 +55,10 @@ const TARGET_COMPANY_HINTS: Record<string, string> = {
 };
 
 const COMMON_ROLES = [
+    "AI Engineer", "Generative AI Engineer", "LLM Engineer",
     "Frontend Engineer", "Backend Engineer", "Full Stack Engineer",
-    "AI Engineer", "DevOps Engineer", "Data Scientist",
-    "Mobile Engineer", "Cloud Engineer", "ML Engineer"
+    "DevOps Engineer", "Data Scientist", "ML Engineer",
+    "Mobile Engineer", "Cloud Engineer"
 ];
 
 export default function RoadmapForm({
@@ -55,6 +76,8 @@ export default function RoadmapForm({
     setStartDate,
     targetCompany,
     setTargetCompany,
+    focusAreas,
+    setFocusAreas,
     onGenerate,
     loading,
 }: RoadmapFormProps) {
@@ -71,15 +94,22 @@ export default function RoadmapForm({
 
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Target className="w-3 h-3 text-blue-400" /> Topic
+                                <Target className="w-3 h-3 text-blue-400" /> Target Role
                             </label>
-                            <input
-                                type="text"
-                                value={targetRole}
-                                onChange={(e) => setTargetRole(e.target.value)}
-                                placeholder="e.g. AI Engineer, Frontend Engineer..."
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium placeholder:text-white/20 shadow-inner text-lg"
-                            />
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="text"
+                                    value={targetRole}
+                                    onChange={(e) => setTargetRole(e.target.value)}
+                                    placeholder="e.g. AI Engineer, LLM Engineer, Frontend Engineer..."
+                                    className="flex-1 bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium placeholder:text-white/20 shadow-inner text-lg"
+                                />
+                                <div className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl border border-blue-500/20">
+                                    <span className="text-[8px] font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 uppercase tracking-widest">
+                                        V3 Engine
+                                    </span>
+                                </div>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {COMMON_ROLES.filter(r => !targetRole || r.toLowerCase().includes(targetRole.toLowerCase())).slice(0, 6).map(role => (
                                     <button
@@ -128,6 +158,21 @@ export default function RoadmapForm({
                                     <p className="text-[9px] font-bold text-purple-300 uppercase tracking-wider leading-relaxed">{companyHint}</p>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Focus Areas */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <Target className="w-3 h-3 text-cyan-400" /> Focus Areas
+                            </label>
+                            <input
+                                type="text"
+                                value={focusAreas}
+                                onChange={(e) => setFocusAreas(e.target.value)}
+                                placeholder="e.g. System Design, Azure, Enterprise AI, MLOps"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all font-medium placeholder:text-white/20 shadow-inner text-lg"
+                            />
+                            <p className="text-[9px] text-slate-600 font-medium">Comma-separated areas to prioritize in your roadmap</p>
                         </div>
 
                         {/* Duration & Weekly Hours */}

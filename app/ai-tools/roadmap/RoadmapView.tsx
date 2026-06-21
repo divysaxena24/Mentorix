@@ -7,6 +7,20 @@ import {
     FileText, Rocket, BrainCircuit, ArrowLeft
 } from "lucide-react"
 
+/** Defensively coerce a value to an array — handles strings, arrays, null/undefined */
+function toArray(val: unknown): unknown[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") return [val];
+    return [];
+}
+
+/** Safely join array items with a separator — handles when AI returns a string instead of array */
+function safeJoin(val: unknown, sep = " "): string {
+    if (Array.isArray(val)) return val.join(sep);
+    if (typeof val === "string") return val;
+    return "";
+}
+
 interface RoadmapViewProps {
     roadmap: PremiumRoadmap | RoadmapResult | any;
     onReset: () => void;
@@ -103,6 +117,7 @@ export default function RoadmapView({
                     {prem.milestones.map((milestone, idx) => {
                         const isLast = idx === prem.milestones.length - 1;
                         const isCheckpoint = checkpoints.some(cp => cp.weekNumber === milestone.weekNumber);
+                        const isV2 = !!(milestone.theme || milestone.projectToBuild);
 
                         return (
                             <div key={milestone.weekNumber} className="relative pl-16">
@@ -153,36 +168,53 @@ export default function RoadmapView({
                                         </div>
                                     </div>
 
-                                    {/* Title */}
+                                    {/* Title — V2 uses theme, V1 uses milestoneTitle */}
                                     <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight group-hover:text-blue-400 transition-colors">
-                                        {milestone.milestoneTitle}
+                                        {isV2 ? milestone.theme : milestone.milestoneTitle}
                                     </h3>
-                                    <p className="text-sm text-slate-400 font-medium mb-4">{milestone.objective}</p>
 
-                                    {/* Project highlight */}
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
-                                        <Rocket className="w-3 h-3 text-emerald-400" />
-                                        <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">
-                                            Build: {milestone.buildThisWeek}
-                                        </span>
-                                    </div>
+                                    {/* Learning Goals (V2) or Objective (V1) */}
+                                    {isV2 ? (
+                                        milestone.learningGoals && (
+                                            <p className="text-sm text-slate-400 font-medium mb-4">{safeJoin(milestone.learningGoals, " • ")}</p>
+                                        )
+                                    ) : (
+                                        <p className="text-sm text-slate-400 font-medium mb-4">{milestone.objective}</p>
+                                    )}
 
-                                    {/* Preview chips */}
+                                    {/* Project highlight — V2 uses projectToBuild object, V1 uses buildThisWeek string */}
+                                    {isV2 && milestone.projectToBuild ? (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
+                                            <Rocket className="w-3 h-3 text-emerald-400" />
+                                            <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">
+                                                Build: {milestone.projectToBuild.name}
+                                            </span>
+                                        </div>
+                                    ) : milestone.buildThisWeek ? (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
+                                            <Rocket className="w-3 h-3 text-emerald-400" />
+                                            <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">
+                                                Build: {milestone.buildThisWeek}
+                                            </span>
+                                        </div>
+                                    ) : null}
+
+                                    {/* Preview chips — V2 uses skillsCovered, V1 uses learningFocus */}
                                     <div className="flex flex-wrap gap-2">
-                                        {milestone.learningFocus.slice(0, 4).map((topic, i) => (
+                                        {toArray(isV2 ? milestone.skillsCovered : milestone.learningFocus).slice(0, 4).map((topic, i) => (
                                             <span key={i} className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-slate-400 uppercase tracking-wider">
                                                 {topic}
                                             </span>
                                         ))}
-                                        {milestone.learningFocus.length > 4 && (
+                                        {toArray(isV2 ? milestone.skillsCovered : milestone.learningFocus).length > 4 && (
                                             <span className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-slate-500 uppercase tracking-wider">
-                                                +{milestone.learningFocus.length - 4}
+                                                +{toArray(isV2 ? milestone.skillsCovered : milestone.learningFocus).length - 4}
                                             </span>
                                         )}
                                     </div>
 
                                     {/* Resume & Interview Impact */}
-                                    {(milestone.resumeImpact || milestone.interviewTopicsCovered?.length > 0) && (
+                                    {(milestone.resumeImpact || ((isV2 ? milestone.interviewTopics : milestone.interviewTopicsCovered)?.length || 0) > 0) && (
                                         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/5">
                                             {milestone.resumeImpact && (
                                                 <div className="flex items-center gap-1.5">
@@ -195,12 +227,12 @@ export default function RoadmapView({
                                                     </span>
                                                 </div>
                                             )}
-                                            {milestone.interviewTopicsCovered?.length > 0 && (
+                                            {toArray(isV2 ? milestone.interviewTopics : milestone.interviewTopicsCovered).length > 0 && (
                                                 <div className="flex items-center gap-1.5">
                                                     <BrainCircuit className="w-3 h-3 text-slate-500" />
                                                     <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">
-                                                        Interview: {milestone.interviewTopicsCovered.slice(0, 2).join(", ")}
-                                                        {milestone.interviewTopicsCovered.length > 2 && " + more"}
+                                                        Interview: {toArray(isV2 ? milestone.interviewTopics : milestone.interviewTopicsCovered).slice(0, 2).join(", ")}
+                                                        {toArray(isV2 ? milestone.interviewTopics : milestone.interviewTopicsCovered).length > 2 && " + more"}
                                                     </span>
                                                 </div>
                                             )}
@@ -224,28 +256,53 @@ export default function RoadmapView({
                                 <h3 className="text-base font-black text-white uppercase tracking-tight">Checkpoints</h3>
                             </div>
                             <div className="space-y-4">
-                                {checkpoints.map((cp) => (
-                                    <div key={cp.weekNumber} className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl hover:bg-amber-500/10 transition-all">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                                <span className="text-[8px] font-black text-amber-400">W{cp.weekNumber}</span>
+                                {checkpoints.map((cp) => {
+                                    const cpIsV2 = !!(cp.assessment || cp.skillReview);
+                                    return (
+                                        <div key={cp.weekNumber} className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl hover:bg-amber-500/10 transition-all">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                                    <span className="text-[8px] font-black text-amber-400">W{cp.weekNumber}</span>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-amber-300 uppercase tracking-wider">{cpIsV2 ? "Skills Checkpoint" : cp.title}</span>
                                             </div>
-                                            <span className="text-[9px] font-bold text-amber-300 uppercase tracking-wider">{cp.title}</span>
+                                            {cpIsV2 ? (
+                                                <div className="space-y-2">
+                                                    {cp.assessment && <p className="text-[10px] text-slate-400 font-medium leading-relaxed">{cp.assessment}</p>}
+                                                    {toArray(cp.skillReview).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {toArray(cp.skillReview).map((skill, i) => (
+                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{skill}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {cp.portfolioReview && <p className="text-[9px] text-amber-300/70 font-medium mt-1">Portfolio: {cp.portfolioReview}</p>}
+                                                    {cp.resumeReview && <p className="text-[9px] text-blue-300/70 font-medium">Resume: {cp.resumeReview}</p>}
+                                                    {cp.mockInterview && <p className="text-[9px] text-purple-300/70 font-medium">Mock: {cp.mockInterview}</p>}
+                                                    {toArray(cp.gapAnalysis).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {toArray(cp.gapAnalysis).map((gap, i) => (
+                                                                <span key={i} className="px-1 py-0.5 bg-red-500/10 text-red-300 rounded text-[6px] font-bold uppercase tracking-wider">{gap}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {cp.roadmapAdjustment && <p className="text-[9px] text-emerald-300/70 font-medium mt-1">Adjustment: {cp.roadmapAdjustment}</p>}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] text-slate-400 font-medium leading-relaxed">{cp.progressReview}</p>
+                                                    {toArray(cp.skillValidation).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {toArray(cp.skillValidation).map((skill, i) => (
+                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{skill}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
-                                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                                            {cp.progressReview}
-                                        </p>
-                                        {cp.skillValidation?.length > 0 && (
-                                            <div className="flex flex-wrap gap-1.5 mt-2">
-                                                {cp.skillValidation.map((skill, i) => (
-                                                    <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">
-                                                        {skill}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -272,92 +329,174 @@ export default function RoadmapView({
                         </div>
                     )}
 
-                    {/* Final Summary */}
+                    {/* Final Summary — V1 (legacy) and V2 (company readiness) */}
                     {prem.finalSummary && (
                         <div className="bg-gradient-to-br from-emerald-600/10 to-teal-600/10 rounded-[2rem] p-6 backdrop-blur-xl border border-emerald-500/10">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                                     <Award className="w-4 h-4 text-emerald-400" />
                                 </div>
-                                <h3 className="text-base font-black text-white uppercase tracking-tight">Expected Outcomes</h3>
+                                <h3 className="text-base font-black text-white uppercase tracking-tight">{prem.finalSummary.companyReadinessScore !== undefined ? "Company Readiness" : "Expected Outcomes"}</h3>
                             </div>
 
                             <div className="space-y-5">
-                                {/* Readiness Score */}
-                                <div className="text-center p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                                    <div className="text-3xl font-black text-emerald-400">{prem.finalSummary.expectedReadinessScore}%</div>
-                                    <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mt-1">
-                                        Readiness for {prem.finalSummary.readinessTarget}
-                                    </div>
-                                </div>
-
-                                {/* Skills */}
-                                {prem.finalSummary.skillsGained?.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <Zap className="w-3 h-3 text-emerald-400" />
-                                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Skills Gained</span>
+                                {/* V2 Company Readiness Scores */}
+                                {prem.finalSummary.companyReadinessScore !== undefined && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="text-center p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                                <div className="text-2xl font-black text-emerald-400">{prem.finalSummary.companyReadinessScore}%</div>
+                                                <div className="text-[8px] font-bold text-emerald-600 uppercase tracking-wider mt-1">Company Readiness</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                                                <div className="text-2xl font-black text-blue-400">{prem.finalSummary.roleReadinessScore}%</div>
+                                                <div className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mt-1">Role Readiness</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                                                <div className="text-2xl font-black text-purple-400">{prem.finalSummary.interviewReadinessScore}%</div>
+                                                <div className="text-[8px] font-bold text-purple-600 uppercase tracking-wider mt-1">Interview Readiness</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                                                <div className="text-2xl font-black text-amber-400">{prem.finalSummary.atsReadiness}%</div>
+                                                <div className="text-[8px] font-bold text-amber-600 uppercase tracking-wider mt-1">ATS Readiness</div>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {prem.finalSummary.skillsGained.map((s, i) => (
-                                                <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
-                                                    {s}
-                                                </span>
-                                            ))}
+                                        {/* Portfolio Strength */}
+                                        {prem.finalSummary.portfolioStrength && (
+                                            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Portfolio Strength</span>
+                                                <span className={`text-sm font-bold ${
+                                                    prem.finalSummary.portfolioStrength === "Exceptional" ? "text-emerald-400" :
+                                                    prem.finalSummary.portfolioStrength === "Strong" ? "text-blue-400" :
+                                                    prem.finalSummary.portfolioStrength === "Moderate" ? "text-amber-400" : "text-red-400"
+                                                }`}>{prem.finalSummary.portfolioStrength}</span>
+                                            </div>
+                                        )}
+                                        {/* Strengths & Weaknesses */}
+                                        {toArray(prem.finalSummary.topStrengths).length > 0 && (
+                                            <div className="space-y-2">
+                                                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Top Strengths</span>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.topStrengths).map((s, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                                                            {s}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {toArray(prem.finalSummary.topWeaknesses).length > 0 && (
+                                            <div className="space-y-2">
+                                                <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Top Weaknesses</span>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.topWeaknesses).map((w, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-amber-500/10 text-amber-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-amber-500/20">
+                                                            {w}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {toArray(prem.finalSummary.criticalMissingSkills).length > 0 && (
+                                            <div className="space-y-2">
+                                                <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Critical Missing Skills</span>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.criticalMissingSkills).map((s, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-red-500/10 text-red-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-red-500/20">
+                                                            {s}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {prem.finalSummary.estimatedHiringProbability && (
+                                            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Estimated Hiring Probability</span>
+                                                <span className={`text-sm font-bold ${
+                                                    prem.finalSummary.estimatedHiringProbability === "Very High" ? "text-emerald-400" :
+                                                    prem.finalSummary.estimatedHiringProbability === "High" ? "text-blue-400" :
+                                                    prem.finalSummary.estimatedHiringProbability === "Medium" ? "text-amber-400" : "text-red-400"
+                                                }`}>{prem.finalSummary.estimatedHiringProbability}</span>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* V1 Legacy Readiness Score (fallback) */}
+                                {prem.finalSummary.companyReadinessScore === undefined && prem.finalSummary.expectedReadinessScore && (
+                                    <div className="text-center p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                        <div className="text-3xl font-black text-emerald-400">{prem.finalSummary.expectedReadinessScore}%</div>
+                                        <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mt-1">
+                                            Readiness for {prem.finalSummary.readinessTarget}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Projects */}
-                                {prem.finalSummary.projectsBuilt?.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <Rocket className="w-3 h-3 text-blue-400" />
-                                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Projects Built</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {prem.finalSummary.projectsBuilt.map((p, i) => (
-                                                <span key={i} className="px-2 py-1 bg-blue-500/10 text-blue-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-blue-500/20">
-                                                    {p}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Interview Areas */}
-                                {prem.finalSummary.interviewAreasCovered?.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <BrainCircuit className="w-3 h-3 text-purple-400" />
-                                            <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Interview Prep</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {prem.finalSummary.interviewAreasCovered.map((i, idx) => (
-                                                <span key={idx} className="px-2 py-1 bg-purple-500/10 text-purple-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-purple-500/20">
-                                                    {i}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Resume Improvements */}
-                                {prem.finalSummary.resumeImprovements?.length > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="w-3 h-3 text-amber-400" />
-                                            <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Resume Impact</span>
-                                        </div>
-                                        <ul className="space-y-1.5">
-                                            {prem.finalSummary.resumeImprovements.map((r, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-[10px] text-slate-300 font-medium">
-                                                    <ChevronRight className="w-2.5 h-2.5 text-amber-400 mt-0.5 shrink-0" />
-                                                    {r}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                {/* V1 Legacy sections */}
+                                {prem.finalSummary.companyReadinessScore === undefined && (
+                                    <>
+                                        {toArray(prem.finalSummary.skillsGained).length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Zap className="w-3 h-3 text-emerald-400" />
+                                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Skills Gained</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.skillsGained).map((s, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                                                            {s}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {toArray(prem.finalSummary.projectsBuilt).length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Rocket className="w-3 h-3 text-blue-400" />
+                                                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Projects Built</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.projectsBuilt).map((p, i) => (
+                                                        <span key={i} className="px-2 py-1 bg-blue-500/10 text-blue-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-blue-500/20">
+                                                            {p}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {toArray(prem.finalSummary.interviewAreasCovered).length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <BrainCircuit className="w-3 h-3 text-purple-400" />
+                                                    <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Interview Prep</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {toArray(prem.finalSummary.interviewAreasCovered).map((i, idx) => (
+                                                        <span key={idx} className="px-2 py-1 bg-purple-500/10 text-purple-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-purple-500/20">
+                                                            {i}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {toArray(prem.finalSummary.resumeImprovements).length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="w-3 h-3 text-amber-400" />
+                                                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Resume Impact</span>
+                                                </div>
+                                                <ul className="space-y-1.5">
+                                                    {toArray(prem.finalSummary.resumeImprovements).map((r, i) => (
+                                                        <li key={i} className="flex items-start gap-2 text-[10px] text-slate-300 font-medium">
+                                                            <ChevronRight className="w-2.5 h-2.5 text-amber-400 mt-0.5 shrink-0" />
+                                                            {r}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

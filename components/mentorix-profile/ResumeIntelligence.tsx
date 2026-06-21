@@ -104,7 +104,7 @@ function AnimatedScoreBar({ value, label, color = "#8b5cf6", delay = 0 }: { valu
     );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────
+
 export default function ResumeIntelligence({ insights, onUpdateResume }: ResumeIntelligenceProps) {
     if (!insights) return null;
 
@@ -158,12 +158,14 @@ export default function ResumeIntelligence({ insights, onUpdateResume }: ResumeI
                         <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Resume Intelligence</h2>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">AI-powered analysis of your current profile</p>
                     </div>
-                    <button
-                        onClick={onUpdateResume}
-                        className="shrink-0 px-5 py-2.5 bg-white rounded-xl text-[10px] font-bold text-slate-900 uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg"
-                    >
-                        Update Resume
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onUpdateResume}
+                            className="shrink-0 px-5 py-2.5 bg-white rounded-xl text-[10px] font-bold text-slate-900 uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg"
+                        >
+                            Update Resume
+                        </button>
+                    </div>
                 </div>
 
                 {/* Main content */}

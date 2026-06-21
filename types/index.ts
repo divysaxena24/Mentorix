@@ -38,33 +38,66 @@ export interface WeeklyResources {
 
 /**
  * A single week/milestone in the premium roadmap.
+ * Supports both V1 (legacy) and V2 (enhanced) formats.
  */
 export interface PremiumMilestone {
     weekNumber: number;
     dateRange: string;
-    milestoneTitle: string;
-    objective: string;
+    // V1 fields (legacy)
+    milestoneTitle?: string;
+    objective?: string;
     difficulty: string;
     estimatedHours: number;
-    learningFocus: string[];
-    actionableTasks: string[];
-    buildThisWeek: string;
-    resources: WeeklyResources;
-    expectedOutcome: string[];
-    resumeImpact: "Low" | "Medium" | "High";
-    interviewTopicsCovered: string[];
+    learningFocus?: string[];
+    actionableTasks?: string[];
+    buildThisWeek?: string;
+    resources?: WeeklyResources;
+    expectedOutcome?: string[];
+    resumeImpact?: "Low" | "Medium" | "High" | "Very High";
+    interviewTopicsCovered?: string[];
+    projectMapping?: {
+        resumeValue: string;
+        companyRelevance: string;
+        interviewRelevance: string;
+        enterpriseImpact: string;
+    };
+    // V2 fields
+    theme?: string;
+    learningGoals?: string[];
+    skillsCovered?: string[];
+    projectToBuild?: {
+        name: string;
+        objective: string;
+        techStack: string[];
+        difficulty: string;
+        resumeValue: string;
+        interviewTopics: string[];
+        expectedOutcome: string;
+    };
+    interviewTopics?: string[];
+    expectedDeliverable?: string;
 }
 
 /**
  * Checkpoint assessment every 4 weeks.
+ * Supports both V1 (legacy) and V2 (enhanced) formats.
  */
 export interface Checkpoint {
     weekNumber: number;
-    title: string;
-    quiz: string[];
-    miniProject: string;
-    skillValidation: string[];
-    progressReview: string;
+    // V1 fields (legacy)
+    title?: string;
+    quiz?: string[];
+    miniProject?: string;
+    skillValidation?: string[];
+    progressReview?: string;
+    // V2 fields
+    assessment?: string;
+    skillReview?: string[];
+    portfolioReview?: string;
+    resumeReview?: string;
+    mockInterview?: string;
+    gapAnalysis?: string[];
+    roadmapAdjustment?: string;
 }
 
 /**
@@ -85,14 +118,26 @@ export interface RoadmapHeader {
 
 /**
  * Final summary at the end of the roadmap.
+ * Supports both V1 (legacy) and V2 (enhanced) formats.
  */
 export interface FinalSummary {
-    skillsGained: string[];
-    projectsBuilt: string[];
-    interviewAreasCovered: string[];
-    resumeImprovements: string[];
-    expectedReadinessScore: number;
-    readinessTarget: string;
+    // V1 fields (legacy)
+    skillsGained?: string[];
+    projectsBuilt?: string[];
+    interviewAreasCovered?: string[];
+    resumeImprovements?: string[];
+    expectedReadinessScore?: number;
+    readinessTarget?: string;
+    // V2 fields — Company Readiness
+    companyReadinessScore?: number;
+    roleReadinessScore?: number;
+    interviewReadinessScore?: number;
+    portfolioStrength?: string;
+    atsReadiness?: number;
+    topStrengths?: string[];
+    topWeaknesses?: string[];
+    criticalMissingSkills?: string[];
+    estimatedHiringProbability?: string;
 }
 
 /**
@@ -107,6 +152,18 @@ export interface PremiumRoadmap {
     finalSummary: FinalSummary;
     createdAt?: string;
     targetField?: string;
+    // V2 fields
+    finalCapstone?: {
+        projectName: string;
+        objective: string;
+        techStack: string[];
+        expectedOutcome: string;
+    };
+    projectProgression?: {
+        weekStart: number;
+        weekEnd: number;
+        progressionArc: string;
+    }[];
 }
 
 /**

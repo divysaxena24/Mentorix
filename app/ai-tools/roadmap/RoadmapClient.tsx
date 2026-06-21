@@ -1,5 +1,27 @@
 "use client"
 
+/**
+ * RoadmapClient — Orchestrator for the V3 Roadmap Engine UI
+ *
+ * Manages the full roadmap generation flow:
+ * - Form state (targetRole, careerGoal, currentLevel, focusAreas, etc.)
+ * - API integration with the V3 engine (POST /api/roadmap)
+ * - History management (fetch, display, delete)
+ * - View switching (generator form ↔ generated roadmap ↔ history)
+ * - URL-based navigation (?id= for direct roadmap access)
+ *
+ * State flow:
+ *   1. User fills form → handleGenerate() → POST /api/roadmap
+ *   2. Response renders RoadmapView with milestones
+ *   3. User clicks milestone → MilestoneDialog opens
+ *   4. User can save to history and revisit later
+ *
+ * @see RoadmapForm — input form component
+ * @see RoadmapView — roadmap display component
+ * @see MilestoneDialog — weekly milestone detail dialog
+ * @see POST /api/roadmap — V3 engine endpoint
+ */
+
 import { useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import {
@@ -47,6 +69,7 @@ export default function RoadmapClient({ initialHistory, profileData }: RoadmapCl
     const [startDate, setStartDate] = useState("");
     const [loading, setLoading] = useState(false);
     const [targetCompany, setTargetCompany] = useState("");
+    const [focusAreas, setFocusAreas] = useState("");
     const [roadmap, setRoadmap] = useState<PremiumRoadmap | AnyRoadmap | null>(null)
     const [selectedMilestone, setSelectedMilestone] = useState<PremiumMilestone | null>(null)
 
@@ -121,6 +144,7 @@ export default function RoadmapClient({ initialHistory, profileData }: RoadmapCl
                 duration,
                 startDate,
                 targetCompany,
+                focusAreas,
             })
             setRoadmap(response.data)
             toast.success("Premium roadmap generated successfully!")
@@ -194,12 +218,14 @@ export default function RoadmapClient({ initialHistory, profileData }: RoadmapCl
                     setStartDate={setStartDate}
                     targetCompany={targetCompany}
                     setTargetCompany={setTargetCompany}
+                    focusAreas={focusAreas}
+                    setFocusAreas={setFocusAreas}
                     onGenerate={handleGenerate}
                     loading={loading}
                 />
             ) : (
                 <RoadmapHistory
-                    history={history}
+                    history={history as any}
                     fetching={fetchingHistory}
                     onSelect={setRoadmap}
                     onDelete={handleDeleteRoadmap}

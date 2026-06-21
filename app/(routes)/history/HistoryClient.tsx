@@ -31,7 +31,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { RoadmapItem, ChatItem, ResumeAnalysisItem, WritingDoc, ResumeItem } from "@/types"
+import {
+    RoadmapItem,
+    ChatItem,
+    ResumeAnalysisItem,
+    WritingDoc,
+    ResumeItem
+} from "@/types"
+
 
 interface HistoryClientProps {
     initialData: {
@@ -220,6 +227,7 @@ export default function HistoryClient({ initialData }: HistoryClientProps) {
                                 onDelete={() => handleDeleteResume(item.id)}
                                 deleteTitle="Delete Analysis"
                                 deleteDescription="This will permanently delete the analysis report."
+
                             />
                         ))}
                         {filterBySearch(resumes).length === 0 && (
@@ -302,7 +310,8 @@ function HistoryCard({
     href,
     onDelete,
     deleteTitle,
-    deleteDescription
+    deleteDescription,
+    extraActions
 }: {
     icon: React.ReactNode,
     title: string,
@@ -310,7 +319,8 @@ function HistoryCard({
     href: string,
     onDelete: () => void,
     deleteTitle: string,
-    deleteDescription: string
+    deleteDescription: string,
+    extraActions?: React.ReactNode
 }) {
     return (
         <div className="group relative glass-card rounded-2xl border border-white/5 hover:border-white/20 transition-all p-5 backdrop-blur-3xl">
@@ -357,11 +367,16 @@ function HistoryCard({
                 </div>
 
                 <Link href={href}>
-                    <button className="w-full mt-2 py-3 bg-white/5 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 border border-white/5 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+                    <button className="w-full py-3 bg-white/5 hover:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 border border-white/5 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]">
                         Open Resource
                         <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </Link>
+                {extraActions && (
+                    <div className="mt-2">
+                        {extraActions}
+                    </div>
+                )}
             </div>
         </div>
     )

@@ -26,12 +26,13 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
     // Premium milestone
     if (isPremium && "weekNumber" in milestone) {
         const pm = milestone as PremiumMilestone;
-        const hasResources = pm.resources && (
-            pm.resources.courses?.length > 0 ||
-            pm.resources.docs?.length > 0 ||
-            pm.resources.videos?.length > 0 ||
-            pm.resources.articles?.length > 0
-        );
+        const isV2 = !!(pm.theme || pm.projectToBuild);
+        const hasResources = !!(pm.resources && (
+            (pm.resources.courses?.length || 0) > 0 ||
+            (pm.resources.docs?.length || 0) > 0 ||
+            (pm.resources.videos?.length || 0) > 0 ||
+            (pm.resources.articles?.length || 0) > 0
+        ));
 
         return (
             <Dialog open={!!milestone} onOpenChange={(open) => !open && onClose()}>
@@ -59,70 +60,122 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                                 </span>
                             </div>
                             <DialogTitle className="text-3xl font-black text-white leading-tight uppercase tracking-tight">
-                                {pm.milestoneTitle}
+                                {isV2 ? pm.theme : pm.milestoneTitle}
                             </DialogTitle>
                             <DialogDescription className="text-slate-400 font-medium text-base mt-2">
-                                {pm.objective}
+                                {isV2 ? (pm.learningGoals?.join(" • ") || "") : pm.objective}
                             </DialogDescription>
                         </DialogHeader>
 
-                        {/* Build This Week - Highlight */}
-                        <div className="p-5 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-2xl border border-emerald-500/20">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Rocket className="w-4 h-4 text-emerald-400" />
-                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Build This Week</span>
+                        {/* Project To Build (V2) or Build This Week (V1) */}
+                        {isV2 && pm.projectToBuild ? (
+                            <div className="p-5 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-2xl border border-emerald-500/20">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Rocket className="w-4 h-4 text-emerald-400" />
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Project To Build</span>
+                                </div>
+                                <p className="text-lg font-bold text-white">{pm.projectToBuild.name}</p>
+                                <p className="text-sm text-slate-300 mt-2">{pm.projectToBuild.objective}</p>
+                                {pm.projectToBuild.techStack?.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        {pm.projectToBuild.techStack.map((tech, i) => (
+                                            <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                                                {tech}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <p className="text-lg font-bold text-white">{pm.buildThisWeek}</p>
-                        </div>
+                        ) : pm.buildThisWeek ? (
+                            <div className="p-5 bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-2xl border border-emerald-500/20">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Rocket className="w-4 h-4 text-emerald-400" />
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Build This Week</span>
+                                </div>
+                                <p className="text-lg font-bold text-white">{pm.buildThisWeek}</p>
+                            </div>
+                        ) : null}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Learning Focus */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <BookOpen className="w-4 h-4 text-blue-400" />
-                                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Learning Focus</h5>
+                            {/* Learning Goals (V2) or Learning Focus (V1) */}
+                            {(isV2 ? pm.learningGoals : pm.learningFocus) && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <BookOpen className="w-4 h-4 text-blue-400" />
+                                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{isV2 ? "Learning Goals" : "Learning Focus"}</h5>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(isV2 ? pm.learningGoals! : pm.learningFocus!).map((topic, idx) => (
+                                            <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                                                {topic}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {pm.learningFocus.map((topic, idx) => (
-                                        <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                                            {topic}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
+                            )}
 
-                            {/* Actionable Tasks */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Actionable Tasks</h5>
+                            {/* Skills Covered (V2) */}
+                            {isV2 && pm.skillsCovered && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Skills Covered</h5>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {pm.skillsCovered.map((skill, idx) => (
+                                            <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="space-y-2.5">
-                                    {pm.actionableTasks.map((task, idx) => (
-                                        <div key={idx} className="flex gap-3 items-start">
-                                            <div className="shrink-0 w-5 h-5 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                                                <span className="text-[8px] font-black text-emerald-400">{idx + 1}</span>
+                            )}
+
+                            {/* Actionable Tasks (V1) */}
+                            {!isV2 && pm.actionableTasks && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Actionable Tasks</h5>
+                                    </div>
+                                    <div className="space-y-2.5">
+                                        {pm.actionableTasks.map((task, idx) => (
+                                            <div key={idx} className="flex gap-3 items-start">
+                                                <div className="shrink-0 w-5 h-5 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                                    <span className="text-[8px] font-black text-emerald-400">{idx + 1}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-300 font-medium leading-relaxed">{task}</p>
                                             </div>
-                                            <p className="text-sm text-slate-300 font-medium leading-relaxed">{task}</p>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* Resources */}
-                        {hasResources && (
+                        {/* Expected Deliverable (V2) */}
+                        {isV2 && pm.expectedDeliverable && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Expected Deliverable</h5>
+                                </div>
+                                <p className="text-sm text-slate-300 font-medium">{pm.expectedDeliverable}</p>
+                            </div>
+                        )}
+
+                        {/* Resources (V1 only) */}
+                        {!isV2 && hasResources && (
                             <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
                                 <div className="flex items-center gap-2 mb-5">
                                     <ExternalLink className="w-4 h-4 text-purple-400" />
                                     <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Resources</h5>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {pm.resources.courses?.length > 0 && (
+                                    {pm.resources!.courses?.length > 0 && (
                                         <div className="space-y-2">
                                             <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Courses</span>
                                             <ul className="space-y-1.5">
-                                                {pm.resources.courses.map((r, i) => (
+                                                {pm.resources!.courses!.map((r, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-xs text-slate-400 font-medium">
                                                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
                                                         {r}
@@ -131,11 +184,11 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                                             </ul>
                                         </div>
                                     )}
-                                    {pm.resources.docs?.length > 0 && (
+                                    {pm.resources!.docs?.length > 0 && (
                                         <div className="space-y-2">
                                             <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Documentation</span>
                                             <ul className="space-y-1.5">
-                                                {pm.resources.docs.map((r, i) => (
+                                                {pm.resources!.docs!.map((r, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-xs text-slate-400 font-medium">
                                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 shrink-0" />
                                                         {r}
@@ -144,13 +197,13 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                                             </ul>
                                         </div>
                                     )}
-                                    {pm.resources.videos?.length > 0 && (
+                                    {pm.resources!.videos?.length > 0 && (
                                         <div className="space-y-2">
                                             <span className="flex items-center gap-1.5 text-[8px] font-black text-red-400 uppercase tracking-widest">
                                                 <Youtube className="w-3 h-3" /> Videos
                                             </span>
                                             <ul className="space-y-1.5">
-                                                {pm.resources.videos.map((r, i) => (
+                                                {pm.resources!.videos!.map((r, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-xs text-slate-400 font-medium">
                                                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-1.5 shrink-0" />
                                                         {r}
@@ -159,11 +212,11 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                                             </ul>
                                         </div>
                                     )}
-                                    {pm.resources.articles?.length > 0 && (
+                                    {pm.resources!.articles?.length > 0 && (
                                         <div className="space-y-2">
                                             <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest">Articles</span>
                                             <ul className="space-y-1.5">
-                                                {pm.resources.articles.map((r, i) => (
+                                                {pm.resources!.articles!.map((r, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-xs text-slate-400 font-medium">
                                                         <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1.5 shrink-0" />
                                                         {r}
@@ -176,15 +229,15 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                             </div>
                         )}
 
-                        {/* Expected Outcomes */}
-                        {pm.expectedOutcome?.length > 0 && (
+                        {/* Expected Outcomes (V1) */}
+                        {!isV2 && (pm.expectedOutcome?.length || 0) > 0 && (
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="w-4 h-4 text-yellow-400" />
                                     <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Expected Outcomes</h5>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {pm.expectedOutcome.map((outcome, idx) => (
+                                    {pm.expectedOutcome?.map((outcome, idx) => (
                                         <span key={idx} className="px-3 py-1.5 bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 rounded-lg text-[9px] font-bold">
                                             {outcome}
                                         </span>
@@ -207,13 +260,13 @@ export default function MilestoneDialog({ milestone, onClose, isPremium }: Miles
                                     </div>
                                 </div>
                             )}
-                            {pm.interviewTopicsCovered?.length > 0 && (
+                            {((isV2 ? pm.interviewTopics : pm.interviewTopicsCovered)?.length || 0) > 0 && (
                                 <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl">
                                     <BrainCircuit className="w-4 h-4 text-slate-400" />
                                     <div>
                                         <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Interview Topics</span>
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                            {pm.interviewTopicsCovered.map((t, i) => (
+                                            {(isV2 ? pm.interviewTopics! : pm.interviewTopicsCovered!).map((t, i) => (
                                                 <span key={i} className="px-1.5 py-0.5 bg-purple-500/10 text-purple-300 rounded text-[7px] font-bold uppercase tracking-wider">
                                                     {t}
                                                 </span>
