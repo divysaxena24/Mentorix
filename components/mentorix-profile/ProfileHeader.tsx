@@ -28,9 +28,11 @@ import {
 interface ProfileHeaderProps {
     data: any
     onUpdate: () => void
+    firstIncompleteId?: string | null
+    onCompleteProfile?: () => void
 }
 
-export default function ProfileHeader({ data, onUpdate }: ProfileHeaderProps) {
+export default function ProfileHeader({ data, onUpdate, firstIncompleteId, onCompleteProfile }: ProfileHeaderProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -247,20 +249,31 @@ export default function ProfileHeader({ data, onUpdate }: ProfileHeaderProps) {
                         </AlertDialog>
                     </div>
 
-                    {/* Completion Bar */}
-                    <div className="max-w-md space-y-2">
-                        <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            <span>Profile Completion</span>
-                            <span className="text-white">{data.completionPercentage}%</span>
+                    {/* Completion Bar + Complete Profile Button */}
+                    <div className="flex items-end gap-4 max-w-md">
+                        <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                <span>Profile Completion</span>
+                                <span className="text-white">{data.completionPercentage}%</span>
+                            </div>
+                            <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${data.completionPercentage}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                                />
+                            </div>
                         </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${data.completionPercentage}%` }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                            />
-                        </div>
+                        {firstIncompleteId && onCompleteProfile && (
+                            <button
+                                onClick={onCompleteProfile}
+                                className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 border-0 rounded-xl text-[11px] font-black text-white uppercase tracking-widest hover:from-amber-400 hover:to-orange-500 hover:shadow-[0_0_20px_rgba(251,191,36,0.4)] active:scale-95 transition-all duration-200 shadow-lg"
+                            >
+                                <AlertTriangle className="w-4 h-4" />
+                                Complete Profile
+                            </button>
+                        )}
                     </div>
                 </div>
 

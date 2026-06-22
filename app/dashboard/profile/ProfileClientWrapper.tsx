@@ -17,6 +17,50 @@ import CareerJourney from "@/components/mentorix-profile/CareerJourney"
 import DetailedAnalysis from "@/components/mentorix-profile/DetailedAnalysis"
 import { ProfileWithRelations } from "@/types"
 
+// ===== Section Completion Helpers =====
+interface SectionStatus {
+    id: string;
+    label: string;
+    isComplete: boolean;
+}
+
+function analyzeSections(profile: any): { sections: SectionStatus[]; firstIncompleteId: string | null } {
+    const sections: SectionStatus[] = [
+        {
+            id: "section-profile",
+            label: "Basic Info",
+            isComplete: !!(profile.name && profile.currentRole && profile.university && profile.location)
+        },
+        {
+            id: "section-links",
+            label: "Professional Links",
+            isComplete: (profile.links?.length || 0) > 0
+        },
+        {
+            id: "section-skills-projects",
+            label: "Skills & Projects",
+            isComplete: (profile.skills?.length || 0) >= 3 && (profile.projects?.length || 0) >= 1
+        },
+        {
+            id: "section-experience",
+            label: "Experience & Education",
+            isComplete: (profile.experience?.length || 0) >= 1 && (profile.education?.length || 0) >= 1
+        },
+        {
+            id: "section-goals",
+            label: "Career Goals",
+            isComplete: !!profile.goals
+        }
+    ];
+
+    const firstIncomplete = sections.find(s => !s.isComplete);
+
+    return {
+        sections,
+        firstIncompleteId: firstIncomplete?.id || null
+    };
+}
+
 interface ProfileClientWrapperProps {
     initialProfile: any; // We'll use any here briefly because of serialized JSON from server, or we can use the actual type
 }
@@ -25,6 +69,27 @@ export default function ProfileClientWrapper({ initialProfile }: ProfileClientWr
     const [profile, setProfile] = useState<any>(initialProfile)
     const [isUpdating, setIsUpdating] = useState(false)
     const router = useRouter()
+
+    // Complete Profile analysis
+    const sectionStatus = profile ? analyzeSections(profile) : null;
+
+    const scrollToSection = (sectionId: string) => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Highlight briefly
+            el.classList.add("ring-2", "ring-blue-500/50", "rounded-[2.5rem]");
+            setTimeout(() => {
+                el.classList.remove("ring-2", "ring-blue-500/50", "rounded-[2.5rem]");
+            }, 2000);
+        }
+    };
+
+    const handleCompleteProfile = () => {
+        if (sectionStatus?.firstIncompleteId) {
+            scrollToSection(sectionStatus.firstIncompleteId);
+        }
+    };
 
     useEffect(() => {
         if (!isUpdating) {
@@ -70,35 +135,52 @@ export default function ProfileClientWrapper({ initialProfile }: ProfileClientWr
                                 </p>
                             </div>
                         </div>
-                        <Link
-                            href="/dashboard/profile/account"
-                            className="flex items-center gap-2 px-4 md:px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all group shrink-0"
-                        >
-                            <UserCircle className="w-4 h-4" />
-                            Account Settings
-                            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            <Link
+                                href="/dashboard/profile/account"
+                                className="flex items-center gap-2 px-4 md:px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all group shrink-0"
+                            >
+                                <UserCircle className="w-4 h-4" />
+                                Account Settings
+                                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-8">
-                        <ProfileHeader data={profile} onUpdate={handleUpdate} />
+                        <div id="section-profile">
+                            <ProfileHeader
+                                data={profile}
+                                onUpdate={handleUpdate}
+                                firstIncompleteId={sectionStatus?.firstIncompleteId}
+                                onCompleteProfile={handleCompleteProfile}
+                            />
+                        </div>
                         <ResumeIntelligence
                             insights={profile.insights}
                             onUpdateResume={() => setIsUpdating(true)}
                         />
-                        <ProfessionalLinks links={profile.links} onUpdate={handleUpdate} />
-                        <CareerJourney
-                            experience={profile.experience}
-                            education={profile.education}
-                            achievements={profile.achievements}
-                            onUpdate={handleUpdate}
-                        />
-                        <SkillsAndProjects
-                            skills={profile.skills}
-                            projects={profile.projects}
-                            onUpdate={handleUpdate}
-                        />
-                        <CareerGoals goals={profile.goals} onUpdate={handleUpdate} />
+                        <div id="section-links">
+                            <ProfessionalLinks links={profile.links} onUpdate={handleUpdate} />
+                        </div>
+                        <div id="section-experience">
+                            <CareerJourney
+                                experience={profile.experience}
+                                education={profile.education}
+                                achievements={profile.achievements}
+                                onUpdate={handleUpdate}
+                            />
+                        </div>
+                        <div id="section-skills-projects">
+                            <SkillsAndProjects
+                                skills={profile.skills}
+                                projects={profile.projects}
+                                onUpdate={handleUpdate}
+                            />
+                        </div>
+                        <div id="section-goals">
+                            <CareerGoals goals={profile.goals} onUpdate={handleUpdate} />
+                        </div>
                         <AIInsights insights={profile.insights} metrics={profile.metrics} />
                         <DetailedAnalysis insights={profile.insights} />
                     </div>
