@@ -299,7 +299,8 @@ export interface ChatItem {
     createdAt: string;
 }
 
-// Resume Builder Types
+// ===== Resume Builder Types =====
+
 export interface PersonalInfo {
     fullName: string;
     email: string;
@@ -357,14 +358,92 @@ export interface CustomSection {
     items: CustomSubItem[];
 }
 
+/** Structured certification entry */
+export interface Certification {
+    title: string;
+    issuer?: string;
+    date?: string;
+    link?: string;
+    description?: string;
+}
+
+/** Structured achievement / honor / award entry */
+export interface Achievement {
+    title: string;
+    date?: string;
+    description?: string;
+    type?: "hackathon" | "contest" | "award" | "other";
+}
+
+/** Language proficiency entry */
+export interface Language {
+    name: string;
+    proficiency?: "Native" | "Fluent" | "Advanced" | "Intermediate" | "Basic";
+}
+
+/** Publication entry (research papers, articles, etc.) */
+export interface Publication {
+    title: string;
+    publisher?: string;
+    date?: string;
+    link?: string;
+    description?: string;
+}
+
+/** Section identifiers used for controlling render order in ResumeData.sectionOrder */
+export type SectionType =
+  | "summary"
+  | "experience"
+  | "education"
+  | "projects"
+  | "skills"
+  | "certifications"
+  | "achievements"
+  | "publications"
+  | "languages"
+  | "customSections";
+
+/**
+ * Default section render order used when `sectionOrder` is not provided.
+ */
+export const DEFAULT_SECTION_ORDER: SectionType[] = [
+  "summary",
+  "experience",
+  "education",
+  "projects",
+  "skills",
+  "certifications",
+  "achievements",
+  "publications",
+  "languages",
+  "customSections",
+];
+
+/**
+ * Complete resume data model.
+ *
+ * New sections (certifications, achievements, languages, publications) have been
+ * added as first-class citizens. `honors` is kept for backward compatibility with
+ * saved data — new code should use `achievements` instead.
+ */
 export interface ResumeData {
     personalInfo: PersonalInfo;
     education: Education[];
     experience: Experience[];
     skills: Skill[];
     projects: Project[];
+    /** @deprecated Use `achievements` instead. Kept for backward compatibility. */
     honors?: string[];
+    /** New first-class sections */
+    certifications?: Certification[];
+    achievements?: Achievement[];
+    languages?: Language[];
+    publications?: Publication[];
+    /** Custom sections (generic catch-all) */
     customSections?: CustomSection[];
+    /** Override the default section render order */
+    sectionOrder?: SectionType[];
+    /** Resume template identifier */
     template: string;
 }
 
