@@ -33,8 +33,10 @@ export default function ImproveResume({ existingData, onResumeGenerated }: Impro
 
       const res = response.data
       setResult(res)
-      if (res.resumeData) {
-        onResumeGenerated?.(res.resumeData)
+      // Support both V3 (resumeData) and legacy (flat/personalInfo) formats
+      const resumeData = res.resumeData ?? (res.personalInfo ? res : null)
+      if (resumeData) {
+        onResumeGenerated?.(resumeData)
       }
       toast.success("Resume improved!")
     } catch (error: any) {

@@ -12,6 +12,7 @@ import {
     Wand2,
     Target,
     Eye,
+    Sparkles,
 } from "lucide-react"
 import Link from "next/link"
 import axios from "axios"
@@ -23,8 +24,9 @@ import ResumePreview from "@/components/resume/ResumePreview"
 import BuildFromScratch from "./BuildFromScratch"
 import ImproveResume from "./ImproveResume"
 import TailorForJob from "./TailorForJob"
+import AIResumeAssistant from "./AIResumeAssistant"
 
-type BuilderMode = "build" | "improve" | "tailor"
+type BuilderMode = "ai-chat" | "build" | "improve" | "tailor"
 
 const INITIAL_DATA: ResumeData = {
     personalInfo: { fullName: "", email: "", phone: "", address: "", linkedin: "", github: "", leetcode: "", portfolio: "", summary: "" },
@@ -43,6 +45,7 @@ const INITIAL_DATA: ResumeData = {
 }
 
 const MODE_TABS: { id: BuilderMode; label: string; icon: any; gradient: string; desc: string }[] = [
+    { id: "ai-chat", label: "AI Assistant 🧠", icon: Sparkles, gradient: "from-blue-600 to-purple-600", desc: "Natural language commands — add, edit, delete, tailor, or optimize" },
     { id: "build", label: "Build from Scratch", icon: Zap, gradient: "from-blue-600 to-purple-600", desc: "Describe your background — AI generates a complete resume" },
     { id: "improve", label: "Improve Resume", icon: Wand2, gradient: "from-blue-600 to-cyan-600", desc: "Tell AI how to improve your current resume — no forms needed" },
     { id: "tailor", label: "Tailor for Job", icon: Target, gradient: "from-purple-600 to-pink-600", desc: "Paste a job description — AI tailors your resume automatically" },
@@ -53,7 +56,7 @@ export default function ResumeClient() {
     const searchParams = useSearchParams()
     const resumeId = searchParams.get("id")
 
-    const [mode, setMode] = useState<BuilderMode>("build")
+    const [mode, setMode] = useState<BuilderMode>("ai-chat")
     const [data, setData] = useState<ResumeData>(INITIAL_DATA)
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(!!resumeId)
@@ -71,6 +74,25 @@ export default function ResumeClient() {
     }
 
     const handleResumeGenerated = (generated: ResumeData) => {
+        // ── DEBUG LOG: Validate resume object before rendering ──
+        console.log("[Resume Builder] RESUME RECEIVED:", {
+            hasPersonalInfo: !!generated.personalInfo,
+            personalInfoName: generated.personalInfo?.fullName,
+            educationCount: generated.education?.length,
+            experienceCount: generated.experience?.length,
+            projectCount: generated.projects?.length,
+            skillCount: generated.skills?.length,
+            certificationCount: generated.certifications?.length,
+            achievementCount: generated.achievements?.length,
+            hasSectionOrder: !!(generated.sectionOrder && generated.sectionOrder.length > 0),
+            template: generated.template,
+            // Check for any missing required fields
+            missingEducation: !generated.education,
+            missingExperience: !generated.experience,
+            missingProjects: !generated.projects,
+            missingSkills: !generated.skills,
+        })
+
         setData(generated)
         // Scroll to preview to show result
         setTimeout(() => {
@@ -169,8 +191,10 @@ export default function ResumeClient() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left: Prompt Input */}
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {mode === "build" && <BuildFromScratch onResumeGenerated={handleResumeGenerated} />}                        {mode === "improve" && <ImproveResume existingData={data} onResumeGenerated={handleResumeGenerated} />}
-                {mode === "tailor" && <TailorForJob existingData={data} onResumeGenerated={handleResumeGenerated} />}
+                        {mode === "ai-chat" && <AIResumeAssistant existingData={data} onResumeGenerated={handleResumeGenerated} />}
+                        {mode === "build" && <BuildFromScratch onResumeGenerated={handleResumeGenerated} />}
+                        {mode === "improve" && <ImproveResume existingData={data} onResumeGenerated={handleResumeGenerated} />}
+                        {mode === "tailor" && <TailorForJob existingData={data} onResumeGenerated={handleResumeGenerated} />}
                     </div>
 
                     {/* Right: Live Preview */}

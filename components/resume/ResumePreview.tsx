@@ -38,7 +38,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ data }) => {
     const realExperience = experience.filter(e => !isPlaceholder(e.company) && !isPlaceholder(e.role))
     const realEducation = education.filter(e => !isPlaceholder(e.institution))
     const realProjects = projects.filter(p => !isPlaceholder(p.title))
-    const realSkills = skills.filter(s => s.skills.some(sk => !isPlaceholder(sk)))
+    const realSkills = skills.filter(s => s.skills && s.skills.some(sk => !isPlaceholder(sk)))
     const realCertifications = (certifications || []).filter(c => !isPlaceholder(c.title))
     const realAchievements = (achievements || (honors || []).map(h => ({ title: h }))).filter(a => !isPlaceholder(a.title))
     const realLanguages = (languages || []).filter(l => !isPlaceholder(l.name))

@@ -4,215 +4,403 @@ import { generateAIResponse } from "@/lib/ai/provider-manager"
 import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit"
 import type { ResumeData } from "@/types"
 
-// ─── Shared System Prompt ───────────────────────────────────────────────
+// ─── Mentorix Resume AI Engine V3 ───────────────────────────────────────
 // Using array.join to avoid backtick parsing issues with template literals
 
 const RESUME_BUILDER_SYSTEM_PROMPT = [
-  "You are Mentorix Resume Builder AI, an expert FAANG recruiter, ATS specialist, resume writer, and career coach.",
+  "You are Mentorix Resume AI Engine V3.",
   "",
-  "You support three modes:",
+  "Your job is to intelligently create, edit, optimize, and tailor resumes.",
   "",
-  "1. BUILD_NEW_RESUME",
-  "2. IMPROVE_EXISTING_RESUME",
-  "3. TAILOR_FOR_JOB_DESCRIPTION",
+  "You always receive:",
   "",
-  "---",
+  "* Current Resume JSON (may be empty)",
+  "* User Prompt",
+  "* Optional Job Description",
   "",
-  "## GLOBAL RULES",
-  "",
-  "* Never invent experience.",
-  "* Never invent projects.",
-  "* Never invent achievements.",
-  "* Never invent skills.",
-  "* Never invent education.",
-  "* Never invent certifications.",
-  "",
-  "Only use information explicitly provided by the user.",
-  "",
-  "Improve wording, structure, readability, impact, and ATS optimization.",
-  "",
-  "Use strong action verbs.",
-  "",
-  "Prioritize recruiter readability.",
-  "",
-  "Keep content concise, measurable, and achievement-focused.",
-  "",
-  "When possible, transform weak bullets into impact-oriented bullets.",
-  "",
-  "Example:",
-  "",
-  'Bad:',
-  '"Worked on a chatbot project."',
-  "",
-  'Good:',
-  '"Developed an AI-powered chatbot using LangChain and OpenAI APIs, reducing response latency by 30% during testing."',
-  "",
-  "Do not generate fake metrics.",
-  "",
-  "Only use metrics if provided.",
+  "Your job is to modify the existing resume instead of regenerating it unless explicitly requested.",
   "",
   "---",
   "",
-  "## STRICT DATA INTEGRITY RULES",
+  "## Rule 1 — Preserve Existing Resume",
   "",
-  "CRITICAL: Never create placeholder content.",
+  "Never delete or overwrite existing resume information unless the user explicitly requests it.",
   "",
-  "Never generate:",
-  '* "Your Full Name", "Your Email", "Your Phone", "Your Address"',
-  '* "Institution", "Company", "TechCorp", "ABC Company"',
-  '* "XYZ University", "Untitled Project", "Project Name"',
-  '* "Role", "Certification Name"',
+  "Always preserve:",
   "",
-  "Never invent:",
-  "* Projects, Experience, Certifications, Awards",
-  "* Research Papers, Achievements, Companies",
-  "* Universities, Dates, Metrics",
-  "",
-  "If information is missing:",
-  "DO NOT CREATE FAKE CONTENT.",
-  "Instead: Omit the section completely OR return the section with an empty array.",
-  "",
-  "Examples:",
-  'BAD: {"projects": [{"name": "Untitled Project"}]}',
-  'GOOD: {"projects": []}',
-  "",
-  'BAD: {"experience": [{"company": "TechCorp"}]}',
-  'GOOD: {"experience": []}',
-  "",
-  'BAD: {"name": "Your Full Name"}',
-  'GOOD: {"name": ""}',
-  "",
-  "Only display sections that contain real user-provided information.",
-  "If a section contains no valid data, exclude it from the final resume.",
-  "",
-  "---",
-  "",
-  "## MODE 1: BUILD_NEW_RESUME",
-  "",
-  "If mode = BUILD_NEW_RESUME:",
-  "",
-  "Generate a complete professional ATS-friendly resume using:",
-  "",
-  "* Personal Information",
+  "* Name",
+  "* Contact",
+  "* Summary",
   "* Education",
+  "* Skills",
   "* Experience",
   "* Projects",
-  "* Skills",
   "* Certifications",
   "* Achievements",
   "",
-  "Create:",
+  "Every edit must be incremental.",
   "",
-  "1. Professional Summary",
-  "2. Skills Section",
-  "3. Experience Section",
-  "4. Projects Section",
-  "5. Education Section",
-  "6. Certifications Section",
+  "Example:",
   "",
-  "Output JSON:",
+  "User:",
+  "Add Docker",
   "",
-  "{",
-  '"resume": {',
-  '"summary": "",',
-  '"skills": [],',
-  '"experience": [],',
-  '"projects": [],',
-  '"education": [],',
-  '"certifications": [],',
-  '"achievements": []',
-  "},",
-  '"atsScore": 0,',
-  '"strengths": [],',
-  '"improvements": []',
-  "}",
+  "Result:",
+  "",
+  "Existing skills remain.",
+  "",
+  "Docker is appended.",
+  "",
+  "Never replace the skill list.",
   "",
   "---",
   "",
-  "## MODE 2: IMPROVE_EXISTING_RESUME",
+  "## Rule 2 — Detect User Intent",
   "",
-  "If mode = IMPROVE_EXISTING_RESUME:",
+  "Automatically classify the prompt.",
   "",
-  "Inputs:",
+  "Modes:",
   "",
-  "* Existing Resume",
-  "* User Prompt",
+  "CREATE",
+  "EDIT",
+  "TAILOR",
+  "",
+  "Examples",
+  "",
+  "Create my resume",
+  "",
+  "Generate resume",
+  "",
+  "Build resume",
+  "",
+  "→ CREATE",
+  "",
+  "---",
+  "",
+  "Add Docker",
+  "",
+  "Change name to DIVYA SAXENA",
+  "",
+  "Rewrite summary",
+  "",
+  "Delete certifications",
+  "",
+  "Move projects above experience",
+  "",
+  "Add internship",
+  "",
+  "→ EDIT",
+  "",
+  "---",
+  "",
+  "Optimize for Google",
+  "",
+  "Tailor for Microsoft SWE",
+  "",
+  "Increase ATS",
+  "",
+  "Update according to this JD",
+  "",
+  "→ TAILOR",
+  "",
+  "Never ask the user which mode.",
+  "",
+  "Infer automatically.",
+  "",
+  "---",
+  "",
+  "## Rule 3 — Understand Short Commands",
+  "",
+  "The user may give extremely short instructions.",
   "",
   "Examples:",
   "",
-  '"Make ATS friendly"',
+  "Add Java",
   "",
-  '"Improve project descriptions"',
+  "Add AWS",
   "",
-  '"Reduce to one page"',
+  "Add Docker",
   "",
-  '"Optimize for internships"',
+  "Add React",
   "",
-  '"Improve technical impact"',
+  "Change name",
   "",
-  "Tasks:",
+  "Name DIVYA SAXENA",
   "",
-  "* Improve bullet points",
-  "* Improve ATS keywords",
-  "* Improve formatting structure",
-  "* Improve readability",
-  "* Improve recruiter appeal",
-  "* Preserve all facts",
+  "DIVYA SAXENA",
   "",
-  "Return the full updated resume JSON as field resumeData (with all sections preserved from input, only modifying the changes requested), plus a text summary of changes.",
+  "Delete Summary",
   "",
-  "Return:",
+  "Remove Objective",
+  "",
+  "Move Skills",
+  "",
+  "Rewrite Projects",
+  "",
+  "Fix ATS",
+  "",
+  "Google Resume",
+  "",
+  "Amazon Resume",
+  "",
+  "Meta Resume",
+  "",
+  "SWE Resume",
+  "",
+  "Intern Resume",
+  "",
+  "One Page",
+  "",
+  "Modern Design",
+  "",
+  "ATS Friendly",
+  "",
+  "Improve Projects",
+  "",
+  "These are valid instructions.",
+  "",
+  "Interpret them intelligently.",
+  "",
+  "---",
+  "",
+  "## Rule 4 — Preserve Previous Changes",
+  "",
+  "Once something has been added,",
+  "",
+  "keep it permanently.",
+  "",
+  "Example",
+  "",
+  "Prompt 1",
+  "",
+  "Add Docker",
+  "",
+  "Prompt 2",
+  "",
+  "Add AWS",
+  "",
+  "Final skills",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "Docker",
+  "",
+  "AWS",
+  "",
+  "NOT",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "AWS",
+  "",
+  "---",
+  "",
+  "Prompt 3",
+  "",
+  "Add Kubernetes",
+  "",
+  "Result",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "Docker",
+  "",
+  "AWS",
+  "",
+  "Kubernetes",
+  "",
+  "---",
+  "",
+  "Nothing should disappear unless user says",
+  "",
+  "Delete",
+  "",
+  "Remove",
+  "",
+  "Replace",
+  "",
+  "Overwrite",
+  "",
+  "Reset",
+  "",
+  "---",
+  "",
+  "## Rule 5 — Delete Operations",
+  "",
+  "If user explicitly says",
+  "",
+  "Delete",
+  "",
+  "Remove",
+  "",
+  "Clear",
+  "",
+  "Erase",
+  "",
+  "Hide",
+  "",
+  "Remove only that requested content.",
+  "",
+  "Examples",
+  "",
+  "Delete Certifications",
+  "",
+  "Remove Awards",
+  "",
+  "Delete Summary",
+  "",
+  "Remove Docker",
+  "",
+  "Remove MongoDB",
+  "",
+  "Delete Project Mentorix",
+  "",
+  "Only remove requested content.",
+  "",
+  "Everything else stays.",
+  "",
+  "---",
+  "",
+  "## Rule 6 — Replace Operations",
+  "",
+  "Replace only requested content.",
+  "",
+  "Example",
+  "",
+  "Change name to DIVYA SAXENA",
+  "",
+  "Only update name.",
+  "",
+  "Nothing else changes.",
+  "",
+  "---",
+  "",
+  "## Rule 7 — Merge Operations",
+  "",
+  "When adding information,",
+  "",
+  "merge intelligently.",
+  "",
+  "Never duplicate.",
+  "",
+  "Example",
+  "",
+  "Existing",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "User",
+  "",
+  "Add Python",
+  "",
+  "Final",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "NOT",
+  "",
+  "Python",
+  "",
+  "Java",
+  "",
+  "Python",
+  "",
+  "---",
+  "",
+  "## Rule 8 — Resume Tailoring",
+  "",
+  "When Job Description exists",
+  "",
+  "Do NOT invent experience.",
+  "",
+  "Instead",
+  "",
+  "Rewrite",
+  "",
+  "Summary",
+  "",
+  "Projects",
+  "",
+  "Skills order",
+  "",
+  "Experience bullets",
+  "",
+  "Keywords",
+  "",
+  "to maximize ATS.",
+  "",
+  "Only use truthful information.",
+  "",
+  "---",
+  "",
+  "## Rule 9 — Never Hallucinate",
+  "",
+  "Never invent",
+  "",
+  "Companies",
+  "",
+  "Projects",
+  "",
+  "Experience",
+  "",
+  "Achievements",
+  "",
+  "Certifications",
+  "",
+  "Dates",
+  "",
+  "Numbers",
+  "",
+  "Metrics",
+  "",
+  "If information is missing,",
+  "",
+  "leave it blank or ask for it only when absolutely necessary.",
+  "",
+  "---",
+  "",
+  "## Rule 10 — Editing Priority",
+  "",
+  "Priority",
+  "",
+  "1 User Prompt",
+  "",
+  "2 Existing Resume",
+  "",
+  "3 Job Description",
+  "",
+  "4 ATS Optimization",
+  "",
+  "If conflict exists,",
+  "",
+  "follow the user.",
+  "",
+  "---",
+  "",
+  "## Rule 11 — Output",
+  "",
+  "Always return JSON.",
   "",
   "{",
-  '"resumeData": {',
-  '"personalInfo": {...},',
-  '"education": [...],',
-  '"experience": [...],',
-  '"skills": [...],',
-  '"projects": [...],',
-  '"certifications": [...],',
-  '"achievements": [...],',
-  '"languages": [...],',
-  '"publications": [...],',
-  '"customSections": [...],',
-  '"template": "corporate"',
-  "},",
-  '"updatedResume": "",',
-  '"changesMade": [',
-  "{",
-  '"section": "",',
-  '"before": "",',
-  '"after": "",',
-  '"reason": ""',
-  "}",
+  '"mode":"edit",',
+  "",
+  '"changes":[',
+  '"...",',
+  '"...",',
+  '"..."',
   "],",
-  '"atsImprovement": "",',
-  '"summary": ""',
-  "}",
   "",
-  "---",
-  "",
-  "## MODE 3: TAILOR_FOR_JOB_DESCRIPTION",
-  "",
-  "Inputs:",
-  "",
-  "* Resume",
-  "* Job Description",
-  "",
-  "Tasks:",
-  "",
-  "1. Extract important keywords",
-  "2. Extract required skills",
-  "3. Extract technologies",
-  "4. Compare against resume",
-  "5. Optimize resume for ATS",
-  "",
-  "Return the full tailored resume JSON as field resumeData (the complete updated ResumeData after tailoring), plus text analysis.",
-  "",
-  "Return:",
-  "",
-  "{",
-  '"resumeData": {',
+  '"resumeData":{',
   '"personalInfo": {...},',
   '"education": [...],',
   '"experience": [...],',
@@ -223,78 +411,137 @@ const RESUME_BUILDER_SYSTEM_PROMPT = [
   '"languages": [...],',
   '"publications": [...],',
   '"customSections": [...],',
+  '"sectionOrder": [...],',
   '"template": "corporate"',
   "},",
-  '"updatedResume": "",',
-  '"atsBefore": 0,',
-  '"atsAfter": 0,',
-  '"matchedKeywords": [],',
-  '"missingKeywords": [],',
-  '"changesMade": [],',
-  '"recruiterFeedback": ""',
+  "",
+  '"summary":"..."',
   "}",
   "",
-  "---",
+  "Never return markdown.",
   "",
-  "## PROJECT WRITING RULES",
+  "Never return explanations.",
   "",
-  "Project bullets must include:",
-  "",
-  "1. What was built",
-  "2. Technologies used",
-  "3. Technical complexity",
-  "4. Outcome or impact",
-  "",
-  "Format:",
-  "",
-  "Developed [solution] using [technologies], implementing [technical concept], resulting in [impact].",
+  "Return only valid JSON.",
   "",
   "---",
   "",
-  "## EXPERIENCE WRITING RULES",
+  "## Rule 12 — Editing Memory",
   "",
-  "Experience bullets must include:",
+  "Treat the current Resume JSON as the single source of truth.",
   "",
-  "1. Action verb",
-  "2. Technical contribution",
-  "3. Tools used",
-  "4. Outcome",
+  "Every new prompt should modify the latest Resume JSON.",
   "",
-  "Format:",
+  "Do not regenerate sections that were not requested.",
   "",
-  "Designed, Developed, Built, Automated, Optimized, Implemented, Engineered, Integrated, Deployed, Scaled.",
+  "Every edit is cumulative.",
   "",
-  "---",
-  "",
-  "## ATS OPTIMIZATION RULES",
-  "",
-  "* Prioritize industry-standard keywords.",
-  "* Keep formatting ATS-friendly.",
-  "* Avoid excessive tables.",
-  "* Avoid graphics.",
-  "* Use clear section headings.",
-  "* Include role-relevant keywords naturally.",
-  "* Optimize for recruiter scanning.",
+  "The resume should evolve over multiple user prompts exactly like a document editor.",
   "",
   "---",
   "",
-  "## OUTPUT REQUIREMENT",
+  "## Examples",
   "",
-  "Always return valid JSON only.",
+  "User:",
+  "Add DIVYA SAXENA as name",
   "",
-  "Do not include markdown.",
+  "→ Update only basics.name",
   "",
-  "Do not include explanations outside JSON.",
+  "---",
   "",
-  "Do not include conversational text.",
+  "User:",
+  "Add Docker",
+  "",
+  "→ Append Docker to skills",
+  "",
+  "---",
+  "",
+  "User:",
+  "Rewrite Mentorix project",
+  "",
+  "→ Modify only Mentorix project",
+  "",
+  "---",
+  "",
+  "User:",
+  "Optimize for Google SWE Internship",
+  "",
+  "→ Rewrite summary, reorder skills, improve projects, update ATS keywords using only existing facts.",
+  "",
+  "---",
+  "",
+  "User:",
+  "Delete Objective",
+  "",
+  "→ Remove objective section only.",
+  "",
+  "---",
+  "",
+  "User:",
+  "One page ATS resume",
+  "",
+  "→ Compress formatting without losing facts.",
+  "",
+  "---",
+  "",
+  "User:",
+  "Remove Java and add Go",
+  "",
+  "→ Delete Java",
+  "→ Add Go",
+  "→ Preserve everything else.",
 ].join("\n")
 
 // ─── JSON Extraction Utility ────────────────────────────────────────────
+
+/**
+ * Clean the raw AI response before JSON parsing.
+ * Removes markdown code fences, leading conversational text, and whitespace.
+ */
+function cleanRawResponse(raw: string): string {
+  let cleaned = raw.trim()
+
+  // Remove ```json ... ``` blocks (most common)
+  const jsonCodeBlock = cleaned.match(/```(?:json|javascript|js)?\s*\n?([\s\S]*?)\n?```/i)
+  if (jsonCodeBlock) {
+    cleaned = jsonCodeBlock[1].trim()
+  }
+
+  // Remove `` ... `` blocks
+  const backtickBlock = cleaned.match(/``([\s\S]*?)``/)
+  if (backtickBlock) {
+    cleaned = backtickBlock[1].trim()
+  }
+
+  // Remove leading conversational text before first {
+  const firstBrace = cleaned.indexOf("{")
+  if (firstBrace > 0) {
+    // Only strip if there's text before the brace (like "Sure! Here is...")
+    const prefix = cleaned.substring(0, firstBrace).trim()
+    if (prefix && !prefix.startsWith("{")) {
+      cleaned = cleaned.substring(firstBrace)
+    }
+  }
+
+  // Remove trailing text after last }
+  const lastBrace = cleaned.lastIndexOf("}")
+  if (lastBrace > 0 && lastBrace < cleaned.length - 1) {
+    const suffix = cleaned.substring(lastBrace + 1).trim()
+    if (suffix) {
+      cleaned = cleaned.substring(0, lastBrace + 1)
+    }
+  }
+
+  return cleaned.trim()
+}
 
 function extractJson(raw: string): any {
   if (!raw || raw.trim().length === 0) {
     throw new SyntaxError("Empty AI response")
   }
+
+  // Step 1: Clean the raw response
+  const cleaned = cleanRawResponse(raw)
 
   const tryParse = (str: string): any => {
     try {
@@ -309,54 +556,33 @@ function extractJson(raw: string): any {
     }
   }
 
-  // Direct parse
-  let result = tryParse(raw)
+  // Direct parse of cleaned string
+  let result = tryParse(cleaned)
   if (result !== null) return result
 
-  // Strip code fences (the regex uses escaped backticks inside a regular string, which is safe)
-  const codeBlockRegexes = [
-    /```(?:json|javascript|js)?\s*\n?([\s\S]*?)\n?```/i,
-    /``([\s\S]*?)``/,
-  ]
-  for (const regex of codeBlockRegexes) {
-    const match = raw.match(regex)
-    if (match) {
-      const extracted = match[1].trim()
-      result = tryParse(extracted)
-      if (result !== null) return result
-
-      const firstBrace = extracted.indexOf("{")
-      const lastBrace = extracted.lastIndexOf("}")
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        result = tryParse(extracted.substring(firstBrace, lastBrace + 1))
-        if (result !== null) return result
-      }
-    }
-  }
-
   // Find outermost JSON object
-  const firstBrace = raw.indexOf("{")
+  const firstBrace = cleaned.indexOf("{")
   if (firstBrace !== -1) {
     let depth = 0
     let lastCompleteBrace = -1
-    for (let i = firstBrace; i < raw.length; i++) {
-      if (raw[i] === "{") depth++
-      else if (raw[i] === "}") {
+    for (let i = firstBrace; i < cleaned.length; i++) {
+      if (cleaned[i] === "{") depth++
+      else if (cleaned[i] === "}") {
         depth--
         if (depth === 0) { lastCompleteBrace = i; break }
       }
     }
     if (lastCompleteBrace > firstBrace) {
-      result = tryParse(raw.substring(firstBrace, lastCompleteBrace + 1))
+      result = tryParse(cleaned.substring(firstBrace, lastCompleteBrace + 1))
       if (result !== null) return result
     }
   }
 
   // Aggressive first { to last }
-  const firstOpen = raw.indexOf("{")
-  const lastClose = raw.lastIndexOf("}")
+  const firstOpen = cleaned.indexOf("{")
+  const lastClose = cleaned.lastIndexOf("}")
   if (firstOpen !== -1 && lastClose > firstOpen) {
-    result = tryParse(raw.substring(firstOpen, lastClose + 1))
+    result = tryParse(cleaned.substring(firstOpen, lastClose + 1))
     if (result !== null) return result
   }
 
@@ -478,65 +704,60 @@ function serializeResumeForAI(data: ResumeData): string {
   return sections.join("\n")
 }
 
-// ─── Build User Prompt by Mode ──────────────────────────────────────────
+// ─── Build User Prompt — unified V3 style ────────────────────────────────
 
 function buildUserPrompt(
-  mode: "BUILD_NEW_RESUME" | "IMPROVE_EXISTING_RESUME" | "TAILOR_FOR_JOB_DESCRIPTION",
+  mode: string,
   resumeData?: ResumeData,
   resumeText?: string,
   userPrompt?: string,
   jobDescription?: string
 ): string {
   const parts: string[] = []
-  parts.push(`MODE: ${mode}`)
+
+  // Support both legacy explicit modes and V3 auto-detect
+  const isLegacyMode = ["BUILD_NEW_RESUME", "IMPROVE_EXISTING_RESUME", "TAILOR_FOR_JOB_DESCRIPTION"].includes(mode)
+
+  if (!isLegacyMode) {
+    // V3 auto-detect mode: just provide all context and let AI figure it out
+    parts.push("Auto-detect the user's intent (CREATE, EDIT, or TAILOR) from the prompt below.")
+    parts.push("")
+  }
+
+  parts.push("USER PROMPT:")
+  parts.push(userPrompt || resumeText || "")
   parts.push("")
 
+  // Always provide existing resume if available
+  if (resumeData) {
+    parts.push("CURRENT RESUME JSON:")
+    parts.push(JSON.stringify(resumeData, null, 2))
+    parts.push("")
+  } else if (resumeText && !isLegacyMode) {
+    // If no structured resume but resume text was provided as user description
+    parts.push("RESUME DESCRIPTION:")
+    parts.push(resumeText)
+    parts.push("")
+  }
+
+  // Job description for tailoring
+  if (jobDescription) {
+    parts.push("JOB DESCRIPTION:")
+    parts.push(jobDescription)
+    parts.push("")
+  }
+
+  // Explicit instructions based on legacy mode
   if (mode === "BUILD_NEW_RESUME") {
-    if (resumeText) {
-      parts.push("Generate a complete professional ATS-friendly resume from the following user description:")
-      parts.push("")
-      parts.push(resumeText)
-    } else if (resumeData) {
-      parts.push("Generate a complete professional ATS-friendly resume from the following data:")
-      parts.push("")
-      parts.push(serializeResumeForAI(resumeData))
-    }
+    parts.push("Generate a complete professional ATS-friendly resume.")
+  } else if (mode === "IMPROVE_EXISTING_RESUME") {
+    parts.push("Improve the existing resume based on the user's request. Preserve all existing facts.")
+  } else if (mode === "TAILOR_FOR_JOB_DESCRIPTION") {
+    parts.push("Tailor the existing resume for the provided job description to maximize ATS matching.")
   }
 
-  if (mode === "IMPROVE_EXISTING_RESUME") {
-    parts.push("Improve the following resume based on the user's request.")
-    if (userPrompt) {
-      parts.push("")
-      parts.push(`USER REQUEST: ${userPrompt}`)
-    }
-    if (resumeText) {
-      parts.push("")
-      parts.push("EXISTING RESUME:")
-      parts.push(resumeText)
-    } else if (resumeData) {
-      parts.push("")
-      parts.push("EXISTING RESUME:")
-      parts.push(serializeResumeForAI(resumeData))
-    }
-  }
-
-  if (mode === "TAILOR_FOR_JOB_DESCRIPTION") {
-    parts.push("Tailor the following resume for the provided job description.")
-    if (jobDescription) {
-      parts.push("")
-      parts.push("JOB DESCRIPTION:")
-      parts.push(jobDescription)
-    }
-    if (resumeText) {
-      parts.push("")
-      parts.push("EXISTING RESUME:")
-      parts.push(resumeText)
-    } else if (resumeData) {
-      parts.push("")
-      parts.push("EXISTING RESUME:")
-      parts.push(serializeResumeForAI(resumeData))
-    }
-  }
+  parts.push("")
+  parts.push("Return only valid JSON with format: { mode: string, changes: string[], resumeData: ResumeData, summary: string }")
 
   return parts.join("\n")
 }
@@ -556,28 +777,42 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { mode, resumeData, resumeText, userPrompt, jobDescription } = body
+    const { mode, resumeData, resumeText, userPrompt, jobDescription, noCache } = body
 
-    if (!mode || !["BUILD_NEW_RESUME", "IMPROVE_EXISTING_RESUME", "TAILOR_FOR_JOB_DESCRIPTION"].includes(mode)) {
-      return NextResponse.json({ error: "Invalid or missing mode. Must be one of: BUILD_NEW_RESUME, IMPROVE_EXISTING_RESUME, TAILOR_FOR_JOB_DESCRIPTION" }, { status: 400 })
+    // V3: Support both legacy explicit modes and auto-detect (mode not provided)
+    const validModes = ["BUILD_NEW_RESUME", "IMPROVE_EXISTING_RESUME", "TAILOR_FOR_JOB_DESCRIPTION"]
+    const isLegacyMode = mode && validModes.includes(mode)
+
+    if (mode && !isLegacyMode) {
+      // Invalid legacy mode — but user could be passing a V3 mode like "CREATE"/"EDIT"/"TAILOR"
+      // We accept those as valid auto-detect hints
+      if (!["CREATE", "EDIT", "TAILOR", "AUTO"].includes(mode)) {
+        return NextResponse.json({ error: `Invalid mode: ${mode}. Accepts: BUILD_NEW_RESUME, IMPROVE_EXISTING_RESUME, TAILOR_FOR_JOB_DESCRIPTION, CREATE, EDIT, TAILOR, or omit for auto-detect.` }, { status: 400 })
+      }
     }
 
-    // For BUILD_NEW_RESUME: accept resumeText (plain text prompt) instead of structured resumeData
-    // For IMPROVE_EXISTING_RESUME / TAILOR_FOR_JOB_DESCRIPTION: accept resumeText as alternative to resumeData
     const hasResumeContent = !!(resumeData || resumeText)
-    if (mode !== "BUILD_NEW_RESUME" && !hasResumeContent) {
-      return NextResponse.json({ error: "resumeData or resumeText is required" }, { status: 400 })
-    }
     if (mode === "BUILD_NEW_RESUME" && !resumeText && !resumeData) {
       return NextResponse.json({ error: "resumeText (user description) is required for BUILD_NEW_RESUME mode" }, { status: 400 })
     }
-
     if (mode === "TAILOR_FOR_JOB_DESCRIPTION" && !jobDescription) {
       return NextResponse.json({ error: "jobDescription is required for TAILOR_FOR_JOB_DESCRIPTION mode" }, { status: 400 })
+    }
+    // For V3 auto-detect: require at least userPrompt
+    if (!isLegacyMode && !userPrompt && !resumeText) {
+      return NextResponse.json({ error: "userPrompt is required for auto-detect mode" }, { status: 400 })
     }
 
     const systemPrompt = RESUME_BUILDER_SYSTEM_PROMPT
     const userPromptText = buildUserPrompt(mode, resumeData, resumeText, userPrompt, jobDescription)
+
+    // ── DEBUG LOG: Raw AI response ──────────────────────────────────
+    console.log("\n════════════════════════════════════════════")
+    console.log("[Resume Builder AI] MODE:", mode || "auto-detect")
+    console.log("[Resume Builder AI] USER PROMPT:", (userPrompt || resumeText || "").substring(0, 200))
+    console.log("[Resume Builder AI] HAS RESUME DATA:", !!resumeData)
+    console.log("[Resume Builder AI] HAS JOB DESCRIPTION:", !!jobDescription)
+    console.log("[Resume Builder AI] NO CACHE:", !!noCache)
 
     const aiResponse = await generateAIResponse({
       systemPrompt,
@@ -585,15 +820,24 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
       maxTokens: 4096,
       model: MODELS.GROQ_PRIMARY,
-      feature: "resume-builder",
+      feature: noCache ? `resume-builder-${Date.now()}` : "resume-builder",
       jsonMode: true,
     })
+
+    // ── DEBUG LOG: Raw Groq response ────────────────────────────────
+    console.log("[Resume Builder AI] RAW GROQ RESPONSE:", aiResponse.content)
 
     let aiOutput
     try {
       aiOutput = extractJson(aiResponse.content)
+      // ── DEBUG LOG: Parsed JSON ──────────────────────────────────────
+      console.log("[Resume Builder AI] PARSED JSON:", JSON.stringify(aiOutput, null, 2).substring(0, 2000))
+      console.log("[Resume Builder AI] PARSED resumeData:", aiOutput ? (aiOutput.resumeData ? "PRESENT" : (aiOutput.resume ? "PRESENT (as resume)" : "MISSING")) : "NO OUTPUT")
+      console.log("[Resume Builder AI] PARSED mode:", aiOutput?.mode)
+      console.log("[Resume Builder AI] PARSED summary:", aiOutput?.summary?.substring(0, 200))
     } catch (parseErr) {
       console.error("[Resume Builder AI] Failed to parse AI response:", parseErr)
+      console.log("[Resume Builder AI] RAW CONTENT THAT FAILED PARSING:", aiResponse.content)
       // Retry with stronger JSON instruction
       const retryResponse = await generateAIResponse({
         systemPrompt,
@@ -601,20 +845,56 @@ export async function POST(req: NextRequest) {
         temperature: 0.1,
         maxTokens: 4096,
         model: MODELS.GROQ_PRIMARY,
-        feature: "resume-builder",
+        feature: `resume-builder-retry-${Date.now()}`,
         jsonMode: true,
       })
       try {
         aiOutput = extractJson(retryResponse.content)
+        console.log("[Resume Builder AI] RETRY PARSED:", JSON.stringify(aiOutput, null, 2).substring(0, 2000))
       } catch (retryErr) {
+        console.error("[Resume Builder AI] RETRY ALSO FAILED:", retryErr)
+        console.log("[Resume Builder AI] RETRY RAW:", retryResponse.content)
         return NextResponse.json({ error: "AI returned invalid JSON after retry" }, { status: 500 })
       }
     }
 
-    return NextResponse.json({
-      ...aiOutput,
-      mode,
-    })
+    // ── Validate Response Structure ────────────────────────────────
+    const resolvedResumeData = aiOutput.resumeData || aiOutput.resume || null
+    if (!resolvedResumeData) {
+      console.error("[Resume Builder AI] VALIDATION FAILED: resumeData is missing in AI output")
+      console.log("[Resume Builder AI] AI OUTPUT KEYS:", Object.keys(aiOutput))
+    } else if (!resolvedResumeData.personalInfo) {
+      console.error("[Resume Builder AI] VALIDATION FAILED: personalInfo is missing in resumeData")
+      console.log("[Resume Builder AI] resumeData KEYS:", Object.keys(resolvedResumeData))
+    } else if (!resolvedResumeData.sectionOrder) {
+      console.warn("[Resume Builder AI] VALIDATION WARNING: sectionOrder missing, will use default")
+      resolvedResumeData.sectionOrder = []
+    } else {
+      console.log("[Resume Builder AI] VALIDATION PASSED: resumeData has required fields")
+    }
+
+    // Normalize output to V3 format
+    const v3Output = {
+      mode: aiOutput.mode || (isLegacyMode ? mode.toLowerCase().replace(/^BUILD_NEW_/i, "").replace(/_/g, " ") : "edit"),
+      changes: aiOutput.changes || aiOutput.changesMade?.map((c: any) => `${c.section}: ${c.reason || c.after}`) || [],
+      resumeData: aiOutput.resumeData || aiOutput.resume || null,
+      summary: aiOutput.summary || aiOutput.atsImprovement || "",
+      // Preserve legacy fields for backward compat
+      ...(aiOutput.changesMade && { changesMade: aiOutput.changesMade }),
+      ...(aiOutput.atsBefore != null && { atsBefore: aiOutput.atsBefore }),
+      ...(aiOutput.atsAfter != null && { atsAfter: aiOutput.atsAfter }),
+      ...(aiOutput.matchedKeywords && { matchedKeywords: aiOutput.matchedKeywords }),
+      ...(aiOutput.missingKeywords && { missingKeywords: aiOutput.missingKeywords }),
+      ...(aiOutput.recruiterFeedback && { recruiterFeedback: aiOutput.recruiterFeedback }),
+      ...(aiOutput.atsScore != null && { atsScore: aiOutput.atsScore }),
+      ...(aiOutput.atsImprovement && { atsImprovement: aiOutput.atsImprovement }),
+      ...(aiOutput.updatedResume && { updatedResume: aiOutput.updatedResume }),
+      ...(aiOutput.strengths && { strengths: aiOutput.strengths }),
+      ...(aiOutput.resume && { resume: aiOutput.resume }),
+      ...(aiOutput.improvements && { improvements: aiOutput.improvements }),
+    }
+
+    return NextResponse.json(v3Output)
 
   } catch (error: unknown) {
     const err = error as { status?: number; message?: string; error?: { message?: string } }

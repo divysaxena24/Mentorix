@@ -59,7 +59,12 @@ export default function BuildFromScratch({ onResumeGenerated }: BuildFromScratch
 
       const result = response.data
 
-      if (result.resume) {
+      // Support both V3 format (resumeData) and legacy format (resume)
+      if (result.resumeData && !result.resume) {
+        // ── V3 format: resumeData is already a full ResumeData object ──
+        onResumeGenerated(result.resumeData)
+        toast.success(`Resume generated!`)
+      } else if (result.resume) {
         const resume = result.resume
 
         // ── Filter raw AI output: remove placeholder entries ──
@@ -195,6 +200,16 @@ export default function BuildFromScratch({ onResumeGenerated }: BuildFromScratch
 
         onResumeGenerated(mappedData)
         toast.success(`Resume generated!${result.atsScore ? ` ATS Score: ${result.atsScore}/100` : ""}`)
+      } else {
+        // ── Fallback: try to use resumeData directly ──
+        console.log("[BuildFromScratch] Neither resume nor resumeData found. Full response:", result)
+        if (result.personalInfo || result.education || result.experience) {
+          // Response might contain flat resume fields directly
+          onResumeGenerated(result as ResumeData)
+          toast.success("Resume generated!")
+        } else {
+          toast.error("AI response missing resume data")
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to generate resume")

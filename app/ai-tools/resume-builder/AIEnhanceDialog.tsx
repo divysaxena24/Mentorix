@@ -317,10 +317,16 @@ export default function AIEnhanceDialog({ open, onOpenChange, data, onApplyResul
                 >
                   New Enhancement
                 </button>
-                {aiResult.updatedResume && (
+                {/* Always show Apply button if resumeData is available */}
+                {(aiResult.resumeData || aiResult.updatedResume) && (
                   <button
                     onClick={() => {
-                      onApplyResult(aiMode, aiResult)
+                      // Pass the full result - parent should use result.resumeData ?? result
+                      onApplyResult(aiMode, {
+                        ...aiResult,
+                        // Ensure resumeData is accessible whether AI returned resumeData or resume
+                        resumeData: aiResult.resumeData || aiResult,
+                      })
                       handleClose()
                     }}
                     className="px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:from-blue-700 hover:to-purple-700 transition-all shadow-xl flex items-center gap-3"
