@@ -4,7 +4,7 @@ import WritingClient from "./WritingClient"
 
 export const metadata: Metadata = {
     title: "Mentorix",
-    description: "Generate professionally tailored cover letters, statements of purpose, and motivation letters with Mentorix's AI Writing Studio.",
+    description: "Generate professionally tailored cover letters, statements of purpose, letters of recommendation, and proposals with Mentorix's AI Writing Studio.",
 }
 
 export default function WritingStudioPage() {

@@ -42,8 +42,31 @@ const PAGE_HEIGHT = (d: jsPDF) => d.internal.pageSize.getHeight()
 
 function pageBackground(d: jsPDF) { setFillColor(d, C.white); d.rect(0, 0, PAGE_WIDTH(d), PAGE_HEIGHT(d), "F") }
 
-// Header with logo placeholder
+/** Add Mentorix watermark to a PDF page */
+function addWatermark(d: jsPDF) {
+  const pw = PAGE_WIDTH(d)
+  const ph = PAGE_HEIGHT(d)
+  d.save()
+  d.setFontSize(72)
+  d.setFont("helvetica", "bold")
+  d.setTextColor(99, 102, 241)
+  // Low opacity watermark via GState
+  try {
+    d.setGState(new (d as any).GState({ opacity: 0.08 }))
+  } catch {
+    // Fallback: opacity not supported
+  }
+  // Rotate and center
+  d.text("MENTORIX", pw / 2, ph / 2, {
+    align: "center",
+    angle: -35,
+  })
+  d.restore()
+}
+
+// Header with logo placeholder — also adds Mentorix watermark
 function addHeader(d: jsPDF, pw: number) {
+  addWatermark(d)
   const h = 20;
   // Background
   setFillColor(d, C.white);

@@ -1,9 +1,12 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { AlignLeft, Check, Copy, Download, FileText, RefreshCw, Wand2, Loader2 } from "lucide-react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import AIActionsDropdown, { openAIActionsDropdown } from './AIActionsDropdown'
+
+type DocType = "cover_letter" | "sop" | "lor" | "proposal"
 
 interface WritingDisplayProps {
     output: string;
@@ -15,6 +18,10 @@ interface WritingDisplayProps {
     onDownloadPdf: () => void;
     onDownloadTxt: () => void;
     onRegenerate: () => void;
+    docType?: DocType;
+    onSave?: () => void;
+    hasPreviousVersion?: boolean;
+    onRestorePrevious?: () => void;
 }
 
 export default function WritingDisplay({
@@ -26,9 +33,34 @@ export default function WritingDisplay({
     onDownloadWord,
     onDownloadPdf,
     onDownloadTxt,
-    onRegenerate
+    onRegenerate,
+    docType = "cover_letter",
+    onSave,
+    hasPreviousVersion,
+    onRestorePrevious
 }: WritingDisplayProps) {
     const [mode, setMode] = useState<"preview" | "edit">("preview");
+    const [selectedText, setSelectedText] = useState<string | undefined>(undefined);
+
+    // Track text selection
+    const handleTextSelect = useCallback(() => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+            setSelectedText(selection.toString().trim());
+        } else {
+            setSelectedText(undefined);
+        }
+    }, []);
+
+    // Selection via right-click context menu — opens AI Actions dropdown
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+            setSelectedText(selection.toString().trim());
+            e.preventDefault()
+            openAIActionsDropdown()
+        }
+    }, []);
 
     if (loading) {
         return (
@@ -69,33 +101,38 @@ export default function WritingDisplay({
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    {/* Document Actions Toolbar */}
                     <button
                         onClick={onCopy}
-                        className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-slate-500 hover:text-white"
-                        title="Copy"
+                        className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/10 rounded-xl hover:bg-white/15 transition-all text-white text-[10px] font-black uppercase tracking-widest"
+                        title="Copy to clipboard"
                     >
-                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                    </button>
-                    <button
-                        onClick={onDownloadTxt}
-                        className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest"
-                    >
-                        TXT
-                    </button>
-                    <button
-                        onClick={onDownloadWord}
-                        className="flex items-center gap-2 px-4 py-3 bg-white text-black rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 transition-all"
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>DOCX</span>
+                        {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                        <span>{copied ? "Copied" : "Copy"}</span>
                     </button>
                     <button
                         onClick={onDownloadPdf}
-                        className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/10 rounded-xl hover:bg-white/15 transition-all text-white text-[10px] font-black uppercase tracking-widest"
+                        title="Export as PDF"
                     >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>PDF</span>
+                        <Download className="w-4 h-4" />
+                        <span>Export PDF</span>
                     </button>
+                    <button
+                        onClick={onDownloadWord}
+                        className="flex items-center gap-2 px-4 py-3 bg-white/10 border border-white/10 rounded-xl hover:bg-white/15 transition-all text-white text-[10px] font-black uppercase tracking-widest"
+                        title="Export as DOCX"
+                    >
+                        <FileText className="w-4 h-4" />
+                        <span>Export DOCX</span>
+                    </button>
+                    {/* AI Actions Dropdown — only AI-powered features */}
+                    <AIActionsDropdown
+                        docType={docType}
+                        content={output}
+                        selectedText={selectedText}
+                        onContentChange={setOutput}
+                    />
                 </div>
             </div>
 
@@ -114,15 +151,23 @@ export default function WritingDisplay({
                 </button>
             </div>
 
-            <div className="flex-1 bg-white/5 rounded-4xl border border-white/5 overflow-hidden flex flex-col shadow-inner relative group min-h-[500px]">
+            <div
+                className="flex-1 bg-white/5 rounded-4xl border border-white/5 overflow-hidden flex flex-col shadow-inner relative group min-h-[500px]"
+                onMouseUp={handleTextSelect}
+                onContextMenu={handleContextMenu}
+            >
                 {mode === "edit" ? (
                     <textarea
                         value={output}
                         onChange={(e) => setOutput(e.target.value)}
+                        onSelect={handleTextSelect}
                         className="flex-1 w-full h-[500px] bg-slate-900/50 p-12 md:p-16 focus:outline-none text-slate-300 font-mono text-sm leading-relaxed resize-none selection:bg-blue-500/30 overflow-y-auto custom-scrollbar"
                     />
                 ) : (
-                    <div className="flex-1 p-12 md:p-16 overflow-y-auto custom-scrollbar">
+                    <div
+                        className="flex-1 p-12 md:p-16 overflow-y-auto custom-scrollbar"
+                        onMouseUp={handleTextSelect}
+                    >
                         <div className="prose prose-invert prose-blue max-w-none text-slate-300 font-serif italic text-lg leading-relaxed">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {output}
@@ -136,16 +181,25 @@ export default function WritingDisplay({
                 <div className="flex items-center gap-3 bg-white/5 px-5 py-2.5 rounded-full border border-white/5">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] italic">
-                        Archived in History
+                        {selectedText ? "Text selected — AI actions will apply to selection" : "Archived in History"}
                     </p>
                 </div>
-                <button
-                    onClick={onRegenerate}
-                    className="flex items-center gap-2.5 text-[8px] font-black text-slate-500 hover:text-white px-6 py-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 uppercase tracking-[0.3em] transition-all"
-                >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Regenerate
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onCopy}
+                        className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-slate-500 hover:text-white"
+                        title="Copy"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                    <button
+                        onClick={onRegenerate}
+                        className="flex items-center gap-2.5 text-[8px] font-black text-slate-500 hover:text-white px-6 py-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 uppercase tracking-[0.3em] transition-all"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Regenerate
+                    </button>
+                </div>
             </div>
         </div>
     );

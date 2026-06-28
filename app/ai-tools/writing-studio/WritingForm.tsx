@@ -1,8 +1,31 @@
 "use client"
 
 import { FileSearch, User, ArrowUp, ChevronDown, Sparkles, Loader2 } from "lucide-react"
+import LORForm from "./LORForm"
+import ResumePreview from "./ResumePreview"
+import type { ResumeData } from "@/types"
+
+type DocType = "cover_letter" | "sop" | "lor" | "proposal"
+
+interface LORFormData {
+    candidateName: string
+    recommenderName: string
+    recommenderDesignation: string
+    organization: string
+    relationship: string
+    duration: string
+    purpose: string
+    programApplyingTo: string
+    strengths: string
+    achievements: string
+    projects: string
+    skills: string
+    additionalInstructions: string
+}
 
 interface WritingFormProps {
+    docType: DocType | null;
+    // Generic form props
     context: string;
     setContext: (val: string) => void;
     userDetails: string;
@@ -11,15 +34,30 @@ interface WritingFormProps {
     setTone: (val: string) => void;
     length: string;
     setLength: (val: string) => void;
+    // LOR form props
+    lorData: LORFormData;
+    setLORData: (data: LORFormData | ((prev: LORFormData) => LORFormData)) => void;
+    lorTone: string;
+    setLORTone: (val: string) => void;
+    // Shared
     loading: boolean;
     onGenerate: () => void;
     onAutoFetch: () => void;
     hasProfileResume: boolean;
+    resumeName?: string;
     tones: string[];
     lengths: string[];
+    // Resume Preview props
+    resumeData: ResumeData | null;
+    showResumePreview: boolean;
+    resumeJSONInternal: string;
+    onRemoveResume: () => void;
+    onRefreshResume: () => void;
 }
 
 export default function WritingForm({
+    docType,
+    // Generic form props
     context,
     setContext,
     userDetails,
@@ -28,13 +66,47 @@ export default function WritingForm({
     setTone,
     length,
     setLength,
+    // LOR form props
+    lorData,
+    setLORData,
+    lorTone,
+    setLORTone,
+    // Shared
     loading,
     onGenerate,
     onAutoFetch,
     hasProfileResume,
+    resumeName,
     tones,
-    lengths
+    lengths,
+    // Resume Preview props
+    resumeData,
+    showResumePreview,
+    resumeJSONInternal,
+    onRemoveResume,
+    onRefreshResume,
 }: WritingFormProps) {
+    // Render LOR-specific form
+    if (docType === "lor") {
+        return (
+            <LORForm
+                data={lorData}
+                onChange={(partial) => setLORData(prev => ({ ...prev, ...partial }))}
+                tone={lorTone}
+                setTone={setLORTone}
+                length={length}
+                setLength={setLength}
+                loading={loading}
+                onGenerate={onGenerate}
+                onAutoFetch={onAutoFetch}
+                hasProfileResume={hasProfileResume}
+                tones={tones}
+                lengths={lengths}
+            />
+        )
+    }
+
+    // Render generic form for cover_letter, sop, proposal
     return (
         <div className="bg-white/2 border border-white/5 rounded-5xl p-5 md:p-9 shadow-2xl backdrop-blur-3xl relative overflow-hidden h-fit">
             <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 blur-[100px] -mr-40 -mt-40 rounded-full pointer-events-none" />
@@ -47,13 +119,21 @@ export default function WritingForm({
                         </div>
                         <div>
                             <h3 className="text-base font-black uppercase tracking-tighter">Strategic Context</h3>
-                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none">Job Specs or Company Details</p>
+                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none">
+                                {docType === "cover_letter" ? "Job Specs or Company Details" :
+                                 docType === "sop" ? "Program Details or University Info" :
+                                 "Business Context or Problem Statement"}
+                            </p>
                         </div>
                     </div>
                     <textarea
                         value={context}
                         onChange={(e) => setContext(e.target.value)}
-                        placeholder="Paste the job description or business context here..."
+                        placeholder={
+                            docType === "cover_letter" ? "Paste the job description or company context here..." :
+                            docType === "sop" ? "Describe the program, university, and your motivation..." :
+                            "Describe the project, requirements, and context..."
+                        }
                         className="w-full min-h-[98px] bg-white/3 border border-white/10 rounded-4xl p-6 text-white placeholder:text-white/5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all resize-none text-[13px] leading-relaxed font-medium shadow-inner"
                     />
                 </div>
@@ -64,25 +144,54 @@ export default function WritingForm({
                             <User className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-black uppercase tracking-tighter">Personal Synthesis</h3>
-                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none">Key Experience or Achievements</p>
+                            <h3 className="text-base font-black uppercase tracking-tighter">
+                                {showResumePreview && resumeData ? "Resume Context" : "Personal Synthesis"}
+                            </h3>
+                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none">
+                                {showResumePreview && resumeData ? "Imported from Resume Builder" : 
+                                 docType === "cover_letter" ? "Key Experience or Achievements" :
+                                 docType === "sop" ? "Academic Background & Goals" :
+                                 "Team Capabilities & Credentials"}
+                            </p>
                         </div>
-                        {hasProfileResume && (
+                        {hasProfileResume && !showResumePreview && (
                             <button
                                 onClick={onAutoFetch}
                                 className="ml-auto flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-black text-[8px] uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg group/fetch-btn"
                             >
                                 <ArrowUp className="w-3 h-3 group-hover:-translate-y-0.5 transition-transform" />
-                                Auto Fetch From Resume
+                                {resumeName ? `Load "${resumeName}"` : "Fetch From Resume"}
                             </button>
                         )}
                     </div>
-                    <textarea
-                        value={userDetails}
-                        onChange={(e) => setUserDetails(e.target.value)}
-                        placeholder="Specify the achievements you want to highlight..."
-                        className="w-full min-h-[98px] bg-white/3 border border-white/10 rounded-4xl p-6 text-white placeholder:text-white/5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all resize-none text-[13px] leading-relaxed font-medium shadow-inner"
-                    />
+
+                    {showResumePreview && resumeData ? (
+                        <div className="space-y-4">
+                            <ResumePreview
+                                resumeData={resumeData}
+                                resumeName={resumeName || "Resume"}
+                                onRemove={onRemoveResume}
+                                onRefresh={onRefreshResume}
+                            />
+                            <textarea
+                                value={userDetails}
+                                onChange={(e) => setUserDetails(e.target.value)}
+                                placeholder="Optional: Add additional notes, context, or specific points you want the AI to emphasize..."
+                                className="w-full min-h-[64px] bg-white/3 border border-white/10 rounded-4xl p-5 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all resize-none text-[12px] leading-relaxed font-medium shadow-inner"
+                            />
+                        </div>
+                    ) : (
+                        <textarea
+                            value={userDetails}
+                            onChange={(e) => setUserDetails(e.target.value)}
+                            placeholder={
+                                docType === "cover_letter" ? "Specify the achievements you want to highlight..." :
+                                docType === "sop" ? "Describe your academic journey, research, and aspirations..." :
+                                "Describe your team's expertise and past successes..."
+                            }
+                            className="w-full min-h-[98px] bg-white/3 border border-white/10 rounded-4xl p-6 text-white placeholder:text-white/5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all resize-none text-[13px] leading-relaxed font-medium shadow-inner"
+                        />
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
