@@ -60,20 +60,18 @@ export default function TopNavbar({
     { value: "creative", label: "Creative Layout" },
   ];
 
+  const ZOOM_LEVELS = [0.5, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 2.0];
+
   const handleZoomIn = () => {
-    if (typeof zoom === "number") {
-      setZoom(Math.min(zoom + 0.1, 2.0));
-    } else {
-      setZoom(1.1);
-    }
+    const currentNum = typeof zoom === "number" ? zoom : 1.0;
+    const next = ZOOM_LEVELS.find(z => z > currentNum + 0.01);
+    setZoom(next ?? 2.0);
   };
 
   const handleZoomOut = () => {
-    if (typeof zoom === "number") {
-      setZoom(Math.max(zoom - 0.1, 0.5));
-    } else {
-      setZoom(0.9);
-    }
+    const currentNum = typeof zoom === "number" ? zoom : 1.0;
+    const prev = [...ZOOM_LEVELS].reverse().find(z => z < currentNum - 0.01);
+    setZoom(prev ?? 0.5);
   };
 
   const toggleTheme = () =>

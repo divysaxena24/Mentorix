@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { MODELS } from "@/lib/ai/models"
 import { generateAIResponse } from "@/lib/ai/provider-manager"
 import { checkRateLimit, getRequestIP, AI_RATE_LIMIT } from "@/lib/rate-limit"
-import type { ResumeData } from "@/types"
+import type { ResumeData, Achievement } from "@/types"
 
 // ─── Mentorix Resume AI Engine V3 ───────────────────────────────────────
 // Using array.join to avoid backtick parsing issues with template literals
@@ -646,7 +646,7 @@ function serializeResumeForAI(data: ResumeData): string {
   }
 
   // Achievements (prefer new structure, fall back to old honors)
-  const achievementsList = data.achievements || (data.honors || []).map(h => ({ title: h }))
+  const achievementsList: Achievement[] = data.achievements || (data.honors || []).map(h => ({ title: h } as Achievement))
   if (achievementsList.filter(Boolean).length > 0) {
     sections.push("\nACHIEVEMENTS & AWARDS:")
     achievementsList.forEach(a => {
