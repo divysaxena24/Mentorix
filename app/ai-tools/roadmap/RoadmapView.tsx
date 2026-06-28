@@ -289,7 +289,7 @@ export default function RoadmapView({
                                     <div className="flex flex-wrap gap-2">
                                         {toArray(isV2 ? milestone.skillsCovered : milestone.learningFocus).slice(0, 4).map((topic, i) => (
                                             <span key={i} className="px-2 py-1 bg-white/5 rounded-md text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-                                                {topic}
+                                                {String(topic)}
                                             </span>
                                         ))}
                                         {toArray(isV2 ? milestone.skillsCovered : milestone.learningFocus).length > 4 && (
@@ -358,7 +358,7 @@ export default function RoadmapView({
                                                     {toArray(cp.skillReview).length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5">
                                                             {toArray(cp.skillReview).map((skill, i) => (
-                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{skill}</span>
+                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{String(skill)}</span>
                                                             ))}
                                                         </div>
                                                     )}
@@ -368,7 +368,7 @@ export default function RoadmapView({
                                                     {toArray(cp.gapAnalysis).length > 0 && (
                                                         <div className="flex flex-wrap gap-1 mt-1">
                                                             {toArray(cp.gapAnalysis).map((gap, i) => (
-                                                                <span key={i} className="px-1 py-0.5 bg-red-500/10 text-red-300 rounded text-[6px] font-bold uppercase tracking-wider">{gap}</span>
+                                                                <span key={i} className="px-1 py-0.5 bg-red-500/10 text-red-300 rounded text-[6px] font-bold uppercase tracking-wider">{String(gap)}</span>
                                                             ))}
                                                         </div>
                                                     )}
@@ -380,7 +380,7 @@ export default function RoadmapView({
                                                     {toArray(cp.skillValidation).length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5 mt-2">
                                                             {toArray(cp.skillValidation).map((skill, i) => (
-                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{skill}</span>
+                                                                <span key={i} className="px-1.5 py-0.5 bg-white/5 rounded text-[7px] font-bold text-slate-500 uppercase tracking-wider">{String(skill)}</span>
                                                             ))}
                                                         </div>
                                                     )}
@@ -465,7 +465,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.topStrengths).map((s, i) => (
                                                         <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
-                                                            {s}
+                                                            {String(s)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -477,7 +477,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.topWeaknesses).map((w, i) => (
                                                         <span key={i} className="px-2 py-1 bg-amber-500/10 text-amber-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-amber-500/20">
-                                                            {w}
+                                                            {String(w)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -489,7 +489,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.criticalMissingSkills).map((s, i) => (
                                                         <span key={i} className="px-2 py-1 bg-red-500/10 text-red-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-red-500/20">
-                                                            {s}
+                                                            {String(s)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -530,7 +530,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.skillsGained).map((s, i) => (
                                                         <span key={i} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-emerald-500/20">
-                                                            {s}
+                                                            {String(s)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -545,7 +545,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.projectsBuilt).map((p, i) => (
                                                         <span key={i} className="px-2 py-1 bg-blue-500/10 text-blue-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-blue-500/20">
-                                                            {p}
+                                                            {String(p)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -560,7 +560,7 @@ export default function RoadmapView({
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {toArray(prem.finalSummary.interviewAreasCovered).map((i, idx) => (
                                                         <span key={idx} className="px-2 py-1 bg-purple-500/10 text-purple-300 rounded-md text-[8px] font-bold uppercase tracking-wider border border-purple-500/20">
-                                                            {i}
+                                                            {String(i)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -576,7 +576,7 @@ export default function RoadmapView({
                                                     {toArray(prem.finalSummary.resumeImprovements).map((r, i) => (
                                                         <li key={i} className="flex items-start gap-2 text-[10px] text-slate-300 font-medium">
                                                             <ChevronRight className="w-2.5 h-2.5 text-amber-400 mt-0.5 shrink-0" />
-                                                            {r}
+                                                            {String(r)}
                                                         </li>
                                                     ))}
                                                 </ul>

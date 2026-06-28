@@ -1,7 +1,9 @@
 "use client";
 
-import ResumeBuilderClient from "./ResumeBuilderClient";
+import { redirect } from "next/navigation";
 
-export default function ResumeBuilderPage() {
-  return <ResumeBuilderClient />;
+export default function Page() {
+  redirect("/resume-builder");
+  return null;
 }
+

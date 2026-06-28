@@ -4,7 +4,7 @@ import React from "react";
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 import { Save, Download, RotateCcw, Settings } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
@@ -98,10 +98,7 @@ export default function TopNavbar({
         <Button variant="ghost">
           <Settings className="h-4 w-4" />
         </Button>
-        <Avatar>
-          <AvatarImage src="/placeholder-avatar.svg" alt="User" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+
       </div>
     </header>
   );
