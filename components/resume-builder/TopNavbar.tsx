@@ -68,6 +68,8 @@ export default function TopNavbar({
     setZoom(next ?? 2.0);
   };
 
+  
+
   const handleZoomOut = () => {
     const currentNum = typeof zoom === "number" ? zoom : 1.0;
     const prev = [...ZOOM_LEVELS].reverse().find(z => z < currentNum - 0.01);
