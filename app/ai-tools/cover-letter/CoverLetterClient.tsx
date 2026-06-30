@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CoverLetterSkeleton } from "@/components/ToolSkeletons"
 import { CoverLetterItem } from "@/types"
+import { cleanDocumentForExport } from "@/lib/formatting/export-cleaner"
 
 export default function CoverLetterClient() {
     const [jobDescription, setJobDescription] = useState("")
@@ -94,16 +95,59 @@ export default function CoverLetterClient() {
     }
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(coverLetter)
+        navigator.clipboard.writeText(cleanDocumentForExport(coverLetter))
         setCopied(true)
         toast.success("Copied to clipboard!")
         setTimeout(() => setCopied(false), 2000)
     }
 
     const downloadAsWord = () => {
-        const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Cover Letter</title></head><body>";
-        const postHtml = "</body></html>";
-        const html = preHtml + coverLetter.replace(/\n/g, '<br>') + postHtml;
+        const cleaned = cleanDocumentForExport(coverLetter)
+
+        // Convert cleaned text to HTML with proper <ul> wrapping for bullet lists
+        const lines = cleaned.split("\n")
+        const htmlParts: string[] = []
+        let inBulletList = false
+
+        for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed) {
+                if (inBulletList) {
+                    htmlParts.push("</ul>")
+                    inBulletList = false
+                }
+                htmlParts.push("<br />")
+                continue
+            }
+
+            if (trimmed.startsWith("\u2022 ")) {
+                if (!inBulletList) {
+                    htmlParts.push("<ul>")
+                    inBulletList = true
+                }
+                htmlParts.push(`<li>${trimmed.replace(/^\u2022 /, "")}</li>`)
+                continue
+            }
+
+            if (inBulletList) {
+                htmlParts.push("</ul>")
+                inBulletList = false
+            }
+
+            if (trimmed.length <= 80 && !trimmed.endsWith(".")) {
+                htmlParts.push(`<h3>${trimmed}</h3>`)
+            } else {
+                htmlParts.push(`<p>${trimmed}</p>`)
+            }
+        }
+
+        if (inBulletList) {
+            htmlParts.push("</ul>")
+        }
+
+        const htmlBody = htmlParts.join("\n")
+
+        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Cover Letter</title><style>body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; padding: 40px; line-height: 1.6; color: #1e293b; } h3 { color: #2563eb; font-size: 1.3rem; margin-top: 24px; margin-bottom: 8px; } li { margin-bottom: 8px; } ul { padding-left: 24px; }</style></head><body>${htmlBody}</body></html>`
 
         const blob = new Blob(['\ufeff', html], {
             type: 'application/msword'

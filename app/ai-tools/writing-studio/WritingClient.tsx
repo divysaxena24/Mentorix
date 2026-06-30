@@ -20,6 +20,7 @@ import { getWritingHistoryAction, getWritingItemAction, deleteWritingItemAction 
 import { getLatestResumeAction } from "@/app/actions/resumeActions"
 import { getUserProfileAction } from "@/app/actions/profileActions"
 import type { ResumeData } from "@/types"
+import { cleanDocumentForExport } from "@/lib/formatting/export-cleaner"
 
 import WritingHub from "./WritingHub"
 import WritingForm from "./WritingForm"
@@ -405,7 +406,7 @@ export default function WritingClient() {
 
     const copyToClipboard = () => {
         if (!output) return
-        navigator.clipboard.writeText(output)
+        navigator.clipboard.writeText(cleanDocumentForExport(output))
         setCopied(true)
         toast.success("Copied to clipboard!")
         setTimeout(() => setCopied(false), 2000)
@@ -414,21 +415,50 @@ export default function WritingClient() {
     const downloadAsWord = async () => {
         if (!output) return
 
-        const paragraphs = output.split("\n\n").map(block => {
-            const isHeader = block.startsWith("###");
-            const cleanText = block.replace(/^###\s*/, "").replace(/\*\*/g, "");
+        const cleaned = cleanDocumentForExport(output)
+        const lines = cleaned.split("\n")
 
-            return new Paragraph({
-                children: [
-                    new TextRun({
-                        text: cleanText,
-                        bold: isHeader || block.includes("**"),
-                        size: isHeader ? 28 : 24
+        // Build paragraphs from cleaned text with heading/bullet detection
+        const paragraphs: Paragraph[] = []
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            const prevBlank = i === 0 || lines[i - 1].trim() === ""
+            const nextBlank = i === lines.length - 1 || lines[i + 1].trim() === ""
+            const trimmed = line.trim()
+
+            if (!trimmed) continue
+
+            const isHeading = trimmed.length <= 80 && prevBlank && nextBlank && !trimmed.endsWith(".")
+            const isBullet = trimmed.startsWith("\u2022 ")
+
+            if (isBullet) {
+                paragraphs.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: trimmed.replace(/^\u2022 /, ""),
+                                size: 24
+                            })
+                        ],
+                        bullet: { level: 0 },
+                        spacing: { before: 80, after: 80 }
                     })
-                ],
-                spacing: { before: 200, after: 200 }
-            });
-        });
+                )
+            } else {
+                paragraphs.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: trimmed,
+                                bold: isHeading,
+                                size: isHeading ? 28 : 24
+                            })
+                        ],
+                        spacing: { before: isHeading ? 240 : 120, after: isHeading ? 120 : 120 }
+                    })
+                )
+            }
+        }
 
         const doc = new Document({
             sections: [{ properties: {}, children: paragraphs }]
@@ -443,17 +473,51 @@ export default function WritingClient() {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
-        const htmlContent = output
-            .replace(/^\s*# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^\s*## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^\s*### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^\s*#### (.*$)/gim, '<h4>$1</h4>')
-            .replace(/^\s*##### (.*$)/gim, '<h5>$1</h5>')
-            .replace(/^\s*###### (.*$)/gim, '<h6>$1</h6>')
-            .replace(/^\s*---+$/gim, '<hr />')
-            .replace(/^\s*\* (.*$)/gim, '<li>$1</li>')
-            .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-            .replace(/\n/gim, '<br />');
+        const cleaned = cleanDocumentForExport(output)
+
+        // Convert cleaned text to HTML with proper <ul> wrapping for bullet lists
+        const lines = cleaned.split("\n")
+        const htmlParts: string[] = []
+        let inBulletList = false
+
+        for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed) {
+                if (inBulletList) {
+                    htmlParts.push("</ul>")
+                    inBulletList = false
+                }
+                htmlParts.push("<br />")
+                continue
+            }
+
+            if (trimmed.startsWith("\u2022 ")) {
+                if (!inBulletList) {
+                    htmlParts.push("<ul>")
+                    inBulletList = true
+                }
+                htmlParts.push(`<li>${trimmed.replace(/^\u2022 /, "")}</li>`)
+                continue
+            }
+
+            if (inBulletList) {
+                htmlParts.push("</ul>")
+                inBulletList = false
+            }
+
+            // Detect likely headings (short standalone lines)
+            if (trimmed.length <= 80 && !trimmed.endsWith(".")) {
+                htmlParts.push(`<h3>${trimmed}</h3>`)
+            } else {
+                htmlParts.push(`<p>${trimmed}</p>`)
+            }
+        }
+
+        if (inBulletList) {
+            htmlParts.push("</ul>")
+        }
+
+        const htmlContent = htmlParts.join("\n")
 
         printWindow.document.write(`
             <html>
@@ -485,7 +549,8 @@ export default function WritingClient() {
                         h4 { font-size: 1.25rem; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
                         hr { border: none; border-top: 2px solid #f1f5f9; margin: 30px 0; }
                         strong { color: #0f172a; font-weight: 700; }
-                        li { margin-bottom: 10px; list-style-type: none; position: relative; padding-left: 20px; }
+                        ul { padding-left: 20px; list-style-type: none; }
+                        li { margin-bottom: 10px; position: relative; padding-left: 20px; }
                         li:before { content: "\\2022"; position: absolute; left: 0; color: #3b82f6; font-weight: bold; }
                         .content { white-space: normal; }
                         /* Mentorix Watermark */
@@ -527,7 +592,7 @@ export default function WritingClient() {
 
     const downloadAsTxt = () => {
         if (!output) return;
-        const cleanText = output.replace(/[#*]/g, '').replace(/\*\*/g, '');
+        const cleanText = cleanDocumentForExport(output);
         const blob = new Blob([cleanText], { type: 'text/plain;charset=utf-8' });
         saveAs(blob, `${selectedDoc}_Output.txt`);
         toast.success("Downloading Plain Text...");
