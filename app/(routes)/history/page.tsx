@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Mentorix",
+    title: "History",
     description: "Track your career preparation history, roadmaps, and AI advisor conversations.",
+    openGraph: { title: "History • Mentorix" },
+    twitter: { title: "History • Mentorix" },
 };
 
 export default async function HistoryPage() {

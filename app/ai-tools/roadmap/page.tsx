@@ -10,8 +10,10 @@ import { careerGoalsTable, userSkillsTable } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const metadata: Metadata = {
-    title: "Mentorix",
+    title: "Career Roadmap Studio",
     description: "Generate a personalized, project-driven, outcome-focused career roadmap tailored to your target role, company, and skill gaps.",
+    openGraph: { title: "Career Roadmap Studio • Mentorix" },
+    twitter: { title: "Career Roadmap Studio • Mentorix" },
 };
 
 export default async function RoadmapPage() {

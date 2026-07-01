@@ -14,6 +14,10 @@ export default function SharedChatPage() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
+        document.title = "Shared Chat • Mentorix"
+    }, [])
+
+    useEffect(() => {
         const fetchChat = async () => {
             try {
                 const response = await axios.get(`/api/ai-career-chat-agent/public-chat?chatId=${chatId}`)

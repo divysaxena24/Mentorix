@@ -102,16 +102,26 @@ function getResumeSummary(data: ResumeData): string {
     const certCount = data.certifications?.length ?? 0
     const pubCount = data.publications?.length ?? 0
     const langCount = data.languages?.length ?? 0
+    const leadershipCount = data.leadership?.length ?? 0
+    const volunteerCount = data.volunteer?.length ?? 0
+    const awardsCount = data.awards?.length ?? 0
+    const interestsCount = data.interests?.length ?? 0
+    const customCount = data.customSections?.length ?? 0
     const skillsCount = data.skills?.reduce((total, s) => total + (s.skills?.length ?? 0), 0) ?? 0
 
-    if (expCount > 0) parts.push(`${expCount} ${expCount === 1 ? "Experience" : "Experience Entries"}`)
+    if (expCount > 0) parts.push(`${expCount} ${expCount === 1 ? "Experience" : "Experiences"}`)
     if (projCount > 0) parts.push(`${projCount} ${projCount === 1 ? "Project" : "Projects"}`)
     if (skillsCount > 0) parts.push(`${skillsCount} ${skillsCount === 1 ? "Skill" : "Skills"}`)
+    if (eduCount > 0) parts.push(`${eduCount} ${eduCount === 1 ? "Education" : "Educations"}`)
     if (achievementCount > 0) parts.push(`${achievementCount} ${achievementCount === 1 ? "Achievement" : "Achievements"}`)
-    if (eduCount > 0) parts.push(`${eduCount} ${eduCount === 1 ? "Education" : "Education Entries"}`)
     if (certCount > 0) parts.push(`${certCount} ${certCount === 1 ? "Certification" : "Certifications"}`)
+    if (leadershipCount > 0) parts.push(`${leadershipCount} ${leadershipCount === 1 ? "Leadership" : "Leadership Roles"}`)
+    if (volunteerCount > 0) parts.push(`${volunteerCount} ${volunteerCount === 1 ? "Volunteer" : "Volunteer Entries"}`)
+    if (awardsCount > 0) parts.push(`${awardsCount} ${awardsCount === 1 ? "Award" : "Awards"}`)
     if (pubCount > 0) parts.push(`${pubCount} ${pubCount === 1 ? "Publication" : "Publications"}`)
     if (langCount > 0) parts.push(`${langCount} ${langCount === 1 ? "Language" : "Languages"}`)
+    if (interestsCount > 0) parts.push(`${interestsCount} ${interestsCount === 1 ? "Interest" : "Interests"}`)
+    if (customCount > 0) parts.push(`${customCount} ${customCount === 1 ? "Custom Section" : "Custom Sections"}`)
 
     if (parts.length === 0) return ""
     return `\n\n${parts.join(" • ")}`
@@ -189,20 +199,80 @@ export default function WritingClient() {
             console.error("Failed to fetch resume data:", err)
         }
 
-        // Fallback: fetch Mentorix profile as flattened text
+        // Fallback: fetch Mentorix profile as structured text (rich extraction)
         try {
             const profileResult = await getUserProfileAction();
             if (profileResult.success && profileResult.data) {
                 const p = profileResult.data;
                 const parts = [];
+
+                // Personal Information
                 if (p.name) parts.push(`Name: ${p.name}`);
                 if (p.currentRole) parts.push(`Current Role: ${p.currentRole}`);
-                const skills = (p as any).skills;
-                if (skills && skills.length > 0) parts.push(`Skills: ${skills.map((s: any) => s.skillName).join(", ")}`);
+                if (p.university) parts.push(`University: ${p.university}`);
+                if (p.location) parts.push(`Location: ${p.location}`);
+
+                // Experience (full details)
                 const exp = (p as any).experience;
-                if (exp && exp.length > 0) Object.values(exp).forEach((e: any) => parts.push(`Experience: ${e.role} at ${e.company} (${e.startDate}-${e.endDate})`));
+                if (exp && exp.length > 0) {
+                    parts.push("--- EXPERIENCE ---");
+                    Object.values(exp).forEach((e: any) => {
+                        parts.push(`Role: ${e.role} at ${e.company}`);
+                        if (e.location) parts.push(`  Location: ${e.location}`);
+                        if (e.startDate || e.endDate) parts.push(`  Duration: ${e.startDate || ""} - ${e.endDate || "Present"}`);
+                        if (e.description) parts.push(`  Description: ${e.description}`);
+                    });
+                }
+
+                // Education (full details)
                 const edu = (p as any).education;
-                if (edu && edu.length > 0) Object.values(edu).forEach((e: any) => parts.push(`Education: ${e.degree} from ${e.institution}`));
+                if (edu && edu.length > 0) {
+                    parts.push("--- EDUCATION ---");
+                    Object.values(edu).forEach((e: any) => {
+                        parts.push(`Degree: ${e.degree || ""} from ${e.institution || ""}`);
+                        if (e.fieldOfStudy) parts.push(`  Field: ${e.fieldOfStudy}`);
+                        if (e.cgpa) parts.push(`  CGPA: ${e.cgpa}`);
+                        if (e.startDate || e.endDate) parts.push(`  Duration: ${e.startDate || ""} - ${e.endDate || ""}`);
+                        if (e.description) parts.push(`  Description: ${e.description}`);
+                    });
+                }
+
+                // Skills (grouped by category)
+                const skills = (p as any).skills;
+                if (skills && skills.length > 0) {
+                    parts.push("--- SKILLS ---");
+                    const grouped: Record<string, string[]> = {};
+                    skills.forEach((s: any) => {
+                        const cat = s.category || "General";
+                        if (!grouped[cat]) grouped[cat] = [];
+                        grouped[cat].push(s.skillName);
+                    });
+                    Object.entries(grouped).forEach(([cat, skillList]) => {
+                        parts.push(`  ${cat}: ${skillList.join(", ")}`);
+                    });
+                }
+
+                // Projects (full details)
+                const proj = (p as any).projects;
+                if (proj && proj.length > 0) {
+                    parts.push("--- PROJECTS ---");
+                    Object.values(proj).forEach((pr: any) => {
+                        parts.push(`Project: ${pr.title || ""}`);
+                        if (pr.techStack) parts.push(`  Technologies: ${pr.techStack}`);
+                        if (pr.description) parts.push(`  Description: ${pr.description}`);
+                        if (pr.links) parts.push(`  Links: ${pr.links}`);
+                    });
+                }
+
+                // Achievements
+                const achievements = (p as any).achievements;
+                if (achievements && achievements.length > 0) {
+                    parts.push("--- ACHIEVEMENTS ---");
+                    Object.values(achievements).forEach((a: any) => {
+                        parts.push(`  ${a.title}${a.description ? `: ${a.description}` : ""}`);
+                    });
+                }
+
                 setProfileFallbackText(parts.join("\n"));
             }
         } catch (err) {

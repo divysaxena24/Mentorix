@@ -1,10 +1,14 @@
 "use client"
 
+import { useEffect } from "react"
 import { UserProfile, SignedIn } from "@clerk/nextjs"
 import { ArrowLeft, User, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 
 export default function ProfilePage() {
+    useEffect(() => {
+        document.title = "Account Settings • Mentorix"
+    }, [])
     return (
         <SignedIn>
             <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col pt-6">

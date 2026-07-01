@@ -3,7 +3,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ResumeProvider } from "@/components/resume/ResumeProvider";
 
 export const metadata: Metadata = {
-    title: "Mentorix",
     description: "Your AI-powered career dashboard. Track resume scores, roadmaps, and job readiness in real-time.",
 };
 

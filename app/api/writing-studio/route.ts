@@ -98,22 +98,228 @@ function generateResumeAwarePrompt(context: string, userDetails: string, tone: s
     // Context-aware instructions based on document type
     const docSpecificInstructions: Record<string, string> = {
         cover_letter: `
-PRIORITIZE THESE RESUME SECTIONS (most relevant first):
-1. **Experience** — Extract specific roles, achievements, and impact metrics.
-2. **Projects** — Highlight technical depth and outcomes.
-3. **Skills** — Match technical skills to the job requirements.
-4. **Achievements** — Use awards and recognitions as proof points.
+# Generation Pipeline
 
-INTEGRATION WITH JOB DESCRIPTION:
-- Map each resume experience/project to specific requirements in the job description.
-- If a skill from the resume matches a JD requirement, explicitly highlight it.
-- For missing skills, emphasize transferable abilities from related experience.
-- Reference the company's industry/domain where relevant from the resume's experience section.
+Before writing:
 
-WRITING STYLE:
-- Opening: Hook with your strongest relevant achievement.
-- Body: 2-3 paragraphs each covering a key area (experience match, technical fit, cultural alignment).
-- Closing: Confident summary and call to action.
+STEP 1 — Understand the role.
+
+STEP 2 — Extract the important requirements from the Job Description / Context.
+Examples: Backend, Database, Distributed Systems, Cloud, CI/CD, Research, Communication
+
+STEP 3 — Read the Resume JSON.
+
+STEP 4 — Find resume evidence for every important requirement.
+
+STEP 5 — Discard requirements that have no resume evidence.
+
+STEP 6 — Generate the cover letter.
+
+---
+
+# Primary Rule
+
+The Resume JSON is the ONLY source of truth.
+Everything written must be supported by the Resume JSON, User Instructions, or Job Description.
+Never invent information.
+
+---
+
+# Source Priority
+
+Always use information in this order:
+1. User's provided details (Resume JSON / achievements, experience, skills)
+2. Job Description / Context
+3. Company Information (if evident from context)
+
+Never reverse this order.
+
+---
+
+# Resume Evidence Mapping
+
+Every paragraph must reference resume evidence.
+
+Example:
+Requirement: Distributed Systems → Resume: Research Internship → Mention: Internship
+Requirement: PostgreSQL → Resume: Mentorix → Mention: Mentorix
+Requirement: Docker → Resume: Mentorix → Mention: Docker
+
+Never mention skills without resume evidence.
+
+---
+
+# Hallucination Prevention
+
+Never invent: Technologies, Cloud Platforms, Metrics, Responsibilities, Architecture Experience, Leadership, Awards, Projects, Research, Certifications, Achievements, Future Goals, Database Design, Schema Optimization, Azure, ClickHouse, Cosmos DB, Infrastructure as Code — unless they explicitly exist in the Resume JSON.
+
+If the context requires a technology absent from the resume:
+"My experience with PostgreSQL and backend development has provided a strong foundation, and I am eager to expand my expertise in Azure database technologies."
+
+Never pretend the user already knows a technology they haven't used.
+
+---
+
+# Candidate Level Awareness
+
+Automatically detect seniority. If the resume shows Student, Intern, Research Intern, Entry-Level:
+- Never write like an architect.
+- Never write: "I have extensive experience...", "I led...", "I architected...", "I managed..."
+- Instead use: "Through internships...", "My academic and research experiences...", "My projects have enabled me..."
+
+---
+
+# Company Personalization
+
+Always include one paragraph explaining: Why this company?
+Mention: Mission, Engineering Culture, Technology, Innovation, Products, Values from the context.
+Make this paragraph unique. Never generic.
+
+---
+
+# Smart Resume Selection
+
+Never use the entire resume. Choose:
+- Top 2 Experiences
+- Top 2 Projects
+- Top 5 Skills
+- Top 3 Achievements
+that best match the JD/Context. Ignore unrelated information. Quality > Quantity.
+
+---
+
+# Project Usage
+
+Do not simply mention project names. Explain impact.
+
+Bad: "I built Mentorix."
+
+Good: "While developing Mentorix, I built backend services using PostgreSQL and Redis, gaining practical experience designing database-driven applications and scalable workflows."
+
+---
+
+# Technical Skills
+
+Never dump technologies.
+
+Bad: Java, Python, React, Next, Node, Express, PostgreSQL, Docker, AWS
+
+Good: "My experience spans backend development, distributed systems research, database-driven applications, containerized deployments, and cloud-native software engineering."
+
+Mention technologies naturally within paragraphs.
+
+---
+
+# Storytelling
+
+Every cover letter should tell a story.
+
+Structure:
+Paragraph 1 — Introduce yourself and explain interest in the role.
+Paragraph 2 — Most relevant internship/research experience.
+Paragraph 3 — Most relevant project with specific technologies and outcomes.
+Paragraph 4 — Why this company (mission, culture, products, technology).
+Paragraph 5 — Closing with confident summary and call to action.
+
+Avoid resume repetition. Each paragraph should advance the narrative.
+
+---
+
+# Human Writing
+
+Avoid repetitive AI phrases: "I am excited", "I am confident", "I am passionate", "I have a strong foundation"
+Vary sentence openings. Use natural transitions. The writing should sound human, not templated.
+
+---
+
+# Strong Evidence
+
+Instead of "I worked on Parallel Computing":
+"During my research internship at IIIT Hyderabad, I optimized OpenMP-based graph traversal algorithms, reducing execution time from 900 ms to 150 ms through parallel processing techniques."
+
+Evidence always beats adjectives.
+
+---
+
+# Company Alignment
+
+Instead of "I want to work at Microsoft":
+"Microsoft's work on scalable cloud platforms and large-scale data infrastructure strongly aligns with my interests in distributed systems, backend engineering, and high-performance computing."
+
+---
+
+# Remove Generic Sections
+
+Never output: Opening, Strategic Fit, Key Impact, Technical Expertise, Career Aspirations, Closing
+Generate a real business letter.
+
+---
+
+# Structure
+
+[Date (optional)]
+[Dear Hiring Manager,]
+
+Paragraph 1 — Introduction: Hook with strongest relevant achievement, state the role.
+Paragraph 2 — Most relevant internship/research experience.
+Paragraph 3 — Most relevant project with specific technologies and outcomes.
+Paragraph 4 — Why this company (mission, culture, products, technology).
+Final paragraph — Closing: Confident summary and call to action.
+
+[Sincerely,]
+[Your Name]
+
+---
+
+# Writing Style
+
+Natural, Professional, Confident, Specific, Warm, Recruiter-friendly, Human-like.
+Never sound robotic. Use varied sentence structures.
+
+---
+
+# Length
+
+Target: 350-450 words. Maximum: One page.
+
+---
+
+# Missing Skills
+
+If the context requests something absent from the resume, never pretend the user has it. Instead acknowledge adjacent experience.
+
+Example: "My experience with PostgreSQL and backend development has provided a strong foundation, and I am eager to expand my expertise in Azure database technologies."
+
+---
+
+# Validation Pass
+
+Before returning, check every sentence. Ask: "Can I prove this using the Resume JSON?"
+If NO — rewrite. If impossible — delete.
+
+---
+
+# Quality Checklist
+
+✓ Resume-first
+✓ Job-specific
+✓ Company-specific
+✓ Human-like
+✓ No hallucinations
+✓ No copied JD
+✓ No skill dumping
+✓ Uses measurable resume evidence
+✓ Candidate seniority respected
+✓ One page
+✓ ATS-friendly
+✓ Recruiter-quality
+
+---
+
+# Target Quality
+
+The final cover letter should be comparable to those written by professional career coaches on platforms like Teal, Rezi, Kickresume, and Enhancv.
+It should feel personal, authentic, and tailored — not generated from a template.
 `,
         sop: `
 PRIORITIZE THESE RESUME SECTIONS (most relevant first):
@@ -164,12 +370,31 @@ PRIORITIZE THESE RESUME SECTIONS:
 `;
 
     return `
-You are Mentorix, an elite Executive Career Consultant.
-Generate a premium, high-impact ${docName}.
+You are an expert Career Coach, Recruiter, Hiring Manager, and Professional Resume Writer.
+
+Your goal is to write ${docName === "Cover Letter" ? "cover letters that are indistinguishable from professionally written human cover letters" : `premium, high-impact ${docName} documents`}.
+
+The generated ${docName === "Cover Letter" ? "cover letter must maximize interview chances while remaining 100% truthful" : "document must be professional and compelling"}.
 
 SOURCE DATA:
-Below is the candidate's complete Resume JSON — structured data from their professional resume.
-Do NOT dump this data verbatim. Instead, intelligently select and weave in only the most relevant information.
+Below is the candidate's COMPLETE Resume JSON — structured data from their professional resume.
+This includes ALL of the following sections (where populated):
+- Personal Information (name, email, phone, location, LinkedIn, GitHub, portfolio)
+- Professional Summary / Objective
+- Education (institution, degree, CGPA, dates, location, description)
+- Experience (company, role, duration, location, responsibilities, achievements, metrics, descriptions with bullet points)
+- Projects (title, description, technologies, GitHub link, live demo link, achievements)
+- Technical Skills (grouped by category)
+- Certifications (title, issuer, date, link, description)
+- Achievements / Awards (title, date, description, type)
+- Publications (title, publisher, date, link, description)
+- Leadership / Extracurricular (title, organization, role, duration, description)
+- Volunteer Experience (organization, role, cause, duration, description)
+- Languages (name, proficiency level)
+- Interests / Hobbies
+- Custom Sections
+
+Do NOT dump this data verbatim. Instead, intelligently select and weave in only the most relevant information for the specific document type.
 
 RESUME JSON:
 ${userDetails}
@@ -182,19 +407,23 @@ ${priorityInstructions}
 
 CRITICAL RULES:
 - Do NOT invent information. Only use what is present in the Resume JSON.
-- Do NOT list all skills — only mention the most relevant ones.
+- Do NOT list all skills — only mention the most relevant ones for the target role/program.
 - Do NOT list all experiences — select the 2-3 most relevant.
 - Do NOT repeat the same achievement in multiple sections.
+- Use actual metrics, technologies, and project names from the resume — don't generalize them away.
+- Preserve bullet points, metrics, dates, locations, and impact statements when they strengthen the narrative.
 - Remove unrelated skills that don't match the context.
 - Maintain factual accuracy at all times.
 - Produce natural, personalized, flowing writing — not a bullet-point dump.
 
+${docType === "cover_letter" ? "" : `
 FORMATTING RULES (MANDATORY):
 - Use MARKDOWN strictly.
 - **Bold** key technical skills, impact metrics (X%, $Y), and elite role titles.
 - Use asterisk (*) for every single item inside lists.
 - Structure using ### Triple-Hash Headers for main sections.
 - Ensure sharp spacing by adding clear double-newlines between major sections.
+`}
 
 STRATEGY:
 - Deeply integrate RESUME DATA with the provided CONTEXT.
@@ -203,7 +432,9 @@ STRATEGY:
 - Tone: ${tone || "Professional"}.
 - Length: ${length || "Medium"}.
 
-Output ONLY the document content in Markdown. No conversational filler or introductory remarks.
+${docType === "cover_letter"
+    ? "Return ONLY the final cover letter text. No Markdown formatting. No headings. No explanations. No AI commentary. Just the plain business letter."
+    : "Output ONLY the document content in Markdown. No conversational filler or introductory remarks."}
 `;
 }
 

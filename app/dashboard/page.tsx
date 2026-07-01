@@ -5,8 +5,10 @@ import DashboardContent from "./DashboardContent";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-    title: "Mentorix",
+    title: "Dashboard",
     description: "Your central hub for career growth. Monitor your job readiness, manage generated resumes, and track your personalized learning progress.",
+    openGraph: { title: "Dashboard • Mentorix" },
+    twitter: { title: "Dashboard • Mentorix" },
 }
 
 export default async function DashboardPage() {

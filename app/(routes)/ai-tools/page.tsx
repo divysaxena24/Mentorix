@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import {
     Wrench,
     FileSearch,
@@ -64,6 +65,9 @@ const tools = [
 ]
 
 export default function AiToolsHub() {
+    useEffect(() => {
+        document.title = "Features • Mentorix"
+    }, [])
     return (
         <div className="p-8 lg:p-16 space-y-12 lg:space-y-16 max-w-7xl mx-auto">
             {/* Header Section */}

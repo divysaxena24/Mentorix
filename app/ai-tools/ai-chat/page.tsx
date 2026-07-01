@@ -4,8 +4,10 @@ import { Loader2 } from "lucide-react"
 import CareerChatClient from "./CareerChatClient"
 
 export const metadata: Metadata = {
-    title: "Mentorix",
+    title: "Career AI Chat",
     description: "Get personalized career advice, interview preparation tips, and resume revision suggestions from Mentorix's intelligent AI Career Agent. Chat anytime, anywhere.",
+    openGraph: { title: "Career AI Chat • Mentorix" },
+    twitter: { title: "Career AI Chat • Mentorix" },
 }
 
 export default function CareerChatPage() {

@@ -1,7 +1,15 @@
+import { Metadata } from "next";
 import { currentUser } from "@clerk/nextjs/server";
 import { getFullUserProfile } from "@/lib/db/profile";
 import ProfileClientWrapper from "./ProfileClientWrapper";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+    title: "Profile",
+    description: "Manage your Mentorix profile — update skills, experience, career goals, and professional links to power your AI career tools.",
+    openGraph: { title: "Profile • Mentorix" },
+    twitter: { title: "Profile • Mentorix" },
+}
 
 export default async function MentorixProfilePage() {
     const user = await currentUser();

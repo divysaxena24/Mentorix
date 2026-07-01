@@ -4,9 +4,10 @@ import { Loader2 } from "lucide-react"
 import ResumeAnalyzerClient from "./ResumeAnalyzerClient"
 
 export const metadata: Metadata = {
-    title: "Mentorix",
-
+    title: "Resume Analyzer",
     description: "Analyze your resume against specific job descriptions or field benchmarks. Get an ATS score, identify critical gaps, and get actionable advice to land your dream job.",
+    openGraph: { title: "Resume Analyzer • Mentorix" },
+    twitter: { title: "Resume Analyzer • Mentorix" },
 }
 
 export default function ResumeAnalyzerPage() {

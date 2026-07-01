@@ -330,6 +330,12 @@ export interface Experience {
     startDate: string;
     endDate: string;
     description: string;
+    /** Bullet-point responsibilities and key contributions */
+    responsibilities?: string[];
+    /** Notable achievements with metrics where possible */
+    achievements?: string[];
+    /** Impact metrics (e.g., "30% improvement", "$100K saved") */
+    metrics?: string[];
 }
 
 export interface Skill {
@@ -337,28 +343,6 @@ export interface Skill {
     skills: string[];
 }
 
-export interface Project {
-    title: string;
-    link?: string;
-    description: string;
-    technologies: string[];
-}
-
-export interface CustomSubItem {
-    title?: string;
-    subtitle?: string;
-    date?: string;
-    location?: string;
-    description: string;
-}
-
-export interface CustomSection {
-    id: string;
-    title: string;
-    items: CustomSubItem[];
-}
-
-/** Structured certification entry */
 export interface Certification {
     title: string;
     issuer?: string;
@@ -390,6 +374,70 @@ export interface Publication {
     description?: string;
 }
 
+/** Leadership / volunteer / extracurricular entry */
+export interface LeadershipEntry {
+    title: string;
+    organization: string;
+    role: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+}
+
+/** Interest / hobby entry */
+export interface InterestEntry {
+    name: string;
+    category?: string;
+    description?: string;
+}
+
+/** Award / honor entry (separate from achievements for richer structure) */
+export interface AwardEntry {
+    title: string;
+    issuer?: string;
+    date?: string;
+    description?: string;
+}
+
+/** Volunteer experience entry */
+export interface VolunteerEntry {
+    organization: string;
+    role: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    cause?: string;
+}
+
+export interface Project {
+    title: string;
+    link?: string;
+    description: string;
+    technologies: string[];
+    /** Dedicated GitHub repository link */
+    github?: string;
+    /** Live deployment / demo link */
+    liveLink?: string;
+    /** Key achievements and outcomes from this project */
+    achievements?: string[];
+}
+
+export interface CustomSubItem {
+    title?: string;
+    subtitle?: string;
+    date?: string;
+    location?: string;
+    description: string;
+}
+
+export interface CustomSection {
+    id: string;
+    title: string;
+    items: CustomSubItem[];
+}
+
 /** Section identifiers used for controlling render order in ResumeData.sectionOrder */
 export type SectionType =
   | "summary"
@@ -401,6 +449,10 @@ export type SectionType =
   | "achievements"
   | "publications"
   | "languages"
+  | "leadership"
+  | "volunteer"
+  | "awards"
+  | "interests"
   | "customSections";
 
 /**
@@ -415,7 +467,11 @@ export const DEFAULT_SECTION_ORDER: SectionType[] = [
   "certifications",
   "achievements",
   "publications",
+  "leadership",
+  "volunteer",
+  "awards",
   "languages",
+  "interests",
   "customSections",
 ];
 
@@ -441,6 +497,14 @@ export interface ResumeData {
     publications?: Publication[];
     /** Custom sections (generic catch-all) */
     customSections?: CustomSection[];
+    /** Leadership / extracurricular roles */
+    leadership?: LeadershipEntry[];
+    /** Volunteer / community service experience */
+    volunteer?: VolunteerEntry[];
+    /** Awards and honors */
+    awards?: AwardEntry[];
+    /** Personal interests / hobbies */
+    interests?: InterestEntry[];
     /** Override the default section render order */
     sectionOrder?: SectionType[];
     /** Resume template identifier */

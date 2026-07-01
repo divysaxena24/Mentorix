@@ -10,6 +10,7 @@ export default function ResumeBuilderRedirect() {
   const router = useRouter();
 
   useEffect(() => {
+    document.title = "Resume Builder • Mentorix"
     // Redirect to the new JSON‑based resume builder page
     router.replace('/dashboard/resume-builder');
   }, [router]);
